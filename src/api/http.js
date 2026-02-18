@@ -1,7 +1,17 @@
 import { clearSession } from '@/lib/auth/session'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
-const API_BASE_URL = API_URL ? `${API_URL}/api` : ''
+const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
+
+const normalizeApiBase = () => {
+  const trimmed = String(API_URL || '').trim().replace(/\/$/, '')
+
+  if (!trimmed) return ''
+  if (trimmed.endsWith('/api')) return trimmed
+
+  return `${trimmed}/api`
+}
+
+const API_BASE_URL = normalizeApiBase()
 
 const TOKEN_KEYS = ['cf_token', 'accessToken', 'token', 'authToken']
 
@@ -18,9 +28,13 @@ const getToken = () => {
 }
 
 const buildUrl = (path, query) => {
-  const normalizedBase = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  const url = new URL(`${normalizedBase}${normalizedPath}`)
+
+  if (!API_BASE_URL) {
+    throw new Error('Falta configurar NEXT_PUBLIC_API_URL en el entorno de despliegue.')
+  }
+
+  const url = new URL(`${API_BASE_URL}${normalizedPath}`)
 
   if (query) {
     Object.entries(query).forEach(([key, value]) => {
@@ -59,7 +73,9 @@ export const apiRequest = async (path, { method = 'GET', query, body, auth = tru
       cache: 'no-store'
     })
   } catch {
-    throw new Error(`No se pudo conectar con el backend en ${API_URL || 'NEXT_PUBLIC_API_URL no configurada'}`)
+    throw new Error(
+      `No se pudo conectar con el backend en ${API_BASE_URL || 'NEXT_PUBLIC_API_URL no configurada en producción'}`
+    )
   }
 
   const payload = await response.json().catch(() => ({}))
