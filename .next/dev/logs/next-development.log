@@ -1,18 +1,1 @@
-[00:00:01.015] Server  LOG     ✓ Ready in 813ms
-[00:00:14.073] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:04:45.936] Server  LOG     ✓ Compiled in 435ms
-[00:04:59.328] Server  WARN    ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-[00:04:59.401] Server  LOG     ✓ Compiled in 44ms
-[00:07:28.958] Browser ERROR   uncaughtError: Error: Cannot find the middleware module
-[00:07:44.194] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:09:02.454] Server  LOG     ✓ Compiled in 38ms
-[00:09:06.722] Server  LOG     ✓ Compiled in 28ms
-[00:10:47.449] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:20:35.719] Server  LOG     ✓ Compiled in 1112ms
-[00:40:06.003] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:40:16.812] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:40:38.884] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:40:57.516] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:45:12.586] Server  LOG     ✓ Compiled in 1979ms
-[00:45:12.604] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./crediflash-vuexy-next/src/configs/themeConfig.js changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-[00:45:13.261] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:01.971] Server  LOG     ✓ Ready in 1753ms
