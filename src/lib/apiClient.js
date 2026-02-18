@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 const getToken = () => {
   if (typeof window === 'undefined') return ''
@@ -30,7 +30,7 @@ export const apiClient = async (path, { method = 'GET', body, auth = true } = {}
       body: body instanceof FormData ? body : body !== undefined && body !== null ? JSON.stringify(body) : undefined
     })
   } catch {
-    throw new Error('No se pudo conectar con el backend en :5001')
+    throw new Error(`No se pudo conectar con el backend en ${API_URL}`)
   }
 
   const data = await response.json().catch(() => ({}))

@@ -1,6 +1,7 @@
 import { clearSession } from '@/lib/auth/session'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+const API_BASE_URL = API_URL ? `${API_URL}/api` : ''
 
 const TOKEN_KEYS = ['cf_token', 'accessToken', 'token', 'authToken']
 
@@ -58,7 +59,7 @@ export const apiRequest = async (path, { method = 'GET', query, body, auth = tru
       cache: 'no-store'
     })
   } catch {
-    throw new Error('No se pudo conectar con el backend en http://localhost:5001')
+    throw new Error(`No se pudo conectar con el backend en ${API_URL || 'NEXT_PUBLIC_API_URL no configurada'}`)
   }
 
   const payload = await response.json().catch(() => ({}))
