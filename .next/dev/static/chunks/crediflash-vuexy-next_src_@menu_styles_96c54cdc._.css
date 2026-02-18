@@ -1,0 +1,38 @@
+/* [project]/crediflash-vuexy-next/src/@menu/styles/styles.module.css [app-client] (css) */
+.styles-module__AzX1FG__ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+/* [project]/crediflash-vuexy-next/src/@menu/styles/horizontal/horizontalUl.module.css [app-client] (css) */
+.horizontalUl-module__Gpfx7q__root {
+  flex-wrap: wrap;
+  align-items: center;
+  block-size: 100%;
+  inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.horizontalUl-module__Gpfx7q__root .horizontalUl-module__Gpfx7q__li:not(:last-of-type) {
+  margin-inline-end: 4px;
+}
+
+/* [project]/crediflash-vuexy-next/src/@menu/styles/vertical/verticalNavBgImage.module.css [app-client] (css) */
+.verticalNavBgImage-module__xGaZRa__root {
+  object-fit: cover;
+  object-position: center;
+  z-index: 2;
+  block-size: 100%;
+  inline-size: 100%;
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+}
+
+/*# sourceMappingURL=crediflash-vuexy-next_src_%40menu_styles_96c54cdc._.css.map*/

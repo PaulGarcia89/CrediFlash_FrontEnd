@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 26, "column": 0}, "map": {"version":3,"sources":["file:///Users/paulgarcia/Documents/ProyectosDesarrollo/ReactCrediFlash/ReactCrediFlash/material-dashboard-pro-react/crediflash-vuexy-next/src/app/%28dashboard%29/home/page.jsx"],"sourcesContent":["import { redirect } from 'next/navigation'\n\nexport default function HomePage() {\n  redirect('/analytics')\n}\n"],"names":[],"mappings":";;;;AAAA;AAAA;;AAEe,SAAS;IACtB,IAAA,gOAAQ,EAAC;AACX"}}]
+}

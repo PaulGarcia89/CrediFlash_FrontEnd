@@ -1,0 +1,11 @@
+{
+  "/(blank-layout-pages)/login/page": "app/(blank-layout-pages)/login/page.js",
+  "/(dashboard)/analytics/page": "app/(dashboard)/analytics/page.js",
+  "/(dashboard)/clientes/nuevo/page": "app/(dashboard)/clientes/nuevo/page.js",
+  "/(dashboard)/clientes/page": "app/(dashboard)/clientes/page.js",
+  "/(dashboard)/cuotas/page": "app/(dashboard)/cuotas/page.js",
+  "/(dashboard)/home/page": "app/(dashboard)/home/page.js",
+  "/(dashboard)/solicitudes/nueva/page": "app/(dashboard)/solicitudes/nueva/page.js",
+  "/(dashboard)/solicitudes/page": "app/(dashboard)/solicitudes/page.js",
+  "/_not-found/page": "app/_not-found/page.js"
+}
