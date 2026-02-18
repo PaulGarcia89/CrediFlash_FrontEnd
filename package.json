@@ -42,7 +42,6 @@
     "eslint-config-next": "15.1.2",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "2.31.0",
-    "eslint-plugin-prettier": "^5.5.5",
     "postcss": "8.5.6",
     "postcss-styled-syntax": "0.7.1",
     "prettier": "3.6.2",
