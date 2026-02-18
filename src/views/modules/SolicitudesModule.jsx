@@ -87,6 +87,13 @@ const EXCLUDED_RESULT_VALUES = new Set(['#10b981'])
 
 const isPlainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value)
 
+const normalizeText = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
 const normalizeField = value =>
   String(value || '')
     .toLowerCase()
@@ -478,6 +485,7 @@ export default function SolicitudesModule() {
 
   const tableRows = useMemo(() => {
     let output = [...rows]
+    const normalizedQuery = normalizeText(search)
 
     if (modeloFiltro) {
       output = output.filter(item => String(item?.modelo_calificacion || '').toUpperCase() === modeloFiltro)
@@ -500,6 +508,25 @@ export default function SolicitudesModule() {
       })
     }
 
+    if (normalizedQuery) {
+      output = output.filter(item => {
+        const nombreCliente = getClienteNombre(item)
+        const emailCliente = item?.cliente?.email || item?.cliente_email || ''
+
+        const searchable = [
+          nombreCliente,
+          emailCliente,
+          item?.estado,
+          item?.modelo_calificacion,
+          item?.monto_solicitado
+        ]
+          .map(normalizeText)
+          .join(' ')
+
+        return searchable.includes(normalizedQuery)
+      })
+    }
+
     if (focusActive) {
       output = output.filter(item => {
         const matchSolicitud = focusSolicitudId ? String(item?.id || '') === String(focusSolicitudId) : false
@@ -510,7 +537,7 @@ export default function SolicitudesModule() {
     }
 
     return output
-  }, [modeloFiltro, orden, rows, focusActive, focusClienteId, focusSolicitudId])
+  }, [modeloFiltro, orden, rows, search, focusActive, focusClienteId, focusSolicitudId])
 
   const metrics = useMemo(() => {
     return {
@@ -700,7 +727,7 @@ export default function SolicitudesModule() {
                 <TextField
                   select
                   size='small'
-                  label='Show'
+                  label='Mostrar'
                   value={String(limit)}
                   onChange={event => setLimit(Number(event.target.value))}
                   sx={{ minWidth: 100 }}
@@ -710,7 +737,7 @@ export default function SolicitudesModule() {
                   <MenuItem value='50'>50</MenuItem>
                 </TextField>
                 <Button variant='tonal' color='secondary' onClick={handleExportCsv}>
-                  Export
+                  Exportar
                 </Button>
                 <Button variant='contained' component={Link} href='/solicitudes/nueva'>
                   + Ingresar solicitud
@@ -718,7 +745,7 @@ export default function SolicitudesModule() {
               </Stack>
               <Stack direction='row' spacing={1.5}>
                 <TextField
-                  label='Search Solicitud'
+                  label='Buscar solicitud'
                   placeholder='Nombre o email'
                   value={search}
                   onChange={event => setSearch(event.target.value)}
@@ -727,7 +754,7 @@ export default function SolicitudesModule() {
                 />
                 <TextField
                   select
-                  label='Status'
+                  label='Estado'
                   value={estado}
                   onChange={event => setEstado(event.target.value)}
                   size='small'
@@ -775,7 +802,7 @@ export default function SolicitudesModule() {
                     <TableCell>Plazo (semanas)</TableCell>
                     <TableCell>Tasa variable (%)</TableCell>
                     <TableCell>Estado</TableCell>
-                    <TableCell>ACTIONS</TableCell>
+                    <TableCell>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

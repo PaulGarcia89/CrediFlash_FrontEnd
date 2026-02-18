@@ -37,13 +37,7 @@ const NavbarContent = () => {
       </Box>
 
       <Stack direction='row' spacing={0.5} alignItems='center'>
-        <IconButton size='small'>
-          <i className='tabler-language text-xl' />
-        </IconButton>
         <ModeDropdown />
-        <IconButton size='small'>
-          <i className='tabler-layout-grid-add text-xl' />
-        </IconButton>
         <IconButton size='small'>
           <i className='tabler-bell text-xl' />
         </IconButton>

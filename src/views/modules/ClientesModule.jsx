@@ -53,6 +53,13 @@ const extractTotal = payload =>
 
 const countEstado = (rows, estado) => rows.filter(item => String(item?.estado || '').toUpperCase() === estado).length
 
+const normalizeText = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
 const getEstadoColor = estado => {
   if (estado === 'ACTIVO') return 'success'
   if (estado === 'INACTIVO') return 'warning'
@@ -133,6 +140,7 @@ export default function ClientesModule() {
 
   const tableRows = useMemo(() => {
     let output = [...rows]
+    const normalizedQuery = normalizeText(search)
 
     if (tipoContacto === 'CON_CONTACTO') {
       output = output.filter(item => item?.nombre_contacto || item?.telefono_contacto || item?.email_contacto)
@@ -150,8 +158,17 @@ export default function ClientesModule() {
       output.sort((a, b) => String(b?.nombre || '').localeCompare(String(a?.nombre || ''), 'es'))
     }
 
+    if (normalizedQuery) {
+      output = output.filter(item => {
+        const fullName = [item?.nombre, item?.apellido].filter(Boolean).join(' ')
+        const searchable = [fullName, item?.email, item?.telefono, item?.estado].map(normalizeText).join(' ')
+
+        return searchable.includes(normalizedQuery)
+      })
+    }
+
     return output
-  }, [orden, rows, tipoContacto])
+  }, [orden, rows, search, tipoContacto])
 
   const metrics = useMemo(() => {
     const fallbackActivos = countEstado(rows, 'ACTIVO')
@@ -346,7 +363,7 @@ export default function ClientesModule() {
                 <TextField
                   select
                   size='small'
-                  label='Show'
+                  label='Mostrar'
                   value={String(limit)}
                   onChange={event => setLimit(Number(event.target.value))}
                   sx={{ minWidth: 100 }}
@@ -357,7 +374,7 @@ export default function ClientesModule() {
                 </TextField>
 
                 <Button variant='tonal' color='secondary' onClick={handleExportCsv}>
-                  Export
+                  Exportar
                 </Button>
                 <Button variant='contained' component={Link} href='/clientes/nuevo'>
                   + Nuevo cliente
@@ -366,7 +383,7 @@ export default function ClientesModule() {
 
               <Stack direction='row' spacing={1.5}>
                 <TextField
-                  label='Search Cliente'
+                  label='Buscar cliente'
                   placeholder='Nombre, teléfono o email'
                   size='small'
                   value={search}
@@ -399,11 +416,11 @@ export default function ClientesModule() {
                   <TableCell padding='checkbox'>
                     <Checkbox size='small' />
                   </TableCell>
-                  <TableCell>STATUS</TableCell>
-                  <TableCell>CLIENT</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell>Cliente</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell>Teléfono</TableCell>
-                  <TableCell>ACTIONS</TableCell>
+                  <TableCell>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

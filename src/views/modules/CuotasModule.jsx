@@ -35,6 +35,13 @@ import { formatUSD } from '@/utils/currency'
 
 const formatCurrency = value => formatUSD(value)
 
+const normalizeText = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.data)) return payload.data
@@ -119,10 +126,10 @@ export default function CuotasModule() {
       let rows = extractRows(response)
 
       if (searchCliente.trim()) {
-        const normalizedQuery = searchCliente.toLowerCase().trim()
+        const normalizedQuery = normalizeText(searchCliente)
 
         rows = rows.filter(row => {
-          const label = String(row.nombre_completo || '').toLowerCase()
+          const label = normalizeText(row.nombre_completo)
 
           return label.includes(normalizedQuery)
         })
@@ -456,7 +463,7 @@ export default function CuotasModule() {
                 <TextField
                   select
                   size='small'
-                  label='Show'
+                  label='Mostrar'
                   value={String(limit)}
                   onChange={event => setLimit(Number(event.target.value))}
                   sx={{ minWidth: 100 }}
@@ -466,13 +473,13 @@ export default function CuotasModule() {
                   <MenuItem value='50'>50</MenuItem>
                 </TextField>
                 <Button variant='tonal' color='secondary' onClick={handleExportCsv}>
-                  Export
+                  Exportar
                 </Button>
               </Stack>
               <Stack direction='row' spacing={1.5}>
                 <TextField
                   size='small'
-                  label='Search Cliente'
+                  label='Buscar cliente'
                   placeholder='Buscar por nombre y apellido'
                   value={searchCliente}
                   onChange={event => setSearchCliente(event.target.value)}
@@ -481,7 +488,7 @@ export default function CuotasModule() {
                 <TextField
                   select
                   size='small'
-                  label='Status'
+                  label='Estado'
                   value={status}
                   onChange={event => setStatus(event.target.value)}
                   sx={{ minWidth: 170 }}
@@ -515,7 +522,7 @@ export default function CuotasModule() {
                     <TableCell>Semanas</TableCell>
                     <TableCell>Cuotas restantes</TableCell>
                     <TableCell>Estado</TableCell>
-                    <TableCell>ACTIONS</TableCell>
+                    <TableCell>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -694,7 +701,7 @@ export default function CuotasModule() {
                     <TableCell>Total</TableCell>
                     <TableCell>Pendiente</TableCell>
                     <TableCell>Estado</TableCell>
-                    <TableCell>ACTIONS</TableCell>
+                    <TableCell>Acciones</TableCell>
                     <TableCell>Inicio</TableCell>
                     <TableCell>Vencimiento</TableCell>
                   </TableRow>
