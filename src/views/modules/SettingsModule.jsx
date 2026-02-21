@@ -354,11 +354,18 @@ export default function SettingsModule() {
   }
 
   const assignRolToAnalista = async (analistaId, rolId) => {
+    if (!rolId) {
+      setError('Debes seleccionar un rol válido para el analista.')
+      setSuccess('')
+
+      return
+    }
+
     setError('')
     setSuccess('')
 
     try {
-      await asignarRolAnalista(analistaId, { rol_id: rolId })
+      await asignarRolAnalista(analistaId, { role_id: rolId })
       setSuccess('Rol de acceso asignado al analista.')
       await loadAnalistas()
     } catch (err) {
