@@ -226,20 +226,36 @@ export default function SolicitudFormModule({ solicitudId = null }) {
           destino: form.destino
         })
       } else {
-        const payload = new FormData()
+        const basePayload = {
+          cliente_id: form.cliente_id,
+          monto_solicitado: Number(form.monto_solicitado || 0),
+          plazo_semanas: Number(form.plazo_semanas || 0),
+          tasa_variable: tasaVariable,
+          modelo_calificacion: form.modelo_calificacion,
+          destino: form.destino
+        }
 
-        payload.append('cliente_id', form.cliente_id)
-        payload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
-        payload.append('plazo_semanas', String(Number(form.plazo_semanas || 0)))
-        payload.append('tasa_variable', String(tasaVariable))
-        payload.append('modelo_calificacion', form.modelo_calificacion)
-        payload.append('destino', form.destino)
+        let created
 
-        files.forEach(file => {
-          payload.append(`documentos+${form.cliente_id}`, file)
-        })
+        if (files.length) {
+          const payload = new FormData()
 
-        const created = await crearSolicitud(payload)
+          payload.append('cliente_id', form.cliente_id)
+          payload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
+          payload.append('plazo_semanas', String(Number(form.plazo_semanas || 0)))
+          payload.append('tasa_variable', String(tasaVariable))
+          payload.append('modelo_calificacion', form.modelo_calificacion)
+          payload.append('destino', form.destino)
+
+          files.forEach(file => {
+            payload.append('documentos', file)
+          })
+
+          created = await crearSolicitud(payload)
+        } else {
+          created = await crearSolicitud(basePayload)
+        }
+
         const createdSolicitudId = extractSolicitudId(created)
         const params = new URLSearchParams()
 
