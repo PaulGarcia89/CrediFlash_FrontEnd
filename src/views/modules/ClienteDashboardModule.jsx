@@ -26,6 +26,8 @@ const extractRows = payload => {
   if (Array.isArray(payload?.data)) return payload.data
   if (Array.isArray(payload?.rows)) return payload.rows
   if (Array.isArray(payload?.data?.rows)) return payload.data.rows
+  if (Array.isArray(payload?.solicitudes)) return payload.solicitudes
+  if (Array.isArray(payload?.data?.solicitudes)) return payload.data.solicitudes
 
   return []
 }
@@ -65,7 +67,18 @@ const resolveFileUrl = value => {
 }
 
 const extractDocumentRows = solicitudes => {
-  const keysToCheck = ['documentos', 'archivos', 'adjuntos', 'documentos_urls', 'documentosUrls', 'file_urls', 'files']
+  const keysToCheck = [
+    'documentos',
+    'archivos',
+    'adjuntos',
+    'documentos_urls',
+    'documentosUrls',
+    'documentos_subidos',
+    'documentosSubidos',
+    'file_urls',
+    'files',
+    'pdfs'
+  ]
   const rows = []
 
   const addItem = (source, fallbackName) => {
@@ -107,6 +120,38 @@ const extractDocumentRows = solicitudes => {
   solicitudes.forEach((solicitud, index) => {
     keysToCheck.forEach(key => addItem(solicitud?.[key], `Documento ${index + 1}`))
   })
+
+  // Fallback: busca URLs PDF en cualquier propiedad anidada
+  const scanForPdfUrls = value => {
+    if (!value) return
+
+    if (Array.isArray(value)) {
+      value.forEach(scanForPdfUrls)
+
+      return
+    }
+
+    if (typeof value === 'string') {
+      if (value.toLowerCase().includes('.pdf')) {
+        const url = resolveFileUrl(value)
+
+        if (url) {
+          rows.push({
+            nombre: value.split('/').pop() || 'Documento PDF',
+            url
+          })
+        }
+      }
+
+      return
+    }
+
+    if (typeof value === 'object') {
+      Object.values(value).forEach(scanForPdfUrls)
+    }
+  }
+
+  solicitudes.forEach(scanForPdfUrls)
 
   const seen = new Set()
 
