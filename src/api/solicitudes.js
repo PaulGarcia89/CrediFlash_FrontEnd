@@ -17,6 +17,11 @@ export const obtenerSolicitud = solicitudId =>
     method: 'GET'
   })
 
+export const listarSolicitudesPorCliente = clienteId =>
+  apiRequest(`/solicitudes/cliente/${clienteId}`, {
+    method: 'GET'
+  })
+
 export const actualizarSolicitud = (solicitudId, payload) =>
   apiRequest(`/solicitudes/${solicitudId}`, {
     method: 'PUT',

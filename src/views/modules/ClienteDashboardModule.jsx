@@ -18,6 +18,7 @@ import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 
 import { obtenerCliente, verHistorialPrestamosCliente } from '@/api/clientes'
+import { listarSolicitudesPorCliente } from '@/api/solicitudes'
 import { formatUSD } from '@/utils/currency'
 
 const extractRows = payload => {
@@ -40,6 +41,85 @@ const formatDate = value => {
   return asDate.toLocaleDateString('es-DO')
 }
 
+const normalizeBackendOrigin = () => {
+  const raw = String(process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/$/, '')
+
+  if (!raw) return ''
+  if (raw.endsWith('/api')) return raw.slice(0, -4)
+
+  return raw
+}
+
+const resolveFileUrl = value => {
+  const raw = String(value || '').trim()
+
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw)) return raw
+
+  const backendOrigin = normalizeBackendOrigin()
+
+  if (!backendOrigin) return raw
+  if (raw.startsWith('/')) return `${backendOrigin}${raw}`
+
+  return `${backendOrigin}/${raw}`
+}
+
+const extractDocumentRows = solicitudes => {
+  const keysToCheck = ['documentos', 'archivos', 'adjuntos', 'documentos_urls', 'documentosUrls', 'file_urls', 'files']
+  const rows = []
+
+  const addItem = (source, fallbackName) => {
+    if (!source) return
+
+    if (Array.isArray(source)) {
+      source.forEach((item, index) => addItem(item, `${fallbackName} ${index + 1}`))
+
+      return
+    }
+
+    if (typeof source === 'string') {
+      const url = resolveFileUrl(source)
+
+      if (!url) return
+
+      rows.push({
+        nombre: source.split('/').pop() || fallbackName,
+        url
+      })
+
+      return
+    }
+
+    if (typeof source === 'object') {
+      const maybeUrl = source.url || source.path || source.ruta || source.link || source.href
+
+      if (maybeUrl) {
+        const url = resolveFileUrl(maybeUrl)
+
+        rows.push({
+          nombre: source.nombre || source.name || source.filename || source.originalname || fallbackName,
+          url
+        })
+      }
+    }
+  }
+
+  solicitudes.forEach((solicitud, index) => {
+    keysToCheck.forEach(key => addItem(solicitud?.[key], `Documento ${index + 1}`))
+  })
+
+  const seen = new Set()
+
+  return rows.filter(item => {
+    const ref = `${item.nombre}-${item.url}`
+
+    if (seen.has(ref)) return false
+    seen.add(ref)
+
+    return true
+  })
+}
+
 export default function ClienteDashboardModule({ clienteId }) {
   const router = useRouter()
   const [tab, setTab] = useState('dashboard')
@@ -47,19 +127,36 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [error, setError] = useState('')
   const [cliente, setCliente] = useState(null)
   const [prestamos, setPrestamos] = useState([])
+  const [documentos, setDocumentos] = useState([])
 
   const loadData = useCallback(async () => {
     setLoading(true)
     setError('')
 
     try {
-      const [clienteResponse, prestamosResponse] = await Promise.all([
+      const [clienteResponse, prestamosResponse, solicitudesResponse] = await Promise.allSettled([
         obtenerCliente(clienteId),
-        verHistorialPrestamosCliente(clienteId, { page: 1, limit: 100 })
+        verHistorialPrestamosCliente(clienteId, { page: 1, limit: 100 }),
+        listarSolicitudesPorCliente(clienteId)
       ])
 
-      setCliente(clienteResponse?.data || clienteResponse || null)
-      setPrestamos(extractRows(prestamosResponse))
+      if (clienteResponse.status === 'fulfilled') {
+        setCliente(clienteResponse.value?.data || clienteResponse.value || null)
+      }
+
+      if (prestamosResponse.status === 'fulfilled') {
+        setPrestamos(extractRows(prestamosResponse.value))
+      } else {
+        setPrestamos([])
+      }
+
+      if (solicitudesResponse.status === 'fulfilled') {
+        const solicitudes = extractRows(solicitudesResponse.value)
+
+        setDocumentos(extractDocumentRows(solicitudes))
+      } else {
+        setDocumentos([])
+      }
     } catch (err) {
       setError(err.message || 'No se pudo cargar el dashboard del cliente.')
     } finally {
@@ -337,9 +434,28 @@ export default function ClienteDashboardModule({ clienteId }) {
               <Typography variant='h5' sx={{ mb: 1.5 }}>
                 Documentos subidos
               </Typography>
-              <Typography color='text.secondary'>
-                La gestión de documentos por cliente se habilitará en una próxima iteración.
-              </Typography>
+              {!documentos.length ? <Typography color='text.secondary'>No hay documentos PDF cargados.</Typography> : null}
+              {documentos.map((item, index) => (
+                <Stack key={`${item.url}-${index}`} direction='row' justifyContent='space-between' alignItems='center' sx={{ py: 1.25 }}>
+                  <Box>
+                    <Typography>{item.nombre || `Documento ${index + 1}`}</Typography>
+                    <Typography color='text.secondary' variant='body2'>
+                      Archivo PDF
+                    </Typography>
+                  </Box>
+                  <Button
+                    size='small'
+                    variant='tonal'
+                    color='primary'
+                    component='a'
+                    href={item.url}
+                    target='_blank'
+                    rel='noreferrer'
+                  >
+                    Ver / Descargar
+                  </Button>
+                </Stack>
+              ))}
             </CardContent>
           </Card>
         </Stack>
