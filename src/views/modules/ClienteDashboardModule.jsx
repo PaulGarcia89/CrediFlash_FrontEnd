@@ -56,7 +56,23 @@ const buildCandidateUrls = value => {
   const raw = String(value || '').trim()
 
   if (!raw) return []
-  if (/^https?:\/\//i.test(raw)) return [raw]
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const absolute = new URL(raw)
+
+      if (absolute.pathname.startsWith('/uploads/')) {
+        const apiUrl = new URL(raw)
+
+        apiUrl.pathname = `/api${absolute.pathname}`
+
+        return [apiUrl.toString(), raw]
+      }
+    } catch {
+      // If URL parsing fails, fallback to raw value
+    }
+
+    return [raw]
+  }
 
   const backendOrigin = normalizeBackendOrigin()
 
@@ -561,7 +577,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                       variant='tonal'
                       color='error'
                       onClick={() => handleDeleteDocument(item)}
-                      disabled={!item?.id || documentActionLoading === String(item.id)}
+                      disabled={Boolean(item?.id) && documentActionLoading === String(item.id)}
                     >
                       Eliminar
                     </Button>
