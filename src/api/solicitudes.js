@@ -59,3 +59,8 @@ export const ejecutarRatingClienteAntiguo = nombreCompleto =>
   apiRequest(`/ratings/client/${encodeURIComponent(nombreCompleto)}`, {
     method: 'GET'
   })
+
+export const eliminarDocumento = documentoId =>
+  apiRequest(`/documentos/${documentoId}`, {
+    method: 'DELETE'
+  })

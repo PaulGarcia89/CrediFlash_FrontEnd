@@ -18,7 +18,7 @@ import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 
 import { obtenerCliente, verHistorialPrestamosCliente } from '@/api/clientes'
-import { listarSolicitudesPorCliente, obtenerSolicitud } from '@/api/solicitudes'
+import { eliminarDocumento, listarSolicitudesPorCliente, obtenerSolicitud } from '@/api/solicitudes'
 import { formatUSD } from '@/utils/currency'
 
 const extractRows = payload => {
@@ -52,18 +52,27 @@ const normalizeBackendOrigin = () => {
   return raw
 }
 
-const resolveFileUrl = value => {
+const buildCandidateUrls = value => {
   const raw = String(value || '').trim()
 
-  if (!raw) return ''
-  if (/^https?:\/\//i.test(raw)) return raw
+  if (!raw) return []
+  if (/^https?:\/\//i.test(raw)) return [raw]
 
   const backendOrigin = normalizeBackendOrigin()
 
-  if (!backendOrigin) return raw
-  if (raw.startsWith('/')) return `${backendOrigin}${raw}`
+  if (!backendOrigin) return [raw]
 
-  return `${backendOrigin}/${raw}`
+  if (raw.startsWith('/uploads/')) {
+    return [`${backendOrigin}/api${raw}`, `${backendOrigin}${raw}`]
+  }
+
+  if (raw.startsWith('uploads/')) {
+    return [`${backendOrigin}/api/${raw}`, `${backendOrigin}/${raw}`]
+  }
+
+  if (raw.startsWith('/')) return [`${backendOrigin}${raw}`]
+
+  return [`${backendOrigin}/${raw}`]
 }
 
 const extractDocumentRows = solicitudes => {
@@ -91,13 +100,15 @@ const extractDocumentRows = solicitudes => {
     }
 
     if (typeof source === 'string') {
-      const url = resolveFileUrl(source)
+      const urls = buildCandidateUrls(source)
+      const url = urls[0] || ''
 
       if (!url) return
 
       rows.push({
         nombre: source.split('/').pop() || fallbackName,
-        url
+        url,
+        urls
       })
 
       return
@@ -107,11 +118,15 @@ const extractDocumentRows = solicitudes => {
       const maybeUrl = source.url || source.path || source.ruta || source.link || source.href
 
       if (maybeUrl) {
-        const url = resolveFileUrl(maybeUrl)
+        const urls = buildCandidateUrls(maybeUrl)
+        const url = urls[0] || ''
 
         rows.push({
+          id: source.id || source.documento_id || source.documentId || '',
+          solicitud_id: source.solicitud_id || source.solicitudId || '',
           nombre: source.nombre || source.name || source.filename || source.originalname || fallbackName,
-          url
+          url,
+          urls
         })
       }
     }
@@ -133,12 +148,14 @@ const extractDocumentRows = solicitudes => {
 
     if (typeof value === 'string') {
       if (value.toLowerCase().includes('.pdf')) {
-        const url = resolveFileUrl(value)
+        const urls = buildCandidateUrls(value)
+        const url = urls[0] || ''
 
         if (url) {
           rows.push({
             nombre: value.split('/').pop() || 'Documento PDF',
-            url
+            url,
+            urls
           })
         }
       }
@@ -173,6 +190,7 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [cliente, setCliente] = useState(null)
   const [prestamos, setPrestamos] = useState([])
   const [documentos, setDocumentos] = useState([])
+  const [documentActionLoading, setDocumentActionLoading] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -276,6 +294,42 @@ export default function ClienteDashboardModule({ clienteId }) {
       }
     })
   }, [prestamoPrincipal])
+
+  const handleOpenDocument = async item => {
+    const candidates = Array.isArray(item?.urls) && item.urls.length ? item.urls : [item?.url].filter(Boolean)
+
+    if (!candidates.length) {
+      setError('No se encontró una URL válida para este documento.')
+
+      return
+    }
+
+    window.open(candidates[0], '_blank', 'noopener,noreferrer')
+  }
+
+  const handleDeleteDocument = async item => {
+    if (!item?.id) {
+      setError('No se puede eliminar este documento porque el backend no envía su ID.')
+
+      return
+    }
+
+    const confirmDelete = window.confirm(`¿Eliminar documento "${item.nombre}"?`)
+
+    if (!confirmDelete) return
+
+    setError('')
+    setDocumentActionLoading(String(item.id))
+
+    try {
+      await eliminarDocumento(item.id)
+      setDocumentos(previous => previous.filter(doc => String(doc.id) !== String(item.id)))
+    } catch (err) {
+      setError(err.message || 'No se pudo eliminar el documento.')
+    } finally {
+      setDocumentActionLoading('')
+    }
+  }
 
   return (
     <Stack spacing={3}>
@@ -498,17 +552,20 @@ export default function ClienteDashboardModule({ clienteId }) {
                       Archivo PDF
                     </Typography>
                   </Box>
-                  <Button
-                    size='small'
-                    variant='tonal'
-                    color='primary'
-                    component='a'
-                    href={item.url}
-                    target='_blank'
-                    rel='noreferrer'
-                  >
-                    Ver / Descargar
-                  </Button>
+                  <Stack direction='row' spacing={1}>
+                    <Button size='small' variant='tonal' color='primary' onClick={() => handleOpenDocument(item)}>
+                      Ver / Descargar
+                    </Button>
+                    <Button
+                      size='small'
+                      variant='tonal'
+                      color='error'
+                      onClick={() => handleDeleteDocument(item)}
+                      disabled={!item?.id || documentActionLoading === String(item.id)}
+                    >
+                      Eliminar
+                    </Button>
+                  </Stack>
                 </Stack>
               ))}
             </CardContent>
