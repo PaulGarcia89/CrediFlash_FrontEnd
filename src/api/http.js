@@ -47,6 +47,24 @@ const buildUrl = (path, query) => {
   return url.toString()
 }
 
+const shouldForceLogin = (status, message = '') => {
+  if (status === 401 || status === 403) return true
+
+  const normalized = String(message || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
+  return (
+    normalized.includes('token') &&
+    (normalized.includes('expir') ||
+      normalized.includes('caduc') ||
+      normalized.includes('inval') ||
+      normalized.includes('requer') ||
+      normalized.includes('autentic'))
+  )
+}
+
 export const apiRequest = async (path, { method = 'GET', query, body, auth = true } = {}) => {
   const headers = {}
   const isFormData = body instanceof FormData
@@ -64,9 +82,11 @@ export const apiRequest = async (path, { method = 'GET', query, body, auth = tru
   }
 
   let response
+  let requestUrl = ''
 
   try {
-    response = await fetch(buildUrl(path, query), {
+    requestUrl = buildUrl(path, query)
+    response = await fetch(requestUrl, {
       method,
       headers,
       body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
@@ -81,7 +101,9 @@ export const apiRequest = async (path, { method = 'GET', query, body, auth = tru
   const payload = await response.json().catch(() => ({}))
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+    const backendMessage = payload?.message || payload?.error || ''
+
+    if (shouldForceLogin(response.status, backendMessage)) {
       clearSession()
 
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
@@ -89,11 +111,13 @@ export const apiRequest = async (path, { method = 'GET', query, body, auth = tru
       }
     }
 
-    const message = payload?.message || payload?.error || `HTTP ${response.status}`
+    const message = backendMessage || `HTTP ${response.status}`
     const error = new Error(message)
 
     error.status = response.status
     error.payload = payload
+    error.url = requestUrl
+    error.method = method
 
     throw error
   }
