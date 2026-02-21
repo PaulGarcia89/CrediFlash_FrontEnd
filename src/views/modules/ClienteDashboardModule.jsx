@@ -18,7 +18,7 @@ import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 
 import { obtenerCliente, verHistorialPrestamosCliente } from '@/api/clientes'
-import { listarSolicitudesPorCliente } from '@/api/solicitudes'
+import { listarSolicitudesPorCliente, obtenerSolicitud } from '@/api/solicitudes'
 import { formatUSD } from '@/utils/currency'
 
 const extractRows = payload => {
@@ -152,8 +152,18 @@ export default function ClienteDashboardModule({ clienteId }) {
 
       if (solicitudesResponse.status === 'fulfilled') {
         const solicitudes = extractRows(solicitudesResponse.value)
+        const detailRequests = solicitudes
+          .map(item => item?.id)
+          .filter(Boolean)
+          .map(id => obtenerSolicitud(id))
 
-        setDocumentos(extractDocumentRows(solicitudes))
+        const detailResponses = await Promise.allSettled(detailRequests)
+        const detalles = detailResponses
+          .filter(item => item.status === 'fulfilled')
+          .map(item => item.value?.data || item.value)
+          .filter(Boolean)
+
+        setDocumentos(extractDocumentRows([...solicitudes, ...detalles]))
       } else {
         setDocumentos([])
       }
