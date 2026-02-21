@@ -184,7 +184,20 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     const selected = Array.from(event.target.files || [])
 
     if (selected.length > 3) {
-      setSnackbar({ open: true, message: 'Solo se permiten 3 documentos por solicitud.' })
+      setSnackbar({ open: true, message: 'Solo se permiten 0, 1, 2 o 3 documentos por solicitud.' })
+
+      return
+    }
+
+    const invalidType = selected.find(file => {
+      const mime = String(file?.type || '').toLowerCase()
+      const name = String(file?.name || '').toLowerCase()
+
+      return mime !== 'application/pdf' && !name.endsWith('.pdf')
+    })
+
+    if (invalidType) {
+      setSnackbar({ open: true, message: 'Solo se permiten documentos en formato PDF.' })
 
       return
     }
@@ -440,14 +453,14 @@ export default function SolicitudFormModule({ solicitudId = null }) {
               </Card>
 
               <Card>
-                <CardHeader title='Documentos' subheader='Carga opcional de 0 a 3 archivos por solicitud.' />
+                <CardHeader title='Documentos' subheader='Carga opcional de 0, 1, 2 o 3 archivos PDF por solicitud.' />
                 <Divider />
                 <CardContent>
                   {!solicitudId ? (
                     <>
                       <Button variant='outlined' component='label'>
-                        Cargar documentos (0 a 3)
-                        <input hidden type='file' multiple onChange={handleFiles} />
+                        Cargar documentos PDF (0 a 3)
+                        <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleFiles} />
                       </Button>
                       <Typography variant='caption' color='text.secondary' display='block' mt={1}>
                         {files.length > 0 ? `${files.length} archivo(s) seleccionado(s)` : 'Sin documentos cargados'}
