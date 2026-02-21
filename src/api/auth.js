@@ -19,3 +19,10 @@ export const obtenerPerfilAnalista = () =>
     method: 'GET',
     auth: true
   })
+
+export const listarAnalistas = ({ page = 1, limit = 100, search = '', estado = '' } = {}) =>
+  apiRequest('/analistas', {
+    method: 'GET',
+    query: { page, limit, search, estado },
+    auth: true
+  })

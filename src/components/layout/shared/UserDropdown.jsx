@@ -37,6 +37,12 @@ const getInitials = analista => {
   return `${nombre.slice(0, 1)}${apellido.slice(0, 1)}`.toUpperCase() || 'AN'
 }
 
+const isAdmin = analista => {
+  const role = String(analista?.rol || analista?.role || '').toUpperCase()
+
+  return role.includes('ADMIN')
+}
+
 const UserDropdown = () => {
   const [open, setOpen] = useState(false)
   const [analista, setAnalista] = useState(null)
@@ -45,6 +51,7 @@ const UserDropdown = () => {
 
   const router = useRouter()
   const { settings } = useSettings()
+  const canOpenSettings = isAdmin(analista)
 
   useEffect(() => {
     setAnalista(getAnalista())
@@ -117,13 +124,15 @@ const UserDropdown = () => {
 
                   <MenuItem className='mli-2 gap-3' onClick={event => handleDropdownClose(event, '/profile')}>
                     <i className='tabler-user' />
-                    <Typography color='text.primary'>My Profile</Typography>
+                    <Typography color='text.primary'>Mi perfil</Typography>
                   </MenuItem>
 
-                  <MenuItem className='mli-2 gap-3' onClick={event => handleDropdownClose(event, '/settings')}>
-                    <i className='tabler-settings' />
-                    <Typography color='text.primary'>Settings</Typography>
-                  </MenuItem>
+                  {canOpenSettings ? (
+                    <MenuItem className='mli-2 gap-3' onClick={event => handleDropdownClose(event, '/settings')}>
+                      <i className='tabler-settings' />
+                      <Typography color='text.primary'>Configuración</Typography>
+                    </MenuItem>
+                  ) : null}
 
                   <div className='flex items-center plb-2 pli-3'>
                     <Button
@@ -135,7 +144,7 @@ const UserDropdown = () => {
                       onClick={handleUserLogout}
                       sx={{ '& .MuiButton-endIcon': { marginInlineStart: 1.5 } }}
                     >
-                      Logout
+                      Cerrar sesión
                     </Button>
                   </div>
                 </MenuList>
