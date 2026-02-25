@@ -180,18 +180,7 @@ export default function AnalyticsModule() {
     <Stack spacing={2.5}>
       <Box>
         <Typography variant='h4'>Dashboard Ejecutivo</Typography>
-        <Typography color='text.secondary'>
-          Diseño inspirado en templates Vuexy: Index, CRM, Ecommerce, Logistics y Academy.
-        </Typography>
       </Box>
-
-      <Stack direction='row' flexWrap='wrap' gap={1}>
-        <Chip size='small' label='Index' color='primary' variant='tonal' />
-        <Chip size='small' label='CRM' color='info' variant='tonal' />
-        <Chip size='small' label='Ecommerce' color='success' variant='tonal' />
-        <Chip size='small' label='Logistics' color='warning' variant='tonal' />
-        <Chip size='small' label='Academy' color='secondary' variant='tonal' />
-      </Stack>
 
       <Card>
         <CardContent>
