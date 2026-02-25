@@ -28,6 +28,25 @@ import { formatUSD } from '@/utils/currency'
 const formatNumber = value => new Intl.NumberFormat('es-DO').format(Number(value || 0))
 const formatPercent = value => `${Number(value || 0).toFixed(1)}%`
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, Number(value || 0)))
+const formatDateInput = date => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const getQuickRange = monthsBack => {
+  const end = new Date()
+  const start = new Date(end)
+
+  start.setMonth(start.getMonth() - Number(monthsBack || 0))
+
+  return {
+    fecha_desde: formatDateInput(start),
+    fecha_hasta: formatDateInput(end)
+  }
+}
 const formatPeriodLabel = value => {
   if (!value) return ''
 
@@ -205,6 +224,13 @@ export default function AnalyticsModule() {
   const totalCuotas = cuotasResumen.pagadas + cuotasResumen.pendientes + cuotasResumen.parciales
   const cumplimientoCobros = totalCuotas ? (cuotasResumen.pagadas / totalCuotas) * 100 : 0
 
+  const applyQuickFilter = monthsBack => {
+    const range = getQuickRange(monthsBack)
+
+    setFiltros(range)
+    fetchAnalytics(range)
+  }
+
   return (
     <Stack spacing={2.5}>
       <Box>
@@ -232,6 +258,12 @@ export default function AnalyticsModule() {
             />
             <Button variant='contained' onClick={() => fetchAnalytics()} disabled={loading}>
               Actualizar dashboard
+            </Button>
+            <Button variant='tonal' color='info' onClick={() => applyQuickFilter(1)} disabled={loading}>
+              Último mes
+            </Button>
+            <Button variant='tonal' color='secondary' onClick={() => applyQuickFilter(12)} disabled={loading}>
+              Últimos 12 meses
             </Button>
             <Button
               variant='text'
