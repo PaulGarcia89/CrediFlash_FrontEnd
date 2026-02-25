@@ -18,6 +18,7 @@ import TableCell from '@mui/material/TableCell'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
 import { obtenerAnalyticsDashboard } from '@/api/analytics'
@@ -27,6 +28,15 @@ import { formatUSD } from '@/utils/currency'
 const formatNumber = value => new Intl.NumberFormat('es-DO').format(Number(value || 0))
 const formatPercent = value => `${Number(value || 0).toFixed(1)}%`
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, Number(value || 0)))
+const formatPeriodLabel = value => {
+  if (!value) return ''
+
+  const asDate = new Date(value)
+
+  if (Number.isNaN(asDate.getTime())) return String(value)
+
+  return asDate.toLocaleDateString('es-DO', { month: 'short', year: 'numeric' })
+}
 
 const MetricCard = ({ icon, color, title, value, subtitle, trend }) => (
   <Card sx={{ height: '100%' }}>
@@ -58,24 +68,37 @@ const MetricCard = ({ icon, color, title, value, subtitle, trend }) => (
   </Card>
 )
 
-const MiniBars = ({ values, color = 'var(--mui-palette-primary-main)' }) => {
+const MiniBars = ({ values, labels = [], color = 'var(--mui-palette-primary-main)', metricLabel = 'Valor', formatValue }) => {
   const safeValues = values.length ? values : [4, 7, 6, 8, 5, 9]
+  const safeLabels = labels.length === safeValues.length ? labels : safeValues.map((_, index) => `Período ${index + 1}`)
   const maxValue = Math.max(...safeValues, 1)
+  const valueFormatter = formatValue || formatNumber
 
   return (
     <Stack direction='row' spacing={0.75} alignItems='end' sx={{ height: 72 }}>
-      {safeValues.map((value, index) => (
-        <Box
-          key={`${value}-${index}`}
-          sx={{
-            flex: 1,
-            borderRadius: 1.2,
-            backgroundColor: color,
-            opacity: 0.28 + (Number(value || 0) / maxValue) * 0.72,
-            height: `${Math.max(12, (Number(value || 0) / maxValue) * 100)}%`
-          }}
-        />
-      ))}
+      {safeValues.map((value, index) => {
+        const period = safeLabels[index]
+
+        return (
+          <Tooltip
+            key={`${value}-${index}-${period}`}
+            arrow
+            placement='top'
+            title={`${period} • ${metricLabel}: ${valueFormatter(value)}`}
+          >
+            <Box
+              sx={{
+                flex: 1,
+                borderRadius: 1.2,
+                backgroundColor: color,
+                opacity: 0.28 + (Number(value || 0) / maxValue) * 0.72,
+                height: `${Math.max(12, (Number(value || 0) / maxValue) * 100)}%`,
+                cursor: 'pointer'
+              }}
+            />
+          </Tooltip>
+        )
+      })}
     </Stack>
   )
 }
@@ -165,6 +188,12 @@ export default function AnalyticsModule() {
     const values = series.map(item => Number(item.total || 0)).slice(-8)
 
     return values.length ? values : [3, 5, 4, 6, 8, 7, 9, 10]
+  }, [series])
+
+  const serieLabels = useMemo(() => {
+    const labels = series.map(item => formatPeriodLabel(item.mes)).slice(-8)
+
+    return labels.length ? labels : Array.from({ length: 8 }, (_, index) => `Período ${index + 1}`)
   }, [series])
 
   const serieMontos = useMemo(() => {
@@ -275,10 +304,22 @@ export default function AnalyticsModule() {
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 8 }}>
                   <Typography color='text.secondary'>Volumen de préstamos por mes</Typography>
-                  <MiniBars values={seriePrestamos} color='var(--mui-palette-info-main)' />
+                  <MiniBars
+                    values={seriePrestamos}
+                    labels={serieLabels}
+                    color='var(--mui-palette-info-main)'
+                    metricLabel='Préstamos'
+                    formatValue={formatNumber}
+                  />
                   <Divider sx={{ my: 2 }} />
                   <Typography color='text.secondary'>Monto mensual estimado</Typography>
-                  <MiniBars values={serieMontos} color='var(--mui-palette-success-main)' />
+                  <MiniBars
+                    values={serieMontos}
+                    labels={serieLabels}
+                    color='var(--mui-palette-success-main)'
+                    metricLabel='Monto'
+                    formatValue={formatUSD}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <Stack spacing={2}>
