@@ -176,27 +176,26 @@ export default function AnalyticsModule() {
   const [analytics, setAnalytics] = useState(null)
   const [filtros, setFiltros] = useState({ fecha_desde: '', fecha_hasta: '' })
 
-  const fetchAnalytics = useCallback(
-    async customFiltros => {
-      setLoading(true)
-      setError('')
+  const fetchAnalytics = useCallback(async customFiltros => {
+    setLoading(true)
+    setError('')
 
-      try {
-        const response = await obtenerAnalyticsDashboard(customFiltros || filtros)
+    try {
+      const response = await obtenerAnalyticsDashboard(customFiltros || filtros)
 
-        setAnalytics(response)
-      } catch (err) {
-        setError(err.message || 'No se pudo cargar analytics.')
-      } finally {
-        setLoading(false)
-      }
-    },
-    [filtros]
-  )
+      setAnalytics(response)
+    } catch (err) {
+      setError(err.message || 'No se pudo cargar analytics.')
+    } finally {
+      setLoading(false)
+    }
+  }, [filtros])
 
   useEffect(() => {
     fetchAnalytics({})
-  }, [fetchAnalytics])
+    // Solo carga inicial; evita recargar sin filtros cuando cambia el estado de fechas
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const kpis = analytics?.kpis || {}
   const topClientes = analytics?.topClientes || []
