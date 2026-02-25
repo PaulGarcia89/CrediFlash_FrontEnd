@@ -310,7 +310,7 @@ export default function AnalyticsModule() {
           <MetricCard
             icon='tabler-file-dollar'
             color='primary'
-            title='Ingresos por intereses'
+            title='Ganancias esperadas'
             value={formatUSD(kpis.ingresosIntereses)}
             subtitle='Acumulado filtrado'
             trend={{ color: 'primary', label: `${formatNumber(kpis.totalPrestamos)} préstamos` }}
