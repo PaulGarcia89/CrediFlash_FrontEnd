@@ -36,11 +36,23 @@ const formatDateInput = date => {
   return `${year}-${month}-${day}`
 }
 
-const getQuickRange = monthsBack => {
+const getPreviousMonthRange = () => {
+  const now = new Date()
+  const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const lastDayPreviousMonth = new Date(firstDayCurrentMonth.getTime() - 24 * 60 * 60 * 1000)
+  const firstDayPreviousMonth = new Date(lastDayPreviousMonth.getFullYear(), lastDayPreviousMonth.getMonth(), 1)
+
+  return {
+    fecha_desde: formatDateInput(firstDayPreviousMonth),
+    fecha_hasta: formatDateInput(lastDayPreviousMonth)
+  }
+}
+
+const getLastTwelveMonthsRange = () => {
   const end = new Date()
   const start = new Date(end)
 
-  start.setMonth(start.getMonth() - Number(monthsBack || 0))
+  start.setMonth(start.getMonth() - 12)
 
   return {
     fecha_desde: formatDateInput(start),
@@ -224,8 +236,8 @@ export default function AnalyticsModule() {
   const totalCuotas = cuotasResumen.pagadas + cuotasResumen.pendientes + cuotasResumen.parciales
   const cumplimientoCobros = totalCuotas ? (cuotasResumen.pagadas / totalCuotas) * 100 : 0
 
-  const applyQuickFilter = monthsBack => {
-    const range = getQuickRange(monthsBack)
+  const applyQuickFilter = type => {
+    const range = type === 'last-month' ? getPreviousMonthRange() : getLastTwelveMonthsRange()
 
     setFiltros(range)
     fetchAnalytics(range)
@@ -259,10 +271,10 @@ export default function AnalyticsModule() {
             <Button variant='contained' onClick={() => fetchAnalytics()} disabled={loading}>
               Actualizar dashboard
             </Button>
-            <Button variant='tonal' color='info' onClick={() => applyQuickFilter(1)} disabled={loading}>
+            <Button variant='tonal' color='info' onClick={() => applyQuickFilter('last-month')} disabled={loading}>
               Último mes
             </Button>
-            <Button variant='tonal' color='secondary' onClick={() => applyQuickFilter(12)} disabled={loading}>
+            <Button variant='tonal' color='secondary' onClick={() => applyQuickFilter('last-12-months')} disabled={loading}>
               Últimos 12 meses
             </Button>
             <Button
