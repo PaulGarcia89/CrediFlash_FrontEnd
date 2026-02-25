@@ -123,7 +123,7 @@ const Login = ({ mode }) => {
 
         <div className='flex flex-col gap-6 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset] mbs-11 sm:mbs-14 md:mbs-0'>
           <div className='flex flex-col gap-1'>
-            <Typography variant='h4'>Ingreso al sistema CrediFlash</Typography>
+            <Typography variant='h4'>Ingreso al sistema CreditFlash</Typography>
             <Typography>Inicia sesión con tu usuario de analista.</Typography>
           </div>
 

@@ -591,7 +591,7 @@ export default function ClienteDashboardModule({ clienteId }) {
 
       <Divider />
       <Typography color='text.secondary' textAlign='center'>
-        Crediflash - Dashboard del cliente
+        CreditFlash - Dashboard del cliente
       </Typography>
     </Stack>
   )

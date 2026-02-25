@@ -16,7 +16,7 @@
  * Another way is to clear the cookie from the browser's Application/Storage tab and then reload the page.
  */
 const themeConfig = {
-  templateName: 'CrediFlash',
+  templateName: 'CreditFlash',
   homePageUrl: '/home',
   settingsCookieName: 'crediflash-mui-next',
   mode: 'system', // 'system', 'light', 'dark'

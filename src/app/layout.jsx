@@ -15,10 +15,10 @@ import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
   title: {
-    default: 'CrediFlash',
-    template: '%s | CrediFlash'
+    default: 'CreditFlash',
+    template: '%s | CreditFlash'
   },
-  description: 'CrediFlash - Plataforma de gestion crediticia y analitica financiera.',
+  description: 'CreditFlash - Plataforma de gestion crediticia y analitica financiera.',
   icons: {
     icon: '/icon.svg'
   }
