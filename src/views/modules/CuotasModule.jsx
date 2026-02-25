@@ -445,7 +445,7 @@ export default function CuotasModule() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card sx={{ mt: 2 }}>
         <CardContent>
           <Stack spacing={3}>
             <Box>
