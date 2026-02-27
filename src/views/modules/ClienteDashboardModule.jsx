@@ -24,6 +24,7 @@ import Typography from '@mui/material/Typography'
 
 import { obtenerCliente, obtenerDocumentosCliente, verHistorialPrestamosCliente } from '@/api/clientes'
 import { eliminarDocumento } from '@/api/solicitudes'
+import { getToken } from '@/lib/auth/session'
 import { formatUSD } from '@/utils/currency'
 
 const extractRows = payload => {
@@ -133,6 +134,7 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewTitle, setPreviewTitle] = useState('')
+  const [previewExternalUrl, setPreviewExternalUrl] = useState('')
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
   const loadData = useCallback(async () => {
@@ -245,42 +247,81 @@ export default function ClienteDashboardModule({ clienteId }) {
     return urls[0] || ''
   }
 
-  const handleOpenDocument = item => {
-    setDocumentActionError('')
-    const url = getDocumentOpenUrl(item)
-
-    if (!url) {
-      setDocumentActionError('No se encontró una URL válida para visualizar este documento.')
-      setSnackbar({ open: true, message: 'No se encontró una URL válida para visualizar el documento.', severity: 'error' })
-
-      return
-    }
-
-    setPreviewUrl(url)
-    setPreviewTitle(item?.nombre || 'Documento PDF')
-    setPreviewOpen(true)
-  }
-
-  const handleDownloadDocument = item => {
-    setDocumentActionError('')
+  const fetchDocumentBlobWithAuth = async item => {
     const url = getDocumentDownloadUrl(item)
 
     if (!url) {
-      setDocumentActionError('No se encontró una URL válida para descargar este documento.')
-      setSnackbar({ open: true, message: 'No se encontró una URL válida para descargar el documento.', severity: 'error' })
-
-      return
+      throw new Error('No se encontró una URL válida para el documento.')
     }
 
-    const link = document.createElement('a')
+    const token = getToken()
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      cache: 'no-store'
+    })
 
-    link.href = url
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    link.download = item?.nombre || 'documento.pdf'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    if (!response.ok) {
+      const backendPayload = await response.json().catch(() => ({}))
+      const backendMessage = backendPayload?.message || backendPayload?.error || `HTTP ${response.status}`
+
+      throw new Error(backendMessage)
+    }
+
+    const blob = await response.blob()
+
+    return {
+      blob,
+      objectUrl: window.URL.createObjectURL(blob)
+    }
+  }
+
+  const handleOpenDocument = async item => {
+    setDocumentActionError('')
+
+    try {
+      const { objectUrl } = await fetchDocumentBlobWithAuth(item)
+
+      setPreviewUrl(previous => {
+        if (previous?.startsWith('blob:')) window.URL.revokeObjectURL(previous)
+
+        return objectUrl
+      })
+      setPreviewExternalUrl(getDocumentOpenUrl(item))
+      setPreviewTitle(item?.nombre || 'Documento PDF')
+      setPreviewOpen(true)
+    } catch (err) {
+      setDocumentActionError(err.message || 'No se encontró una URL válida para visualizar este documento.')
+      setSnackbar({
+        open: true,
+        message: err.message || 'No se encontró una URL válida para visualizar el documento.',
+        severity: 'error'
+      })
+    }
+  }
+
+  const handleDownloadDocument = async item => {
+    setDocumentActionError('')
+
+    try {
+      const { objectUrl } = await fetchDocumentBlobWithAuth(item)
+      const link = document.createElement('a')
+
+      link.href = objectUrl
+      link.download = item?.nombre || 'documento.pdf'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0)
+    } catch (err) {
+      setDocumentActionError(err.message || 'No se encontró una URL válida para descargar este documento.')
+      setSnackbar({
+        open: true,
+        message: err.message || 'No se encontró una URL válida para descargar el documento.',
+        severity: 'error'
+      })
+    }
   }
 
   const handleDeleteDocument = async item => {
@@ -312,6 +353,17 @@ export default function ClienteDashboardModule({ clienteId }) {
     } finally {
       setDocumentActionLoading('')
     }
+  }
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false)
+
+    if (previewUrl?.startsWith('blob:')) {
+      window.URL.revokeObjectURL(previewUrl)
+    }
+
+    setPreviewUrl('')
+    setPreviewExternalUrl('')
   }
 
   return (
@@ -575,7 +627,7 @@ export default function ClienteDashboardModule({ clienteId }) {
         </Stack>
       ) : null}
 
-      <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth='lg'>
+      <Dialog open={previewOpen} onClose={handleClosePreview} fullWidth maxWidth='lg'>
         <DialogTitle>{previewTitle || 'Vista previa del documento'}</DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
           {previewUrl ? (
@@ -593,12 +645,13 @@ export default function ClienteDashboardModule({ clienteId }) {
             variant='tonal'
             color='primary'
             onClick={() => {
-              if (previewUrl) window.open(previewUrl, '_blank', 'noopener,noreferrer')
+              if (previewExternalUrl) window.open(previewExternalUrl, '_blank', 'noopener,noreferrer')
             }}
+            disabled={!previewExternalUrl}
           >
             Abrir en nueva pestaña
           </Button>
-          <Button variant='outlined' onClick={() => setPreviewOpen(false)}>
+          <Button variant='outlined' onClick={handleClosePreview}>
             Cerrar
           </Button>
         </DialogActions>
