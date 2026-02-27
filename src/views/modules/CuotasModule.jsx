@@ -107,6 +107,8 @@ export default function CuotasModule() {
   const [pagoDialogOpen, setPagoDialogOpen] = useState(false)
   const [selectedPrestamo, setSelectedPrestamo] = useState(null)
   const [montoPago, setMontoPago] = useState('')
+  const [pagoDialogError, setPagoDialogError] = useState('')
+  const [pagoDialogInfo, setPagoDialogInfo] = useState('')
   const [processing, setProcessing] = useState(false)
   const [detalleOpen, setDetalleOpen] = useState(false)
   const [historialOpen, setHistorialOpen] = useState(false)
@@ -154,6 +156,8 @@ export default function CuotasModule() {
   }, [limit, searchCliente, status])
 
   const openPagoDialog = row => {
+    setPagoDialogError('')
+    setPagoDialogInfo('')
     setSelectedPrestamo(row)
     setMontoPago(String(row.pagos_semanales || ''))
     setPagoDialogOpen(true)
@@ -168,6 +172,8 @@ export default function CuotasModule() {
     setPagoDialogOpen(false)
     setSelectedPrestamo(null)
     setMontoPago('')
+    setPagoDialogError('')
+    setPagoDialogInfo('')
   }
 
   const confirmarPago = async () => {
@@ -176,20 +182,22 @@ export default function CuotasModule() {
     const parsedMonto = Number(montoPago)
 
     if (!Number.isFinite(parsedMonto) || parsedMonto <= 0) {
-      setError('El monto_pago debe ser mayor que 0.')
+      setPagoDialogError('El monto_pago debe ser mayor que 0.')
 
       return
     }
 
     setProcessing(true)
-    setError('')
-    setSuccess('')
+    setPagoDialogError('')
+    setPagoDialogInfo('')
 
     try {
       await registrarPagoSemanal(selectedPrestamo.id, parsedMonto)
-      setSuccess(`Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}.`)
-      closePagoDialog()
+      setPagoDialogInfo(`Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}.`)
       await loadPrestamos()
+      setTimeout(() => {
+        closePagoDialog()
+      }, 1200)
     } catch (err) {
       const message = err.message || 'No se pudo registrar la cuota.'
 
@@ -208,21 +216,23 @@ export default function CuotasModule() {
           })
 
           await registrarPagoSemanal(selectedPrestamo.id, parsedMonto)
-          setSuccess(
+          setPagoDialogInfo(
             `Cuotas generadas y pago registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}.`
           )
-          closePagoDialog()
           await loadPrestamos()
+          setTimeout(() => {
+            closePagoDialog()
+          }, 1200)
 
           return
         } catch (retryError) {
-          setError(retryError.message || 'No se pudo generar cuotas ni registrar pago.')
+          setPagoDialogError(retryError.message || 'No se pudo generar cuotas ni registrar pago.')
 
           return
         }
       }
 
-      setError(message)
+      setPagoDialogError(message)
     } finally {
       setProcessing(false)
     }
@@ -600,6 +610,8 @@ export default function CuotasModule() {
         <DialogTitle>Confirmar pago semanal</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
+            {pagoDialogError ? <Alert severity='error'>{pagoDialogError}</Alert> : null}
+            {pagoDialogInfo ? <Alert severity='success'>{pagoDialogInfo}</Alert> : null}
             <Typography>
               Cliente: <strong>{selectedPrestamo?.nombre_completo || '-'}</strong>
             </Typography>

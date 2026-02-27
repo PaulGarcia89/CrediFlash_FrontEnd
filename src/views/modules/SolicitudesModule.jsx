@@ -327,6 +327,8 @@ export default function SolicitudesModule() {
   const [modeloTipo, setModeloTipo] = useState('CLIENTE_NUEVO')
   const [ratingForm, setRatingForm] = useState(initialModeloForm)
   const [ratingLoading, setRatingLoading] = useState(false)
+  const [modeloDialogError, setModeloDialogError] = useState('')
+  const [modeloDialogInfo, setModeloDialogInfo] = useState('')
   const [resultadoModelo, setResultadoModelo] = useState(null)
 
   const loadSolicitudes = useCallback(async () => {
@@ -400,6 +402,8 @@ export default function SolicitudesModule() {
   }
 
   const openModeloDialog = row => {
+    setModeloDialogError('')
+    setModeloDialogInfo('')
     setSelectedSolicitud(row)
     setModeloTipo(row?.modelo_calificacion || 'CLIENTE_NUEVO')
     setRatingForm({
@@ -413,6 +417,8 @@ export default function SolicitudesModule() {
   const closeModeloDialog = () => {
     if (ratingLoading) return
 
+    setModeloDialogError('')
+    setModeloDialogInfo('')
     setModeloDialogOpen(false)
     setSelectedSolicitud(null)
   }
@@ -425,8 +431,8 @@ export default function SolicitudesModule() {
     if (!selectedSolicitud) return
 
     setRatingLoading(true)
-    setError('')
-    setSuccess('')
+    setModeloDialogError('')
+    setModeloDialogInfo('')
 
     const start = Date.now()
 
@@ -471,11 +477,14 @@ export default function SolicitudesModule() {
         })
       }
 
-      setSuccess('Modelo ejecutado con éxito.')
+      setModeloDialogInfo('Modelo ejecutado con éxito.')
       await loadSolicitudes()
-      setModeloDialogOpen(false)
+      setTimeout(() => {
+        setModeloDialogOpen(false)
+        setModeloDialogInfo('')
+      }, 1200)
     } catch (err) {
-      setError(err.message || 'No se pudo ejecutar el modelo.')
+      setModeloDialogError(err.message || 'No se pudo ejecutar el modelo.')
     } finally {
       setRatingLoading(false)
     }
@@ -911,6 +920,8 @@ export default function SolicitudesModule() {
         <DialogTitle>Ejecutar modelo de aprobación</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
+            {modeloDialogError ? <Alert severity='error'>{modeloDialogError}</Alert> : null}
+            {modeloDialogInfo ? <Alert severity='success'>{modeloDialogInfo}</Alert> : null}
             <TextField
               select
               label='Modelo'
