@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
@@ -154,6 +154,7 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewTitle, setPreviewTitle] = useState('')
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+  const lastPreviewTriggerRef = useRef(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -305,8 +306,14 @@ export default function ClienteDashboardModule({ clienteId }) {
     }
   }
 
-  const handleOpenDocument = async item => {
+  const handleOpenDocument = async (item, triggerElement = null) => {
     setDocumentActionError('')
+    const activeElement = triggerElement || document.activeElement
+
+    if (activeElement && typeof activeElement.blur === 'function') {
+      lastPreviewTriggerRef.current = activeElement
+      activeElement.blur()
+    }
 
     try {
       const { objectUrl } = await fetchDocumentBlobWithAuth(item)
@@ -418,6 +425,14 @@ export default function ClienteDashboardModule({ clienteId }) {
     }
 
     setPreviewUrl('')
+
+    const trigger = lastPreviewTriggerRef.current
+
+    if (trigger && typeof trigger.focus === 'function') {
+      window.setTimeout(() => {
+        trigger.focus()
+      }, 0)
+    }
   }
 
   return (
@@ -658,7 +673,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                     </Typography>
                   </Box>
                   <Stack direction='row' spacing={1}>
-                    <Button size='small' variant='tonal' color='primary' onClick={() => handleOpenDocument(item)}>
+                    <Button size='small' variant='tonal' color='primary' onClick={event => handleOpenDocument(item, event.currentTarget)}>
                       Visualizar
                     </Button>
                     <Button size='small' variant='tonal' color='info' onClick={() => handleDownloadDocument(item)}>
@@ -705,7 +720,7 @@ export default function ClienteDashboardModule({ clienteId }) {
           >
             Abrir en nueva pestaña
           </Button>
-          <Button variant='outlined' onClick={handleClosePreview}>
+          <Button variant='outlined' onClick={handleClosePreview} autoFocus>
             Cerrar
           </Button>
         </DialogActions>
