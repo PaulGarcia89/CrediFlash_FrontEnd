@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import Alert from '@mui/material/Alert'
+import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -48,12 +49,22 @@ const extractRows = payload => {
 }
 
 const getClienteLabel = cliente => [cliente?.nombre, cliente?.apellido].filter(Boolean).join(' ').trim()
+const getClienteId = cliente =>
+  String(cliente?.id || cliente?.cliente_id || cliente?.uuid || cliente?._id || cliente?.clienteId || '')
 const normalizeText = value =>
   String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
+const isSameCliente = (left, right) => {
+  const leftId = getClienteId(left)
+  const rightId = getClienteId(right)
+
+  if (leftId && rightId) return leftId === rightId
+
+  return normalizeText(getClienteLabel(left)) === normalizeText(getClienteLabel(right))
+}
 
 export default function ClienteFormModule({ clienteId = null }) {
   const router = useRouter()
@@ -74,7 +85,7 @@ export default function ClienteFormModule({ clienteId = null }) {
         let rows = extractRows(response)
 
         if (clienteId) {
-          rows = rows.filter(item => String(item?.id || '') !== String(clienteId))
+          rows = rows.filter(item => getClienteId(item) !== String(clienteId))
         }
 
         setClientesActivos(rows)
@@ -92,14 +103,14 @@ export default function ClienteFormModule({ clienteId = null }) {
   useEffect(() => {
     if (!form.es_referido || !form.referido_por || !clientesActivos.length) return
 
-    const alreadyId = clientesActivos.some(item => String(item?.id || '') === String(form.referido_por))
+    const alreadyId = clientesActivos.some(item => getClienteId(item) === String(form.referido_por))
 
     if (alreadyId) return
 
     const byLabel = clientesActivos.find(item => normalizeText(getClienteLabel(item)) === normalizeText(form.referido_por))
 
-    if (byLabel?.id) {
-      setForm(previous => ({ ...previous, referido_por: String(byLabel.id) }))
+    if (getClienteId(byLabel)) {
+      setForm(previous => ({ ...previous, referido_por: getClienteId(byLabel) }))
     }
   }, [clientesActivos, form.es_referido, form.referido_por])
 
@@ -172,7 +183,11 @@ export default function ClienteFormModule({ clienteId = null }) {
         throw new Error('El porcentaje de referido debe estar entre 0 y 100.')
       }
 
-      const referidoPorCliente = clientesActivos.find(item => String(item?.id || '') === String(form.referido_por))
+      const referidoPorCliente = clientesActivos.find(item => {
+        const selected = String(form.referido_por || '')
+
+        return getClienteId(item) === selected || normalizeText(getClienteLabel(item)) === normalizeText(selected)
+      })
       const referidoPorNombre = referidoPorCliente ? getClienteLabel(referidoPorCliente) : ''
 
       if (form.es_referido && !referidoPorNombre) {
@@ -316,41 +331,46 @@ export default function ClienteFormModule({ clienteId = null }) {
                     </TextField>
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      label='Referido por'
-                      name='referido_por'
-                      value={form.referido_por}
-                      onChange={handleChange}
-                      select
-                      fullWidth
-                      disabled={!form.es_referido}
-                      helperText={
-                        form.es_referido
-                          ? loadingClientesActivos
-                            ? 'Cargando clientes activos...'
-                            : clientesActivos.length
-                              ? 'Selecciona un cliente activo'
-                              : 'No hay clientes activos disponibles'
-                          : ''
+                    <Autocomplete
+                      options={clientesActivos}
+                      value={
+                        clientesActivos.find(item => {
+                          const selected = String(form.referido_por || '')
+
+                          return (
+                            getClienteId(item) === selected ||
+                            normalizeText(getClienteLabel(item)) === normalizeText(selected)
+                          )
+                        }) || null
                       }
-                    >
-                      {form.es_referido ? (
-                        <>
-                          <MenuItem value=''>
-                            <em>Seleccionar cliente activo</em>
-                          </MenuItem>
-                          {clientesActivos.map(cliente => (
-                            <MenuItem key={cliente.id} value={String(cliente.id)}>
-                              {getClienteLabel(cliente) || 'Cliente'} {cliente?.email ? `• ${cliente.email}` : ''}
-                            </MenuItem>
-                          ))}
-                        </>
-                      ) : (
-                        <MenuItem value=''>
-                          <em>No aplica</em>
-                        </MenuItem>
+                      onChange={(_, value) =>
+                        setForm(previous => ({
+                          ...previous,
+                          referido_por: value ? getClienteId(value) || getClienteLabel(value) : ''
+                        }))
+                      }
+                      getOptionLabel={option =>
+                        `${getClienteLabel(option) || 'Cliente'}${option?.email ? ` • ${option.email}` : ''}`
+                      }
+                      isOptionEqualToValue={(option, value) => isSameCliente(option, value)}
+                      disabled={!form.es_referido || loadingClientesActivos}
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          label='Referido por'
+                          placeholder='Seleccionar cliente activo'
+                          helperText={
+                            form.es_referido
+                              ? loadingClientesActivos
+                                ? 'Cargando clientes activos...'
+                                : clientesActivos.length
+                                  ? 'Selecciona un cliente activo'
+                                  : 'No hay clientes activos disponibles'
+                              : ''
+                          }
+                        />
                       )}
-                    </TextField>
+                    />
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
