@@ -18,7 +18,7 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
-import { actualizarCliente, crearCliente, obtenerCliente } from '@/api/clientes'
+import { actualizarCliente, crearCliente, listarClientes, obtenerCliente } from '@/api/clientes'
 
 const initialForm = {
   nombre: '',
@@ -38,14 +38,50 @@ const initialForm = {
 }
 
 const parseBoolean = value => value === true || value === 1 || String(value || '').toLowerCase() === 'true'
+const extractRows = payload => {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.rows)) return payload.rows
+  if (Array.isArray(payload?.data?.rows)) return payload.data.rows
+
+  return []
+}
+
+const getClienteLabel = cliente => [cliente?.nombre, cliente?.apellido].filter(Boolean).join(' ').trim()
 
 export default function ClienteFormModule({ clienteId = null }) {
   const router = useRouter()
 
   const [form, setForm] = useState(initialForm)
+  const [clientesActivos, setClientesActivos] = useState([])
+  const [loadingClientesActivos, setLoadingClientesActivos] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(Boolean(clienteId))
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    const loadClientesActivos = async () => {
+      setLoadingClientesActivos(true)
+
+      try {
+        const response = await listarClientes({ page: 1, limit: 500, search: '', estado: 'ACTIVO' })
+        let rows = extractRows(response)
+
+        if (clienteId) {
+          rows = rows.filter(item => String(item?.id || '') !== String(clienteId))
+        }
+
+        setClientesActivos(rows)
+      } catch (_err) {
+        // Mantener formulario usable aunque falle catálogo de referidos
+        setClientesActivos([])
+      } finally {
+        setLoadingClientesActivos(false)
+      }
+    }
+
+    loadClientesActivos()
+  }, [clienteId])
 
   useEffect(() => {
     if (!clienteId) return
@@ -258,9 +294,36 @@ export default function ClienteFormModule({ clienteId = null }) {
                       name='referido_por'
                       value={form.referido_por}
                       onChange={handleChange}
+                      select
                       fullWidth
                       disabled={!form.es_referido}
-                    />
+                      helperText={
+                        form.es_referido
+                          ? loadingClientesActivos
+                            ? 'Cargando clientes activos...'
+                            : clientesActivos.length
+                              ? 'Selecciona un cliente activo'
+                              : 'No hay clientes activos disponibles'
+                          : ''
+                      }
+                    >
+                      {form.es_referido ? (
+                        <>
+                          <MenuItem value=''>
+                            <em>Seleccionar cliente activo</em>
+                          </MenuItem>
+                          {clientesActivos.map(cliente => (
+                            <MenuItem key={cliente.id} value={getClienteLabel(cliente)}>
+                              {getClienteLabel(cliente) || 'Cliente'} {cliente?.email ? `• ${cliente.email}` : ''}
+                            </MenuItem>
+                          ))}
+                        </>
+                      ) : (
+                        <MenuItem value=''>
+                          <em>No aplica</em>
+                        </MenuItem>
+                      )}
+                    </TextField>
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
