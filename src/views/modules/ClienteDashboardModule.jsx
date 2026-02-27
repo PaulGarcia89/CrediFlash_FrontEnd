@@ -11,6 +11,10 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
@@ -18,7 +22,13 @@ import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 
 import { obtenerCliente, verHistorialPrestamosCliente } from '@/api/clientes'
-import { eliminarDocumento, listarSolicitudesPorCliente, obtenerSolicitud } from '@/api/solicitudes'
+import {
+  eliminarDocumento,
+  listarSolicitudesPorCliente,
+  obtenerDocumentoDetalle,
+  obtenerDocumentoUrl,
+  obtenerSolicitud
+} from '@/api/solicitudes'
 import { formatUSD } from '@/utils/currency'
 
 const extractRows = payload => {
@@ -103,6 +113,19 @@ const buildCandidateUrls = value => {
   return [`${backendOrigin}/${raw}`]
 }
 
+const cleanDocumentName = value => {
+  const raw = String(value || '').trim()
+
+  if (!raw) return 'Documento PDF'
+
+  const lastSegment = raw.split('/').pop() || raw
+  const noQuery = lastSegment.split('?')[0]
+  const withoutPrefix = noQuery.replace(/^\d{10,}-\d{3,}-/i, '').replace(/^\d{10,}-/i, '')
+  const normalized = withoutPrefix.replace(/[_]+/g, ' ').trim()
+
+  return normalized || 'Documento PDF'
+}
+
 const extractDocumentRows = solicitudes => {
   const keysToCheck = [
     'documentos',
@@ -134,27 +157,40 @@ const extractDocumentRows = solicitudes => {
       if (!url) return
 
       rows.push({
-        nombre: source.split('/').pop() || fallbackName,
+        nombre: cleanDocumentName(source.split('/').pop() || fallbackName),
         url,
-        urls
+        urls,
+        sourceKey: source
       })
 
       return
     }
 
     if (typeof source === 'object') {
-      const maybeUrl = source.url || source.path || source.ruta || source.link || source.href
+      const maybeUrl =
+        source.url ||
+        source.path ||
+        source.ruta ||
+        source.link ||
+        source.href ||
+        source.file_url ||
+        source.fileUrl ||
+        source.documento_url ||
+        source.documentoUrl
 
       if (maybeUrl) {
         const urls = buildCandidateUrls(maybeUrl)
         const url = urls[0] || ''
 
         rows.push({
-          id: source.id || source.documento_id || source.documentId || '',
+          id: source.id || source.documento_id || source.documentId || source.uuid || source._id || '',
           solicitud_id: source.solicitud_id || source.solicitudId || '',
-          nombre: source.nombre || source.name || source.filename || source.originalname || fallbackName,
+          nombre: cleanDocumentName(source.nombre || source.name || source.filename || source.originalname || fallbackName),
+          mime_type: source.mime_type || source.mimetype || source.type || '',
+          size_bytes: source.size_bytes || source.size || null,
           url,
-          urls
+          urls,
+          sourceKey: `${source.id || source.documento_id || source.documentId || ''}-${maybeUrl}`
         })
       }
     }
@@ -181,9 +217,10 @@ const extractDocumentRows = solicitudes => {
 
         if (url) {
           rows.push({
-            nombre: value.split('/').pop() || 'Documento PDF',
+            nombre: cleanDocumentName(value.split('/').pop() || 'Documento PDF'),
             url,
-            urls
+            urls,
+            sourceKey: value
           })
         }
       }
@@ -201,7 +238,7 @@ const extractDocumentRows = solicitudes => {
   const seen = new Set()
 
   return rows.filter(item => {
-    const ref = `${item.nombre}-${item.url}`
+    const ref = item.id ? `id:${item.id}` : `src:${String(item.sourceKey || item.url || item.nombre).toLowerCase()}`
 
     if (seen.has(ref)) return false
     seen.add(ref)
@@ -219,6 +256,10 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [prestamos, setPrestamos] = useState([])
   const [documentos, setDocumentos] = useState([])
   const [documentActionLoading, setDocumentActionLoading] = useState('')
+  const [documentActionError, setDocumentActionError] = useState('')
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [previewTitle, setPreviewTitle] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -328,21 +369,98 @@ export default function ClienteDashboardModule({ clienteId }) {
     })
   }, [prestamoPrincipal])
 
+  const resolveDocumentUrls = async item => {
+    const fromRow = Array.isArray(item?.urls) && item.urls.length ? item.urls : [item?.url].filter(Boolean)
+    const byId = []
+
+    if (item?.id) {
+      try {
+        const urlPayload = await obtenerDocumentoUrl(item.id)
+        const maybeUrl =
+          urlPayload?.url || urlPayload?.data?.url || urlPayload?.file_url || urlPayload?.data?.file_url || ''
+
+        if (maybeUrl) {
+          byId.push(...buildCandidateUrls(maybeUrl))
+        }
+      } catch {
+        // Endpoint opcional, fallback a URLs ya conocidas
+      }
+
+      try {
+        const detailPayload = await obtenerDocumentoDetalle(item.id)
+        const detail = detailPayload?.data || detailPayload
+        const detailUrl =
+          detail?.url ||
+          detail?.path ||
+          detail?.ruta ||
+          detail?.file_url ||
+          detail?.fileUrl ||
+          detail?.documento_url ||
+          detail?.documentoUrl ||
+          ''
+
+        if (detailUrl) {
+          byId.push(...buildCandidateUrls(detailUrl))
+        }
+      } catch {
+        // Endpoint opcional, fallback a URLs ya conocidas
+      }
+    }
+
+    const merged = [...byId, ...fromRow].filter(Boolean)
+    const seen = new Set()
+
+    return merged.filter(url => {
+      const key = String(url).trim()
+
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+
+      return true
+    })
+  }
+
   const handleOpenDocument = async item => {
-    const candidates = Array.isArray(item?.urls) && item.urls.length ? item.urls : [item?.url].filter(Boolean)
+    setDocumentActionError('')
+    const candidates = await resolveDocumentUrls(item)
 
     if (!candidates.length) {
-      setError('No se encontró una URL válida para este documento.')
+      setDocumentActionError('No se encontró una URL válida para visualizar este documento.')
 
       return
     }
 
-    window.open(candidates[0], '_blank', 'noopener,noreferrer')
+    setPreviewUrl(candidates[0])
+    setPreviewTitle(item?.nombre || 'Documento PDF')
+    setPreviewOpen(true)
+  }
+
+  const handleDownloadDocument = async item => {
+    setDocumentActionError('')
+    const candidates = await resolveDocumentUrls(item)
+
+    if (!candidates.length) {
+      setDocumentActionError('No se encontró una URL válida para descargar este documento.')
+
+      return
+    }
+
+    const link = document.createElement('a')
+
+    link.href = candidates[0]
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.download = item?.nombre || 'documento.pdf'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const handleDeleteDocument = async item => {
+    setDocumentActionError('')
+
     if (!item?.id) {
-      setError('No se puede eliminar este documento porque el backend no envía su ID.')
+      setDocumentActionError('No se puede eliminar este documento porque el backend no envía su ID.')
 
       return
     }
@@ -358,7 +476,7 @@ export default function ClienteDashboardModule({ clienteId }) {
       await eliminarDocumento(item.id)
       setDocumentos(previous => previous.filter(doc => String(doc.id) !== String(item.id)))
     } catch (err) {
-      setError(err.message || 'No se pudo eliminar el documento.')
+      setDocumentActionError(err.message || 'No se pudo eliminar el documento.')
     } finally {
       setDocumentActionLoading('')
     }
@@ -581,18 +699,32 @@ export default function ClienteDashboardModule({ clienteId }) {
               <Typography variant='h5' sx={{ mb: 1.5 }}>
                 Documentos subidos
               </Typography>
+              {documentActionError ? (
+                <Alert severity='error' sx={{ mb: 2 }}>
+                  {documentActionError}
+                </Alert>
+              ) : null}
               {!documentos.length ? <Typography color='text.secondary'>No hay documentos PDF cargados.</Typography> : null}
               {documentos.map((item, index) => (
-                <Stack key={`${item.url}-${index}`} direction='row' justifyContent='space-between' alignItems='center' sx={{ py: 1.25 }}>
+                <Stack
+                  key={`${item.id || item.url}-${index}`}
+                  direction='row'
+                  justifyContent='space-between'
+                  alignItems='center'
+                  sx={{ py: 1.25 }}
+                >
                   <Box>
                     <Typography>{item.nombre || `Documento ${index + 1}`}</Typography>
                     <Typography color='text.secondary' variant='body2'>
-                      Archivo PDF
+                      Archivo PDF {item?.size_bytes ? `• ${(Number(item.size_bytes) / (1024 * 1024)).toFixed(2)} MB` : ''}
                     </Typography>
                   </Box>
                   <Stack direction='row' spacing={1}>
                     <Button size='small' variant='tonal' color='primary' onClick={() => handleOpenDocument(item)}>
-                      Ver / Descargar
+                      Visualizar
+                    </Button>
+                    <Button size='small' variant='tonal' color='info' onClick={() => handleDownloadDocument(item)}>
+                      Descargar
                     </Button>
                     <Button
                       size='small'
@@ -610,6 +742,35 @@ export default function ClienteDashboardModule({ clienteId }) {
           </Card>
         </Stack>
       ) : null}
+
+      <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth='lg'>
+        <DialogTitle>{previewTitle || 'Vista previa del documento'}</DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          {previewUrl ? (
+            <Box sx={{ width: '100%', height: '75vh' }}>
+              <iframe title='Vista previa PDF' src={previewUrl} width='100%' height='100%' style={{ border: 0 }} />
+            </Box>
+          ) : (
+            <Box sx={{ p: 3 }}>
+              <Typography color='text.secondary'>No se encontró una URL válida para mostrar el documento.</Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant='tonal'
+            color='primary'
+            onClick={() => {
+              if (previewUrl) window.open(previewUrl, '_blank', 'noopener,noreferrer')
+            }}
+          >
+            Abrir en nueva pestaña
+          </Button>
+          <Button variant='outlined' onClick={() => setPreviewOpen(false)}>
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Divider />
       <Typography color='text.secondary' textAlign='center'>
