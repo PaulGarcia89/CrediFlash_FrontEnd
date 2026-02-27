@@ -118,6 +118,20 @@ html {
   min-block-size: 100%;
 }
 
+body {
+  inline-size: 100%;
+  min-block-size: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-inline-size: 100%;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -217,4 +231,37 @@ code {
   color: var(--mui-palette-info-main);
   background-color: rgb(var(--mui-palette-info-mainChannel) / 0.08);
   border: 0;
+}
+
+@media (max-width: 900px) {
+  .MuiContainer-root {
+    padding-inline: 12px !important;
+  }
+
+  .MuiCardContent-root {
+    padding: 16px !important;
+  }
+
+  .MuiDialog-paper {
+    margin: 12px !important;
+    max-inline-size: calc(100% - 24px) !important;
+    inline-size: calc(100% - 24px) !important;
+  }
+
+  .MuiTableContainer-root {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .MuiTable-root {
+    min-inline-size: 760px;
+  }
+
+  .MuiTabs-root {
+    min-block-size: 44px;
+  }
+
+  .MuiButton-root {
+    white-space: normal;
+  }
 }

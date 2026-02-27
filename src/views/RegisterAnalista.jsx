@@ -36,6 +36,17 @@ const RegisterIllustration = styled('img')(({ theme }) => ({
   }
 }))
 
+const MobileIllustration = styled('img')(({ theme }) => ({
+  inlineSize: '100%',
+  maxInlineSize: 360,
+  blockSize: 'auto',
+  marginInline: 'auto',
+  marginBlockEnd: theme.spacing(2),
+  [theme.breakpoints.up('md')]: {
+    display: 'none'
+  }
+}))
+
 const MaskImg = styled('img')({
   blockSize: 'auto',
   maxBlockSize: 355,
@@ -67,8 +78,8 @@ const RegisterAnalista = ({ mode }) => {
 
   const darkImg = '/images/pages/auth-mask-dark.png'
   const lightImg = '/images/pages/auth-mask-light.png'
-  const darkIllustration = '/images/illustrations/auth/v2-register-dark.png'
-  const lightIllustration = '/images/illustrations/auth/v2-register-light.png'
+  const darkIllustration = '/images/illustrations/auth/v2-login-dark.png'
+  const lightIllustration = '/images/illustrations/auth/v2-login-light.png'
 
   const authBackground = mode === 'dark' ? darkImg : lightImg
   const characterIllustration = mode === 'dark' ? darkIllustration : lightIllustration
@@ -109,7 +120,7 @@ const RegisterAnalista = ({ mode }) => {
         />
       </div>
 
-      <div className='flex justify-center items-center bs-full bg-backgroundPaper !min-is-full p-6 md:!min-is-[unset] md:p-12 md:is-[520px]'>
+      <div className='flex justify-center items-start md:items-center bs-full bg-backgroundPaper !min-is-full p-6 pt-24 md:pt-12 md:!min-is-[unset] md:p-12 md:is-[520px]'>
         <Link
           href='/login'
           className='absolute block-start-5 sm:block-start-[33px] inline-start-6 sm:inline-start-[38px]'
@@ -117,7 +128,8 @@ const RegisterAnalista = ({ mode }) => {
           <Logo />
         </Link>
 
-        <div className='flex flex-col gap-6 is-full sm:is-auto md:is-full sm:max-is-[430px] md:max-is-[unset] mbs-11 sm:mbs-14 md:mbs-0'>
+        <div className='flex flex-col gap-6 is-full sm:is-auto md:is-full sm:max-is-[430px] md:max-is-[unset]'>
+          <MobileIllustration src={characterIllustration} alt='Ilustración registro' />
           <div className='flex flex-col gap-1'>
             <Typography variant='h4'>Registro de Analistas</Typography>
             <Typography>Completa los datos para crear una cuenta de analista.</Typography>

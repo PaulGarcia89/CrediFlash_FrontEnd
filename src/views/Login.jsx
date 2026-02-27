@@ -36,6 +36,17 @@ const LoginIllustration = styled('img')(({ theme }) => ({
   }
 }))
 
+const MobileIllustration = styled('img')(({ theme }) => ({
+  inlineSize: '100%',
+  maxInlineSize: 360,
+  blockSize: 'auto',
+  marginInline: 'auto',
+  marginBlockEnd: theme.spacing(2),
+  [theme.breakpoints.up('md')]: {
+    display: 'none'
+  }
+}))
+
 const MaskImg = styled('img')({
   blockSize: 'auto',
   maxBlockSize: 355,
@@ -113,7 +124,7 @@ const Login = ({ mode }) => {
         />
       </div>
 
-      <div className='flex justify-center items-center bs-full bg-backgroundPaper !min-is-full p-6 md:!min-is-[unset] md:p-12 md:is-[480px]'>
+      <div className='flex justify-center items-start md:items-center bs-full bg-backgroundPaper !min-is-full p-6 pt-24 md:pt-12 md:!min-is-[unset] md:p-12 md:is-[480px]'>
         <Link
           href='/login'
           className='absolute block-start-5 sm:block-start-[33px] inline-start-6 sm:inline-start-[38px]'
@@ -121,7 +132,8 @@ const Login = ({ mode }) => {
           <Logo />
         </Link>
 
-        <div className='flex flex-col gap-6 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset] mbs-11 sm:mbs-14 md:mbs-0'>
+        <div className='flex flex-col gap-6 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset]'>
+          <MobileIllustration src={characterIllustration} alt='Ilustración login' />
           <div className='flex flex-col gap-1'>
             <Typography variant='h4'>Ingreso al sistema CreditFlash</Typography>
             <Typography>Inicia sesión con tu usuario de analista.</Typography>
