@@ -134,7 +134,6 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewTitle, setPreviewTitle] = useState('')
-  const [previewExternalUrl, setPreviewExternalUrl] = useState('')
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
   const loadData = useCallback(async () => {
@@ -288,7 +287,6 @@ export default function ClienteDashboardModule({ clienteId }) {
 
         return objectUrl
       })
-      setPreviewExternalUrl(getDocumentOpenUrl(item))
       setPreviewTitle(item?.nombre || 'Documento PDF')
       setPreviewOpen(true)
     } catch (err) {
@@ -363,7 +361,6 @@ export default function ClienteDashboardModule({ clienteId }) {
     }
 
     setPreviewUrl('')
-    setPreviewExternalUrl('')
   }
 
   return (
@@ -645,9 +642,9 @@ export default function ClienteDashboardModule({ clienteId }) {
             variant='tonal'
             color='primary'
             onClick={() => {
-              if (previewExternalUrl) window.open(previewExternalUrl, '_blank', 'noopener,noreferrer')
+              if (previewUrl) window.open(previewUrl, '_blank', 'noopener,noreferrer')
             }}
-            disabled={!previewExternalUrl}
+            disabled={!previewUrl}
           >
             Abrir en nueva pestaña
           </Button>
