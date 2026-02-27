@@ -349,9 +349,7 @@ export default function ClienteFormModule({ clienteId = null }) {
                           referido_por: value ? getClienteId(value) || getClienteLabel(value) : ''
                         }))
                       }
-                      getOptionLabel={option =>
-                        `${getClienteLabel(option) || 'Cliente'}${option?.email ? ` • ${option.email}` : ''}`
-                      }
+                      getOptionLabel={option => getClienteLabel(option) || 'Cliente'}
                       isOptionEqualToValue={(option, value) => isSameCliente(option, value)}
                       disabled={!form.es_referido || loadingClientesActivos}
                       renderInput={params => (
