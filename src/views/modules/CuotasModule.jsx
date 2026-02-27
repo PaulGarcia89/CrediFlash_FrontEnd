@@ -179,10 +179,10 @@ export default function CuotasModule() {
   const confirmarPago = async () => {
     if (!selectedPrestamo) return
 
-    const parsedMonto = Number(montoPago)
+    const parsedMonto = Number(String(montoPago || '').replace(',', '.'))
 
     if (!Number.isFinite(parsedMonto) || parsedMonto <= 0) {
-      setPagoDialogError('El monto_pago debe ser mayor que 0.')
+      setPagoDialogError('El monto_pago debe ser mayor que 0. Se permite pago parcial, exacto o mayor a la cuota.')
 
       return
     }
@@ -625,12 +625,13 @@ export default function CuotasModule() {
               Cuotas restantes: <strong>{selectedPrestamo ? getCuotasRestantes(selectedPrestamo) : 0}</strong>
             </Typography>
             <TextField
-              label='Monto pago'
+              label='Monto pago (parcial, exacto o mayor)'
               type='number'
               value={montoPago}
               onChange={event => setMontoPago(event.target.value)}
               inputProps={{ min: 0, step: '0.01' }}
               size='small'
+              helperText={`Cuota sugerida: ${formatCurrency(selectedPrestamo?.pagos_semanales)}. Puedes registrar un monto menor, igual o mayor.`}
               required
             />
           </Stack>
