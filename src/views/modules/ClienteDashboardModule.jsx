@@ -82,6 +82,25 @@ const normalizeBackendOrigin = () => {
   return raw
 }
 
+const forceHttpsIfNeeded = inputUrl => {
+  const raw = String(inputUrl || '').trim()
+
+  if (!raw) return ''
+
+  try {
+    const parsed = new URL(raw)
+    const currentProtocol = typeof window !== 'undefined' ? window.location.protocol : ''
+
+    if (currentProtocol === 'https:' && parsed.protocol === 'http:') {
+      parsed.protocol = 'https:'
+    }
+
+    return parsed.toString()
+  } catch {
+    return raw
+  }
+}
+
 const buildCandidateUrls = value => {
   const raw = String(value || '').trim()
 
@@ -95,30 +114,30 @@ const buildCandidateUrls = value => {
 
         apiUrl.pathname = `/api${absolute.pathname}`
 
-        return [apiUrl.toString(), raw]
+        return [forceHttpsIfNeeded(apiUrl.toString()), forceHttpsIfNeeded(raw)]
       }
     } catch {
       // If URL parsing fails, fallback to raw value
     }
 
-    return [raw]
+    return [forceHttpsIfNeeded(raw)]
   }
 
-  const backendOrigin = normalizeBackendOrigin()
+  const backendOrigin = forceHttpsIfNeeded(normalizeBackendOrigin())
 
   if (!backendOrigin) return [raw]
 
   if (raw.startsWith('/uploads/')) {
-    return [`${backendOrigin}/api${raw}`, `${backendOrigin}${raw}`]
+    return [forceHttpsIfNeeded(`${backendOrigin}/api${raw}`), forceHttpsIfNeeded(`${backendOrigin}${raw}`)]
   }
 
   if (raw.startsWith('uploads/')) {
-    return [`${backendOrigin}/api/${raw}`, `${backendOrigin}/${raw}`]
+    return [forceHttpsIfNeeded(`${backendOrigin}/api/${raw}`), forceHttpsIfNeeded(`${backendOrigin}/${raw}`)]
   }
 
-  if (raw.startsWith('/')) return [`${backendOrigin}${raw}`]
+  if (raw.startsWith('/')) return [forceHttpsIfNeeded(`${backendOrigin}${raw}`)]
 
-  return [`${backendOrigin}/${raw}`]
+  return [forceHttpsIfNeeded(`${backendOrigin}/${raw}`)]
 }
 
 export default function ClienteDashboardModule({ clienteId }) {
@@ -305,7 +324,6 @@ export default function ClienteDashboardModule({ clienteId }) {
 
         if (fallbackUrl) {
           setPreviewUrl(fallbackUrl)
-          setPreviewExternalUrl(fallbackUrl)
           setPreviewTitle(item?.nombre || 'Documento PDF')
           setPreviewOpen(true)
           setSnackbar({
@@ -342,18 +360,14 @@ export default function ClienteDashboardModule({ clienteId }) {
       window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0)
     } catch (err) {
       if (err?.code === 'FETCH_FAILED') {
-        const fallbackUrl = err?.fallbackUrl || getDocumentDownloadUrl(item)
+        setDocumentActionError('No se pudo descargar el archivo por CORS/red. Intenta visualizarlo o solicita ajuste CORS al backend.')
+        setSnackbar({
+          open: true,
+          message: 'Descarga bloqueada por CORS/red. Requiere ajuste backend.',
+          severity: 'error'
+        })
 
-        if (fallbackUrl) {
-          window.open(fallbackUrl, '_blank', 'noopener,noreferrer')
-          setSnackbar({
-            open: true,
-            message: 'Descarga iniciada en nueva pestaña por restricción CORS.',
-            severity: 'warning'
-          })
-
-          return
-        }
+        return
       }
 
       setDocumentActionError(err.message || 'No se encontró una URL válida para descargar este documento.')
