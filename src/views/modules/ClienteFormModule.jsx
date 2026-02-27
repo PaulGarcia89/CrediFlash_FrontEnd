@@ -48,6 +48,12 @@ const extractRows = payload => {
 }
 
 const getClienteLabel = cliente => [cliente?.nombre, cliente?.apellido].filter(Boolean).join(' ').trim()
+const normalizeText = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
 
 export default function ClienteFormModule({ clienteId = null }) {
   const router = useRouter()
@@ -82,6 +88,20 @@ export default function ClienteFormModule({ clienteId = null }) {
 
     loadClientesActivos()
   }, [clienteId])
+
+  useEffect(() => {
+    if (!form.es_referido || !form.referido_por || !clientesActivos.length) return
+
+    const alreadyId = clientesActivos.some(item => String(item?.id || '') === String(form.referido_por))
+
+    if (alreadyId) return
+
+    const byLabel = clientesActivos.find(item => normalizeText(getClienteLabel(item)) === normalizeText(form.referido_por))
+
+    if (byLabel?.id) {
+      setForm(previous => ({ ...previous, referido_por: String(byLabel.id) }))
+    }
+  }, [clientesActivos, form.es_referido, form.referido_por])
 
   useEffect(() => {
     if (!clienteId) return
@@ -152,10 +172,17 @@ export default function ClienteFormModule({ clienteId = null }) {
         throw new Error('El porcentaje de referido debe estar entre 0 y 100.')
       }
 
+      const referidoPorCliente = clientesActivos.find(item => String(item?.id || '') === String(form.referido_por))
+      const referidoPorNombre = referidoPorCliente ? getClienteLabel(referidoPorCliente) : ''
+
+      if (form.es_referido && !referidoPorNombre) {
+        throw new Error('Debes seleccionar un cliente activo en el campo "Referido por".')
+      }
+
       const payload = {
         ...form,
         es_referido: Boolean(form.es_referido),
-        referido_por: form.es_referido ? String(form.referido_por || '').trim() : '',
+        referido_por: form.es_referido ? referidoPorNombre : '',
         porcentaje_referido: form.es_referido ? Number(porcentaje.toFixed(2)) : 0
       }
 
@@ -313,7 +340,7 @@ export default function ClienteFormModule({ clienteId = null }) {
                             <em>Seleccionar cliente activo</em>
                           </MenuItem>
                           {clientesActivos.map(cliente => (
-                            <MenuItem key={cliente.id} value={getClienteLabel(cliente)}>
+                            <MenuItem key={cliente.id} value={String(cliente.id)}>
                               {getClienteLabel(cliente) || 'Cliente'} {cliente?.email ? `• ${cliente.email}` : ''}
                             </MenuItem>
                           ))}
