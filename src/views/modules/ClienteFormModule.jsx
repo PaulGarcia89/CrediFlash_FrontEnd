@@ -13,6 +13,7 @@ import CardHeader from '@mui/material/CardHeader'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
+import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -25,6 +26,9 @@ const initialForm = {
   telefono: '',
   email: '',
   direccion: '',
+  es_referido: false,
+  referido_por: '',
+  porcentaje_referido: '0',
   nombre_contacto: '',
   apellido_contacto: '',
   telefono_contacto: '',
@@ -32,6 +36,8 @@ const initialForm = {
   direccion_contacto: '',
   observaciones: ''
 }
+
+const parseBoolean = value => value === true || value === 1 || String(value || '').toLowerCase() === 'true'
 
 export default function ClienteFormModule({ clienteId = null }) {
   const router = useRouter()
@@ -59,6 +65,9 @@ export default function ClienteFormModule({ clienteId = null }) {
           telefono: cliente?.telefono || '',
           email: cliente?.email || '',
           direccion: cliente?.direccion || '',
+          es_referido: parseBoolean(cliente?.es_referido),
+          referido_por: cliente?.referido_por || '',
+          porcentaje_referido: String(cliente?.porcentaje_referido ?? '0'),
           nombre_contacto: cliente?.nombre_contacto || '',
           apellido_contacto: cliente?.apellido_contacto || '',
           telefono_contacto: cliente?.telefono_contacto || '',
@@ -79,6 +88,19 @@ export default function ClienteFormModule({ clienteId = null }) {
   const handleChange = event => {
     const { name, value } = event.target
 
+    if (name === 'es_referido') {
+      const isReferido = value === 'SI'
+
+      setForm(previous => ({
+        ...previous,
+        es_referido: isReferido,
+        referido_por: isReferido ? previous.referido_por : '',
+        porcentaje_referido: isReferido ? previous.porcentaje_referido : '0'
+      }))
+
+      return
+    }
+
     setForm(previous => ({ ...previous, [name]: value }))
   }
 
@@ -88,11 +110,24 @@ export default function ClienteFormModule({ clienteId = null }) {
     setError('')
 
     try {
+      const porcentaje = Number(String(form.porcentaje_referido || '0').replace(',', '.'))
+
+      if (!Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+        throw new Error('El porcentaje de referido debe estar entre 0 y 100.')
+      }
+
+      const payload = {
+        ...form,
+        es_referido: Boolean(form.es_referido),
+        referido_por: form.es_referido ? String(form.referido_por || '').trim() : '',
+        porcentaje_referido: form.es_referido ? Number(porcentaje.toFixed(2)) : 0
+      }
+
       if (clienteId) {
-        await actualizarCliente(clienteId, form)
+        await actualizarCliente(clienteId, payload)
         router.replace('/clientes')
       } else {
-        await crearCliente(form)
+        await crearCliente(payload)
         router.replace('/solicitudes/nueva')
       }
     } catch (err) {
@@ -202,6 +237,41 @@ export default function ClienteFormModule({ clienteId = null }) {
                       onChange={handleChange}
                       placeholder='Dirección principal'
                       fullWidth
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      select
+                      label='¿Es referido?'
+                      name='es_referido'
+                      value={form.es_referido ? 'SI' : 'NO'}
+                      onChange={handleChange}
+                      fullWidth
+                    >
+                      <MenuItem value='NO'>No</MenuItem>
+                      <MenuItem value='SI'>Sí</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      label='Referido por'
+                      name='referido_por'
+                      value={form.referido_por}
+                      onChange={handleChange}
+                      fullWidth
+                      disabled={!form.es_referido}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      label='Porcentaje referido (%)'
+                      name='porcentaje_referido'
+                      type='number'
+                      value={form.porcentaje_referido}
+                      onChange={handleChange}
+                      inputProps={{ min: 0, max: 100, step: '0.01' }}
+                      fullWidth
+                      disabled={!form.es_referido}
                     />
                   </Grid>
                 </Grid>

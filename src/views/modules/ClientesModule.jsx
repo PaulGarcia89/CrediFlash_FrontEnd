@@ -67,6 +67,8 @@ const getEstadoColor = estado => {
   return 'error'
 }
 
+const parseBoolean = value => value === true || value === 1 || String(value || '').toLowerCase() === 'true'
+
 export default function ClientesModule() {
   const router = useRouter()
 
@@ -161,7 +163,17 @@ export default function ClientesModule() {
     if (normalizedQuery) {
       output = output.filter(item => {
         const fullName = [item?.nombre, item?.apellido].filter(Boolean).join(' ')
-        const searchable = [fullName, item?.email, item?.telefono, item?.estado].map(normalizeText).join(' ')
+        const searchable = [
+          fullName,
+          item?.email,
+          item?.telefono,
+          item?.estado,
+          parseBoolean(item?.es_referido) ? 'referido' : 'no referido',
+          item?.referido_por,
+          item?.porcentaje_referido
+        ]
+          .map(normalizeText)
+          .join(' ')
 
         return searchable.includes(normalizedQuery)
       })
@@ -205,10 +217,28 @@ export default function ClientesModule() {
   }
 
   const handleExportCsv = () => {
-    const headers = ['Nombre', 'Apellido', 'Email', 'Telefono', 'Estado']
+    const headers = [
+      'Nombre',
+      'Apellido',
+      'Email',
+      'Telefono',
+      'Estado',
+      'Es referido',
+      'Referido por',
+      'Porcentaje referido'
+    ]
 
     const lines = tableRows.map(item =>
-      [item?.nombre || '', item?.apellido || '', item?.email || '', item?.telefono || '', item?.estado || '']
+      [
+        item?.nombre || '',
+        item?.apellido || '',
+        item?.email || '',
+        item?.telefono || '',
+        item?.estado || '',
+        parseBoolean(item?.es_referido) ? 'SI' : 'NO',
+        item?.referido_por || '',
+        item?.porcentaje_referido ?? 0
+      ]
         .map(value => `"${String(value).replaceAll('"', '""')}"`)
         .join(',')
     )
@@ -420,13 +450,15 @@ export default function ClientesModule() {
                   <TableCell>Cliente</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell>Teléfono</TableCell>
+                  <TableCell>Referido</TableCell>
+                  <TableCell>% Referido</TableCell>
                   <TableCell>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} align='center'>
+                    <TableCell colSpan={8} align='center'>
                       Cargando...
                     </TableCell>
                   </TableRow>
@@ -454,6 +486,15 @@ export default function ClientesModule() {
                         <TableCell>{[row.nombre, row.apellido].filter(Boolean).join(' ') || '-'}</TableCell>
                         <TableCell>{row.email || '-'}</TableCell>
                         <TableCell>{row.telefono || '-'}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={parseBoolean(row.es_referido) ? `Sí${row.referido_por ? ` • ${row.referido_por}` : ''}` : 'No'}
+                            size='small'
+                            color={parseBoolean(row.es_referido) ? 'info' : 'default'}
+                            variant='tonal'
+                          />
+                        </TableCell>
+                        <TableCell>{parseBoolean(row.es_referido) ? `${Number(row.porcentaje_referido || 0)}%` : '0%'}</TableCell>
                         <TableCell>
                           <Stack direction='row' spacing={0.25} flexWrap='wrap'>
                             <Tooltip title='Ver detalle'>
@@ -486,7 +527,7 @@ export default function ClientesModule() {
 
                 {!loading && tableRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align='center'>
+                    <TableCell colSpan={8} align='center'>
                       Sin resultados
                     </TableCell>
                   </TableRow>
