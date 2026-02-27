@@ -306,19 +306,24 @@ export default function ClienteDashboardModule({ clienteId }) {
   const proximosPagos = useMemo(() => {
     if (!prestamoPrincipal) return []
 
-    const baseDate = prestamoPrincipal?.fecha_vencimiento ? new Date(prestamoPrincipal.fecha_vencimiento) : new Date()
+    const totalCuotas = Math.max(Number(prestamoPrincipal?.num_semanas || 0), 0)
+    const cuotasPagadas = Math.max(Number(prestamoPrincipal?.pagos_hechos || 0), 0)
+    const baseDate = prestamoPrincipal?.fecha_inicio ? new Date(prestamoPrincipal.fecha_inicio) : new Date()
     const amount = Number(prestamoPrincipal?.pagos_semanales || 0)
 
-    return Array.from({ length: 3 }).map((_, index) => {
+    if (!totalCuotas) return []
+
+    return Array.from({ length: totalCuotas }).map((_, index) => {
       const date = new Date(baseDate)
 
       date.setDate(date.getDate() + index * 7)
 
       return {
         id: `${prestamoPrincipal?.id || 'prestamo'}-${index}`,
-        label: `Pago semanal #${index + 1}`,
+        label: `Cuota #${index + 1}`,
         fecha: formatDate(date),
-        monto: amount
+        monto: amount,
+        estado: index < cuotasPagadas ? 'Pagada' : 'Pendiente'
       }
     })
   }, [prestamoPrincipal])
@@ -513,13 +518,16 @@ export default function ClienteDashboardModule({ clienteId }) {
           <Card>
             <CardContent>
               <Typography variant='h5' sx={{ mb: 1.5 }}>
-                Próximos pagos
+                Cuotas del crédito activo
               </Typography>
+              {!proximosPagos.length ? <Typography color='text.secondary'>No hay cuotas disponibles.</Typography> : null}
               {proximosPagos.map(item => (
                 <Stack key={item.id} direction='row' justifyContent='space-between' sx={{ py: 1.5 }}>
                   <Box>
                     <Typography>{item.label}</Typography>
-                    <Typography color='text.secondary'>Vence: {item.fecha}</Typography>
+                    <Typography color='text.secondary'>
+                      Vence: {item.fecha} • Estado: {item.estado}
+                    </Typography>
                   </Box>
                   <Typography variant='h6'>{formatCurrency(item.monto)}</Typography>
                 </Stack>
