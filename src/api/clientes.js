@@ -33,3 +33,8 @@ export const verHistorialPrestamosCliente = (clienteId, { page = 1, limit = 20 }
     method: 'GET',
     query: { page, limit }
   })
+
+export const obtenerDocumentosCliente = clienteId =>
+  apiRequest(`/clientes/${clienteId}/documentos`, {
+    method: 'GET'
+  })

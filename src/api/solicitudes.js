@@ -64,3 +64,13 @@ export const eliminarDocumento = documentoId =>
   apiRequest(`/documentos/${documentoId}`, {
     method: 'DELETE'
   })
+
+export const obtenerDocumentoDetalle = documentoId =>
+  apiRequest(`/documentos/${documentoId}`, {
+    method: 'GET'
+  })
+
+export const obtenerDocumentoUrl = documentoId =>
+  apiRequest(`/documentos/${documentoId}/url`, {
+    method: 'GET'
+  })

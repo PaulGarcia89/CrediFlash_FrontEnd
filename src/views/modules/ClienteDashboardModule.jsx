@@ -16,19 +16,14 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Grid from '@mui/material/Grid'
+import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 
-import { obtenerCliente, verHistorialPrestamosCliente } from '@/api/clientes'
-import {
-  eliminarDocumento,
-  listarSolicitudesPorCliente,
-  obtenerDocumentoDetalle,
-  obtenerDocumentoUrl,
-  obtenerSolicitud
-} from '@/api/solicitudes'
+import { obtenerCliente, obtenerDocumentosCliente, verHistorialPrestamosCliente } from '@/api/clientes'
+import { eliminarDocumento } from '@/api/solicitudes'
 import { formatUSD } from '@/utils/currency'
 
 const extractRows = payload => {
@@ -40,6 +35,18 @@ const extractRows = payload => {
   if (Array.isArray(payload?.data?.solicitudes)) return payload.data.solicitudes
 
   return []
+}
+
+const deduplicarDocumentos = documentos => {
+  const seen = new Set()
+
+  return (Array.isArray(documentos) ? documentos : []).filter(item => {
+    const key = String(item?.id || item?.url_descarga || item?.download_url || item?.url || '').trim()
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+
+    return true
+  })
 }
 
 const formatCurrency = value => formatUSD(value)
@@ -113,140 +120,6 @@ const buildCandidateUrls = value => {
   return [`${backendOrigin}/${raw}`]
 }
 
-const cleanDocumentName = value => {
-  const raw = String(value || '').trim()
-
-  if (!raw) return 'Documento PDF'
-
-  const lastSegment = raw.split('/').pop() || raw
-  const noQuery = lastSegment.split('?')[0]
-  const withoutPrefix = noQuery.replace(/^\d{10,}-\d{3,}-/i, '').replace(/^\d{10,}-/i, '')
-  const normalized = withoutPrefix.replace(/[_]+/g, ' ').trim()
-
-  return normalized || 'Documento PDF'
-}
-
-const extractDocumentRows = solicitudes => {
-  const keysToCheck = [
-    'documentos',
-    'archivos',
-    'adjuntos',
-    'documentos_urls',
-    'documentosUrls',
-    'documentos_subidos',
-    'documentosSubidos',
-    'file_urls',
-    'files',
-    'pdfs'
-  ]
-  const rows = []
-
-  const addItem = (source, fallbackName) => {
-    if (!source) return
-
-    if (Array.isArray(source)) {
-      source.forEach((item, index) => addItem(item, `${fallbackName} ${index + 1}`))
-
-      return
-    }
-
-    if (typeof source === 'string') {
-      const urls = buildCandidateUrls(source)
-      const url = urls[0] || ''
-
-      if (!url) return
-
-      rows.push({
-        nombre: cleanDocumentName(source.split('/').pop() || fallbackName),
-        url,
-        urls,
-        sourceKey: source
-      })
-
-      return
-    }
-
-    if (typeof source === 'object') {
-      const maybeUrl =
-        source.url ||
-        source.path ||
-        source.ruta ||
-        source.link ||
-        source.href ||
-        source.file_url ||
-        source.fileUrl ||
-        source.documento_url ||
-        source.documentoUrl
-
-      if (maybeUrl) {
-        const urls = buildCandidateUrls(maybeUrl)
-        const url = urls[0] || ''
-
-        rows.push({
-          id: source.id || source.documento_id || source.documentId || source.uuid || source._id || '',
-          solicitud_id: source.solicitud_id || source.solicitudId || '',
-          nombre: cleanDocumentName(source.nombre || source.name || source.filename || source.originalname || fallbackName),
-          mime_type: source.mime_type || source.mimetype || source.type || '',
-          size_bytes: source.size_bytes || source.size || null,
-          url,
-          urls,
-          sourceKey: `${source.id || source.documento_id || source.documentId || ''}-${maybeUrl}`
-        })
-      }
-    }
-  }
-
-  solicitudes.forEach((solicitud, index) => {
-    keysToCheck.forEach(key => addItem(solicitud?.[key], `Documento ${index + 1}`))
-  })
-
-  // Fallback: busca URLs PDF en cualquier propiedad anidada
-  const scanForPdfUrls = value => {
-    if (!value) return
-
-    if (Array.isArray(value)) {
-      value.forEach(scanForPdfUrls)
-
-      return
-    }
-
-    if (typeof value === 'string') {
-      if (value.toLowerCase().includes('.pdf')) {
-        const urls = buildCandidateUrls(value)
-        const url = urls[0] || ''
-
-        if (url) {
-          rows.push({
-            nombre: cleanDocumentName(value.split('/').pop() || 'Documento PDF'),
-            url,
-            urls,
-            sourceKey: value
-          })
-        }
-      }
-
-      return
-    }
-
-    if (typeof value === 'object') {
-      Object.values(value).forEach(scanForPdfUrls)
-    }
-  }
-
-  solicitudes.forEach(scanForPdfUrls)
-
-  const seen = new Set()
-
-  return rows.filter(item => {
-    const ref = item.id ? `id:${item.id}` : `src:${String(item.sourceKey || item.url || item.nombre).toLowerCase()}`
-
-    if (seen.has(ref)) return false
-    seen.add(ref)
-
-    return true
-  })
-}
-
 export default function ClienteDashboardModule({ clienteId }) {
   const router = useRouter()
   const [tab, setTab] = useState('dashboard')
@@ -260,16 +133,17 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewTitle, setPreviewTitle] = useState('')
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
   const loadData = useCallback(async () => {
     setLoading(true)
     setError('')
 
     try {
-      const [clienteResponse, prestamosResponse, solicitudesResponse] = await Promise.allSettled([
+      const [clienteResponse, prestamosResponse, documentosResponse] = await Promise.allSettled([
         obtenerCliente(clienteId),
         verHistorialPrestamosCliente(clienteId, { page: 1, limit: 100 }),
-        listarSolicitudesPorCliente(clienteId)
+        obtenerDocumentosCliente(clienteId)
       ])
 
       if (clienteResponse.status === 'fulfilled') {
@@ -282,20 +156,8 @@ export default function ClienteDashboardModule({ clienteId }) {
         setPrestamos([])
       }
 
-      if (solicitudesResponse.status === 'fulfilled') {
-        const solicitudes = extractRows(solicitudesResponse.value)
-        const detailRequests = solicitudes
-          .map(item => item?.id)
-          .filter(Boolean)
-          .map(id => obtenerSolicitud(id))
-
-        const detailResponses = await Promise.allSettled(detailRequests)
-        const detalles = detailResponses
-          .filter(item => item.status === 'fulfilled')
-          .map(item => item.value?.data || item.value)
-          .filter(Boolean)
-
-        setDocumentos(extractDocumentRows([...solicitudes, ...detalles]))
+      if (documentosResponse.status === 'fulfilled') {
+        setDocumentos(deduplicarDocumentos(extractRows(documentosResponse.value)))
       } else {
         setDocumentos([])
       }
@@ -369,85 +231,50 @@ export default function ClienteDashboardModule({ clienteId }) {
     })
   }, [prestamoPrincipal])
 
-  const resolveDocumentUrls = async item => {
-    const fromRow = Array.isArray(item?.urls) && item.urls.length ? item.urls : [item?.url].filter(Boolean)
-    const byId = []
+  const getDocumentOpenUrl = item => {
+    const raw = item?.url_ver || item?.url_descarga || item?.download_url || item?.url || ''
+    const urls = buildCandidateUrls(raw)
 
-    if (item?.id) {
-      try {
-        const urlPayload = await obtenerDocumentoUrl(item.id)
-        const maybeUrl =
-          urlPayload?.url || urlPayload?.data?.url || urlPayload?.file_url || urlPayload?.data?.file_url || ''
-
-        if (maybeUrl) {
-          byId.push(...buildCandidateUrls(maybeUrl))
-        }
-      } catch {
-        // Endpoint opcional, fallback a URLs ya conocidas
-      }
-
-      try {
-        const detailPayload = await obtenerDocumentoDetalle(item.id)
-        const detail = detailPayload?.data || detailPayload
-        const detailUrl =
-          detail?.url ||
-          detail?.path ||
-          detail?.ruta ||
-          detail?.file_url ||
-          detail?.fileUrl ||
-          detail?.documento_url ||
-          detail?.documentoUrl ||
-          ''
-
-        if (detailUrl) {
-          byId.push(...buildCandidateUrls(detailUrl))
-        }
-      } catch {
-        // Endpoint opcional, fallback a URLs ya conocidas
-      }
-    }
-
-    const merged = [...byId, ...fromRow].filter(Boolean)
-    const seen = new Set()
-
-    return merged.filter(url => {
-      const key = String(url).trim()
-
-      if (!key || seen.has(key)) return false
-      seen.add(key)
-
-      return true
-    })
+    return urls[0] || ''
   }
 
-  const handleOpenDocument = async item => {
-    setDocumentActionError('')
-    const candidates = await resolveDocumentUrls(item)
+  const getDocumentDownloadUrl = item => {
+    const raw = item?.url_descarga || item?.download_url || item?.url_ver || item?.url || ''
+    const urls = buildCandidateUrls(raw)
 
-    if (!candidates.length) {
+    return urls[0] || ''
+  }
+
+  const handleOpenDocument = item => {
+    setDocumentActionError('')
+    const url = getDocumentOpenUrl(item)
+
+    if (!url) {
       setDocumentActionError('No se encontró una URL válida para visualizar este documento.')
+      setSnackbar({ open: true, message: 'No se encontró una URL válida para visualizar el documento.', severity: 'error' })
 
       return
     }
 
-    setPreviewUrl(candidates[0])
+    setPreviewUrl(url)
     setPreviewTitle(item?.nombre || 'Documento PDF')
     setPreviewOpen(true)
   }
 
-  const handleDownloadDocument = async item => {
+  const handleDownloadDocument = item => {
     setDocumentActionError('')
-    const candidates = await resolveDocumentUrls(item)
+    const url = getDocumentDownloadUrl(item)
 
-    if (!candidates.length) {
+    if (!url) {
       setDocumentActionError('No se encontró una URL válida para descargar este documento.')
+      setSnackbar({ open: true, message: 'No se encontró una URL válida para descargar el documento.', severity: 'error' })
 
       return
     }
 
     const link = document.createElement('a')
 
-    link.href = candidates[0]
+    link.href = url
     link.target = '_blank'
     link.rel = 'noopener noreferrer'
     link.download = item?.nombre || 'documento.pdf'
@@ -461,6 +288,7 @@ export default function ClienteDashboardModule({ clienteId }) {
 
     if (!item?.id) {
       setDocumentActionError('No se puede eliminar este documento porque el backend no envía su ID.')
+      setSnackbar({ open: true, message: 'No se puede eliminar: falta ID del documento.', severity: 'error' })
 
       return
     }
@@ -474,9 +302,13 @@ export default function ClienteDashboardModule({ clienteId }) {
 
     try {
       await eliminarDocumento(item.id)
-      setDocumentos(previous => previous.filter(doc => String(doc.id) !== String(item.id)))
+      const refreshed = await obtenerDocumentosCliente(clienteId)
+
+      setDocumentos(deduplicarDocumentos(extractRows(refreshed)))
+      setSnackbar({ open: true, message: 'Documento eliminado correctamente.', severity: 'success' })
     } catch (err) {
       setDocumentActionError(err.message || 'No se pudo eliminar el documento.')
+      setSnackbar({ open: true, message: err.message || 'No se pudo eliminar el documento.', severity: 'error' })
     } finally {
       setDocumentActionLoading('')
     }
@@ -771,6 +603,22 @@ export default function ClienteDashboardModule({ clienteId }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3500}
+        onClose={() => setSnackbar(previous => ({ ...previous, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar(previous => ({ ...previous, open: false }))}
+          severity={snackbar.severity}
+          variant='filled'
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       <Divider />
       <Typography color='text.secondary' textAlign='center'>
