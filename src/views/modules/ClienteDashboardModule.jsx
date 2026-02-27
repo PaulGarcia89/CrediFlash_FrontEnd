@@ -33,6 +33,18 @@ const extractRows = payload => {
 }
 
 const formatCurrency = value => formatUSD(value)
+const formatNaturalNumber = value => new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
+const normalizeStatus = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim()
+const isActiveStatus = value => {
+  const normalized = normalizeStatus(value)
+
+  return ['ACTIVO', 'ACTIVA', 'ACTIVE', 'VIGENTE', 'EN CURSO', 'EN_CURSO', 'PENDIENTE'].includes(normalized)
+}
 
 const formatDate = value => {
   if (!value) return '-'
@@ -263,7 +275,7 @@ export default function ClienteDashboardModule({ clienteId }) {
   )
 
   const prestamosActivos = useMemo(
-    () => prestamos.filter(item => String(item?.status || '').toUpperCase() === 'ACTIVO'),
+    () => prestamos.filter(item => isActiveStatus(item?.status || item?.estado)),
     [prestamos]
   )
 
@@ -421,8 +433,8 @@ export default function ClienteDashboardModule({ clienteId }) {
                   <Typography variant='h5'>Resumen de préstamo</Typography>
                   <Chip
                     size='small'
-                    color={prestamoPrincipal?.status === 'ACTIVO' ? 'success' : 'warning'}
-                    label={prestamoPrincipal?.status || 'Sin préstamo'}
+                    color={isActiveStatus(prestamoPrincipal?.status || prestamoPrincipal?.estado) ? 'success' : 'warning'}
+                    label={prestamoPrincipal?.status || prestamoPrincipal?.estado || 'Sin préstamo'}
                     variant='tonal'
                   />
                 </Stack>
@@ -435,7 +447,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                   <Box sx={{ width: `${progresoPrincipal}%`, height: '100%', bgcolor: 'success.main' }} />
                 </Box>
                 <Stack direction='row' justifyContent='space-between'>
-                  <Typography>Pagado: {formatCurrency(prestamoPrincipal?.pagos_hechos)}</Typography>
+                  <Typography>Pagos hechos: {formatNaturalNumber(prestamoPrincipal?.pagos_hechos)}</Typography>
                   <Typography>Total: {formatCurrency(prestamoPrincipal?.total_pagar)}</Typography>
                 </Stack>
               </Stack>
@@ -484,8 +496,10 @@ export default function ClienteDashboardModule({ clienteId }) {
                       Estado: {item.status || '-'} • Inicio: {formatDate(item.fecha_inicio)}
                     </Typography>
                   </Box>
-                  <Typography variant='h6' color={item.status === 'ACTIVO' ? 'primary.main' : 'success.main'}>
-                    {item.status === 'ACTIVO' ? formatCurrency(item.pendiente || item.pagos_pendientes) : 'Completado'}
+                  <Typography variant='h6' color={isActiveStatus(item.status || item?.estado) ? 'primary.main' : 'success.main'}>
+                    {isActiveStatus(item.status || item?.estado)
+                      ? formatCurrency(item.pendiente || item.pagos_pendientes)
+                      : 'Completado'}
                   </Typography>
                 </Stack>
               ))}

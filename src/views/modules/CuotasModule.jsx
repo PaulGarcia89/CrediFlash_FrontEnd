@@ -34,6 +34,7 @@ import { generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@
 import { formatUSD } from '@/utils/currency'
 
 const formatCurrency = value => formatUSD(value)
+const formatNaturalNumber = value => new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
 
 const normalizeText = value =>
   String(value || '')
@@ -655,10 +656,10 @@ export default function CuotasModule() {
               Semanas: <strong>{selectedPrestamo?.num_semanas ?? '-'}</strong>
             </Typography>
             <Typography>
-              Pagos hechos: <strong>{formatCurrency(selectedPrestamo?.pagos_hechos)}</strong>
+              Pagos hechos: <strong>{formatNaturalNumber(selectedPrestamo?.pagos_hechos)}</strong>
             </Typography>
             <Typography>
-              Pagos pendientes: <strong>{formatCurrency(selectedPrestamo?.pagos_pendientes)}</strong>
+              Pagos pendientes: <strong>{formatNaturalNumber(selectedPrestamo?.pagos_pendientes)}</strong>
             </Typography>
             <Typography>
               Fecha inicio: <strong>{String(selectedPrestamo?.fecha_inicio || '').slice(0, 10) || '-'}</strong>
