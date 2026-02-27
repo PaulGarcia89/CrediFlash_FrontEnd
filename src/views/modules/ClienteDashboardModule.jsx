@@ -255,11 +255,21 @@ export default function ClienteDashboardModule({ clienteId }) {
 
     const token = getToken()
     const headers = token ? { Authorization: `Bearer ${token}` } : {}
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-      cache: 'no-store'
-    })
+    let response
+
+    try {
+      response = await fetch(url, {
+        method: 'GET',
+        headers,
+        cache: 'no-store'
+      })
+    } catch {
+      const networkError = new Error('No se pudo descargar por CORS/red (Failed to fetch).')
+
+      networkError.code = 'FETCH_FAILED'
+      networkError.fallbackUrl = url
+      throw networkError
+    }
 
     if (!response.ok) {
       const backendPayload = await response.json().catch(() => ({}))
@@ -290,6 +300,24 @@ export default function ClienteDashboardModule({ clienteId }) {
       setPreviewTitle(item?.nombre || 'Documento PDF')
       setPreviewOpen(true)
     } catch (err) {
+      if (err?.code === 'FETCH_FAILED') {
+        const fallbackUrl = err?.fallbackUrl || getDocumentOpenUrl(item)
+
+        if (fallbackUrl) {
+          setPreviewUrl(fallbackUrl)
+          setPreviewExternalUrl(fallbackUrl)
+          setPreviewTitle(item?.nombre || 'Documento PDF')
+          setPreviewOpen(true)
+          setSnackbar({
+            open: true,
+            message: 'Vista previa abierta con modo alterno por restricción CORS.',
+            severity: 'warning'
+          })
+
+          return
+        }
+      }
+
       setDocumentActionError(err.message || 'No se encontró una URL válida para visualizar este documento.')
       setSnackbar({
         open: true,
@@ -313,6 +341,21 @@ export default function ClienteDashboardModule({ clienteId }) {
       document.body.removeChild(link)
       window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0)
     } catch (err) {
+      if (err?.code === 'FETCH_FAILED') {
+        const fallbackUrl = err?.fallbackUrl || getDocumentDownloadUrl(item)
+
+        if (fallbackUrl) {
+          window.open(fallbackUrl, '_blank', 'noopener,noreferrer')
+          setSnackbar({
+            open: true,
+            message: 'Descarga iniciada en nueva pestaña por restricción CORS.',
+            severity: 'warning'
+          })
+
+          return
+        }
+      }
+
       setDocumentActionError(err.message || 'No se encontró una URL válida para descargar este documento.')
       setSnackbar({
         open: true,
