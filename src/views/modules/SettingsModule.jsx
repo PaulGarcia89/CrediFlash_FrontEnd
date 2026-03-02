@@ -655,7 +655,7 @@ export default function SettingsModule() {
                             color='warning'
                             onClick={() => openResetPasswordDialog(item.id, analistaNombre)}
                           >
-                            Reset password
+                            Resetear contraseña
                           </Button>
                         </TableCell>
                       </TableRow>
