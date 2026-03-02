@@ -26,3 +26,17 @@ export const listarAnalistas = ({ page = 1, limit = 100, search = '', estado = '
     query: { page, limit, search, estado },
     auth: true
   })
+
+export const actualizarPerfilAnalista = payload =>
+  apiRequest('/analistas/perfil', {
+    method: 'PUT',
+    body: payload,
+    auth: true
+  })
+
+export const resetPasswordAnalista = (analistaId, payload) =>
+  apiRequest(`/analistas/${analistaId}/reset-password`, {
+    method: 'POST',
+    body: payload,
+    auth: true
+  })

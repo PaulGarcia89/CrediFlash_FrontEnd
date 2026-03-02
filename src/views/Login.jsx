@@ -197,6 +197,10 @@ const Login = ({ mode }) => {
             >
               Registrar
             </Button>
+
+            <Typography variant='body2' color='text.secondary' textAlign='center'>
+              ¿Olvidaste tu contraseña? Solicita al administrador que la resetee desde Configuración de acceso.
+            </Typography>
           </form>
         </div>
       </div>

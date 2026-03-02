@@ -34,7 +34,7 @@ import Tab from '@mui/material/Tab'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
-import { listarAnalistas } from '@/api/auth'
+import { listarAnalistas, resetPasswordAnalista } from '@/api/auth'
 import {
   asignarRolAnalista,
   actualizarRol,
@@ -170,6 +170,13 @@ export default function SettingsModule() {
     permisos: [],
     loading: false
   })
+  const [resetDialog, setResetDialog] = useState({
+    open: false,
+    analistaId: '',
+    analistaNombre: ''
+  })
+  const [resetPasswordValue, setResetPasswordValue] = useState('')
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -399,6 +406,48 @@ export default function SettingsModule() {
     }
   }
 
+  const openResetPasswordDialog = (analistaId, analistaNombre) => {
+    setError('')
+    setSuccess('')
+    setResetPasswordValue('')
+    setResetDialog({
+      open: true,
+      analistaId: String(analistaId || ''),
+      analistaNombre: analistaNombre || 'Analista'
+    })
+  }
+
+  const submitResetPassword = async () => {
+    if (!resetDialog.analistaId) {
+      setError('No se pudo identificar el analista para resetear contraseña.')
+
+      return
+    }
+
+    if (!resetPasswordValue || resetPasswordValue.length < 8) {
+      setError('La nueva contraseña temporal debe tener al menos 8 caracteres.')
+
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    setResetPasswordLoading(true)
+
+    try {
+      await resetPasswordAnalista(resetDialog.analistaId, {
+        nueva_password: resetPasswordValue
+      })
+      setSuccess('Contraseña reseteada correctamente. Se requerirá cambio al próximo login.')
+      setResetDialog(previous => ({ ...previous, open: false }))
+      setResetPasswordValue('')
+    } catch (err) {
+      setError(err.message || 'No se pudo resetear la contraseña del analista.')
+    } finally {
+      setResetPasswordLoading(false)
+    }
+  }
+
   const renderPermissionTree = node => {
     const leafIds = flattenLeafIds([node])
     const selectedCount = leafIds.filter(id => selectedPermisos.has(id)).length
@@ -566,6 +615,7 @@ export default function SettingsModule() {
                       <TableCell>Rol actual</TableCell>
                       <TableCell>Asignar rol</TableCell>
                       <TableCell>Permisos efectivos</TableCell>
+                      <TableCell>Seguridad</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -598,11 +648,21 @@ export default function SettingsModule() {
                             Ver permisos
                           </Button>
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            size='small'
+                            variant='tonal'
+                            color='warning'
+                            onClick={() => openResetPasswordDialog(item.id, analistaNombre)}
+                          >
+                            Reset password
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     )})}
                     {!analistas.length ? (
                       <TableRow>
-                        <TableCell colSpan={5} align='center'>
+                        <TableCell colSpan={6} align='center'>
                           Sin analistas registrados
                         </TableCell>
                       </TableRow>
@@ -719,6 +779,46 @@ export default function SettingsModule() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPermisosDialog(previous => ({ ...previous, open: false }))}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={resetDialog.open}
+        fullWidth
+        maxWidth='xs'
+        onClose={() => {
+          if (resetPasswordLoading) return
+          setResetDialog(previous => ({ ...previous, open: false }))
+        }}
+      >
+        <DialogTitle>Resetear contraseña</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography color='text.secondary'>
+              Analista: <strong>{resetDialog.analistaNombre}</strong>
+            </Typography>
+            <TextField
+              fullWidth
+              label='Nueva contraseña temporal'
+              type='password'
+              value={resetPasswordValue}
+              onChange={event => setResetPasswordValue(event.target.value)}
+              placeholder='NuevaClave123!'
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              if (resetPasswordLoading) return
+              setResetDialog(previous => ({ ...previous, open: false }))
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button variant='contained' color='warning' onClick={submitResetPassword} disabled={resetPasswordLoading}>
+            {resetPasswordLoading ? 'Procesando...' : 'Resetear'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Stack>
