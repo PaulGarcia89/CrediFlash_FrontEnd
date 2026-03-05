@@ -373,13 +373,13 @@ export default function SolicitudesModule() {
         num_semanas: Number(row?.plazo_semanas || row?.num_semanas || 0) || undefined
       })
       const payload = response?.data || response || {}
-      const prestamoId = payload?.prestamo?.id || payload?.prestamo_id || ''
+      const nombreCliente = getClienteNombre(row) || payload?.prestamo?.nombre_completo || 'cliente seleccionado'
       const cuotasGeneradasRaw = payload?.cuotas_generadas
       const cuotasGeneradas = Array.isArray(cuotasGeneradasRaw)
         ? cuotasGeneradasRaw.length
         : Number(cuotasGeneradasRaw || payload?.cuotas || 0)
       const suffix = [
-        prestamoId ? `Préstamo ${prestamoId} creado.` : '',
+        `Préstamo de ${nombreCliente} creado.`,
         Number.isFinite(cuotasGeneradas) && cuotasGeneradas > 0 ? `${cuotasGeneradas} cuota(s) generada(s).` : ''
       ]
         .filter(Boolean)
