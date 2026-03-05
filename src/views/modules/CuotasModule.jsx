@@ -80,10 +80,26 @@ const getCuotasRestantes = row => {
 
 const countByStatus = (rows, status) => rows.filter(item => String(item?.status || '').toUpperCase() === status).length
 
+const getOperationalStatus = row => {
+  const rawStatus = String(row?.status || '').toUpperCase()
+  const totalSemanas = Number(row?.num_semanas || 0)
+  const pagosHechos = Number(row?.pagos_hechos || 0)
+  const cuotasRestantes = getCuotasRestantes(row)
+
+  if (rawStatus === 'CANCELADO' || rawStatus === 'PAGADO' || cuotasRestantes <= 0) return 'PAGADO'
+  if (rawStatus === 'MOROSO') return 'MOROSO'
+  if (totalSemanas > 0 && pagosHechos > 0 && pagosHechos < totalSemanas) return 'EN_MARCHA'
+  if (rawStatus === 'ACTIVO' || totalSemanas > 0) return 'EN_PROCESO'
+
+  return rawStatus || 'PENDIENTE'
+}
+
 const getStatusColor = status => {
   const normalized = String(status || '').toUpperCase()
 
   if (normalized === 'ACTIVO') return 'success'
+  if (normalized === 'EN_MARCHA') return 'success'
+  if (normalized === 'EN_PROCESO') return 'warning'
   if (normalized === 'MOROSO') return 'error'
   if (normalized === 'PAGADO' || normalized === 'CANCELADO') return 'info'
   if (normalized.includes('LE QUEDAN')) return 'primary'
@@ -193,7 +209,14 @@ export default function CuotasModule() {
 
     try {
       await registrarPagoSemanal(selectedPrestamo.id, parsedMonto)
-      setPagoDialogInfo(`Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}.`)
+      const nextStatus = getOperationalStatus({
+        ...selectedPrestamo,
+        pagos_hechos: Number(selectedPrestamo?.pagos_hechos || 0) + 1
+      })
+
+      setPagoDialogInfo(
+        `Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}. Estado: ${nextStatus}.`
+      )
       await loadPrestamos()
       setTimeout(() => {
         closePagoDialog()
@@ -261,7 +284,7 @@ export default function CuotasModule() {
   const metrics = useMemo(() => {
     return {
       total: pagination.total,
-      activos: countByStatus(rows, 'ACTIVO'),
+      activos: rows.filter(item => ['EN_PROCESO', 'EN_MARCHA'].includes(getOperationalStatus(item))).length,
       morosos: countByStatus(rows, 'MOROSO'),
       cuotasPendientes: rows.reduce((total, item) => total + getCuotasRestantes(item), 0)
     }
@@ -556,8 +579,8 @@ export default function CuotasModule() {
                         <Chip
                           size='small'
                           variant='tonal'
-                          label={row.status || '-'}
-                          color={getStatusColor(row.status)}
+                          label={getOperationalStatus(row)}
+                          color={getStatusColor(getOperationalStatus(row))}
                         />
                       </TableCell>
                       <TableCell>

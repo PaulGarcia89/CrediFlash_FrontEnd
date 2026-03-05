@@ -369,14 +369,21 @@ export default function SolicitudesModule() {
     setSuccess('')
 
     try {
-      const interes = Number(row.tasa_variable || 0)
+      const response = await aprobarSolicitud(row.id)
+      const payload = response?.data || response || {}
+      const prestamoId = payload?.prestamo?.id || payload?.prestamo_id || ''
+      const cuotasGeneradasRaw = payload?.cuotas_generadas
+      const cuotasGeneradas = Array.isArray(cuotasGeneradasRaw)
+        ? cuotasGeneradasRaw.length
+        : Number(cuotasGeneradasRaw || payload?.cuotas || 0)
+      const suffix = [
+        prestamoId ? `Préstamo ${prestamoId} creado.` : '',
+        Number.isFinite(cuotasGeneradas) && cuotasGeneradas > 0 ? `${cuotasGeneradas} cuota(s) generada(s).` : ''
+      ]
+        .filter(Boolean)
+        .join(' ')
 
-      await aprobarSolicitud(row.id, {
-        interes: Number.isFinite(interes) ? Math.round(interes) : 0,
-        num_semanas: Number(row.plazo_semanas || 0)
-      })
-
-      setSuccess('Solicitud aprobada.')
+      setSuccess(`Solicitud aprobada.${suffix ? ` ${suffix}` : ''}`)
       await loadSolicitudes()
     } catch (err) {
       setError(err.message || 'No se pudo aprobar la solicitud.')
