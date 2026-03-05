@@ -369,7 +369,9 @@ export default function SolicitudesModule() {
     setSuccess('')
 
     try {
-      const response = await aprobarSolicitud(row.id)
+      const response = await aprobarSolicitud(row.id, {
+        num_semanas: Number(row?.plazo_semanas || row?.num_semanas || 0) || undefined
+      })
       const payload = response?.data || response || {}
       const prestamoId = payload?.prestamo?.id || payload?.prestamo_id || ''
       const cuotasGeneradasRaw = payload?.cuotas_generadas
