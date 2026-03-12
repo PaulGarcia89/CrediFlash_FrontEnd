@@ -11,7 +11,6 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import CardHeader from '@mui/material/CardHeader'
-import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
@@ -478,37 +477,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
           <Grid size={{ xs: 12, lg: 4 }}>
             <Stack spacing={3}>
-              <Card>
-                <CardHeader title='Estado' />
-                <Divider />
-                <CardContent>
-                  <Stack spacing={1.5}>
-                    <Chip label={solicitudId ? 'Edición' : 'Borrador'} color='primary' variant='tonal' />
-                    <Typography variant='body2' color='text.secondary'>
-                      El modelo de aprobación se ejecuta luego desde el listado de solicitudes.
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader title='Organización' />
-                <Divider />
-                <CardContent>
-                  <Stack spacing={4}>
-                    <TextField label='Canal' value='Registro manual' fullWidth size='small' disabled />
-                    <TextField label='Tipo' value='Solicitud de crédito' fullWidth size='small' disabled />
-                    <TextField
-                      label='Estado de publicación'
-                      value='Listo para publicar'
-                      fullWidth
-                      size='small'
-                      disabled
-                    />
-                  </Stack>
-                </CardContent>
-              </Card>
-
               <Card>
                 <CardHeader title='Acciones' />
                 <Divider />
