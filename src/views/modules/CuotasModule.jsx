@@ -606,6 +606,16 @@ export default function CuotasModule() {
                               <i className='tabler-cash text-3xl' />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title='Historial'>
+                            <IconButton size='small' color='secondary' onClick={() => openHistorial(row)}>
+                              <i className='tabler-history text-3xl' />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title='Ver detalle'>
+                            <IconButton size='small' onClick={() => openDetalleDialog(row)}>
+                              <i className='tabler-eye text-3xl' />
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title='Enviar notificación por correo'>
                             <span>
                               <IconButton
@@ -621,16 +631,6 @@ export default function CuotasModule() {
                                 )}
                               </IconButton>
                             </span>
-                          </Tooltip>
-                          <Tooltip title='Historial'>
-                            <IconButton size='small' color='secondary' onClick={() => openHistorial(row)}>
-                              <i className='tabler-history text-3xl' />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title='Ver detalle'>
-                            <IconButton size='small' onClick={() => openDetalleDialog(row)}>
-                              <i className='tabler-eye text-3xl' />
-                            </IconButton>
                           </Tooltip>
                         </Stack>
                       </TableCell>
