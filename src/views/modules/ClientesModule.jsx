@@ -538,6 +538,11 @@ export default function ClientesModule() {
                                 </IconButton>
                               </span>
                             </Tooltip>
+                            <Tooltip title='WhatsApp (próximamente)'>
+                              <IconButton size='small' color='success' onClick={() => {}}>
+                                <i className='tabler-brand-whatsapp text-3xl' />
+                              </IconButton>
+                            </Tooltip>
                           </Stack>
                         </TableCell>
                       </TableRow>
