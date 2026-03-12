@@ -24,3 +24,8 @@ export const generarCuotasSemanales = (prestamoId, payload) =>
     method: 'POST',
     body: payload
   })
+
+export const enviarNotificacionCuotaEmail = prestamoId =>
+  apiRequest(`/cuotas/prestamo/${prestamoId}/notificar-email`, {
+    method: 'POST'
+  })
