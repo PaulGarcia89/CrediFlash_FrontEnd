@@ -608,18 +608,23 @@ export default function CuotasModule() {
                           </Tooltip>
                           <Tooltip title='Enviar notificación por correo'>
                             <span>
-                              <IconButton
+                              <Button
                                 size='small'
-                                color='primary'
+                                variant='tonal'
+                                color='info'
                                 onClick={() => enviarNotificacionEmail(row)}
                                 disabled={notifyingPrestamoId === String(row.id)}
+                                startIcon={
+                                  notifyingPrestamoId === String(row.id) ? (
+                                    <CircularProgress size={14} color='inherit' />
+                                  ) : (
+                                    <i className='tabler-mail text-lg' />
+                                  )
+                                }
+                                sx={{ textTransform: 'none' }}
                               >
-                                {notifyingPrestamoId === String(row.id) ? (
-                                  <CircularProgress size={20} color='inherit' />
-                                ) : (
-                                  <i className='tabler-mail text-3xl' />
-                                )}
-                              </IconButton>
+                                Enviar notificación mediante correo
+                              </Button>
                             </span>
                           </Tooltip>
                           <Tooltip title='Historial'>
