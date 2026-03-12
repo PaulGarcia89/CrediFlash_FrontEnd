@@ -27,7 +27,7 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
-import { inactivarCliente, listarClientes } from '@/api/clientes'
+import { actualizarCliente, inactivarCliente, listarClientes } from '@/api/clientes'
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -195,22 +195,35 @@ export default function ClientesModule() {
     }
   }, [globalMetrics, rows, pagination.total])
 
-  const handleInactivar = async clienteId => {
-    const confirmed = window.confirm('¿Deseas marcar este cliente como INACTIVO?')
+  const handleToggleEstadoCliente = async row => {
+    const clienteId = row?.id
+    const estadoActual = String(row?.estado || '').toUpperCase()
+    const isInactivo = estadoActual === 'INACTIVO'
+    const confirmed = window.confirm(
+      isInactivo
+        ? '¿Deseas marcar este cliente como ACTIVO?'
+        : '¿Deseas marcar este cliente como INACTIVO?'
+    )
 
-    if (!confirmed) return
+    if (!confirmed || !clienteId) return
 
     setUpdatingId(clienteId)
     setError('')
     setSuccess('')
 
     try {
-      await inactivarCliente(clienteId)
-      setSuccess('Cliente marcado como INACTIVO.')
+      if (isInactivo) {
+        await actualizarCliente(clienteId, { estado: 'ACTIVO' })
+        setSuccess('Cliente marcado como ACTIVO.')
+      } else {
+        await inactivarCliente(clienteId)
+        setSuccess('Cliente marcado como INACTIVO.')
+      }
+
       await loadClientes()
       await loadGlobalMetrics()
     } catch (err) {
-      setError(err.message || 'No se pudo inactivar el cliente.')
+      setError(err.message || 'No se pudo actualizar el estado del cliente.')
     } finally {
       setUpdatingId('')
     }
@@ -507,15 +520,21 @@ export default function ClientesModule() {
                                 <i className='tabler-edit text-3xl' />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title='Inactivar'>
+                            <Tooltip title={String(row.estado || '').toUpperCase() === 'INACTIVO' ? 'Activar' : 'Inactivar'}>
                               <span>
                                 <IconButton
                                   size='small'
-                                  color='warning'
-                                  disabled={row.estado === 'INACTIVO' || updatingId === row.id}
-                                  onClick={() => handleInactivar(row.id)}
+                                  color={String(row.estado || '').toUpperCase() === 'INACTIVO' ? 'success' : 'warning'}
+                                  disabled={updatingId === row.id}
+                                  onClick={() => handleToggleEstadoCliente(row)}
                                 >
-                                  <i className='tabler-user-off text-3xl' />
+                                  <i
+                                    className={
+                                      String(row.estado || '').toUpperCase() === 'INACTIVO'
+                                        ? 'tabler-user-check text-3xl'
+                                        : 'tabler-user-off text-3xl'
+                                    }
+                                  />
                                 </IconButton>
                               </span>
                             </Tooltip>
