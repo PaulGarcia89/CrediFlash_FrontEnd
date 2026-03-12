@@ -30,7 +30,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
 import { verHistorialPrestamosCliente } from '@/api/clientes'
-import { generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
+import { enviarNotificacionCuotaEmail, generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
 import { formatUSD } from '@/utils/currency'
 
 const formatCurrency = value => formatUSD(value)
@@ -126,6 +126,7 @@ export default function CuotasModule() {
   const [pagoDialogError, setPagoDialogError] = useState('')
   const [pagoDialogInfo, setPagoDialogInfo] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [notifyingPrestamoId, setNotifyingPrestamoId] = useState('')
   const [detalleOpen, setDetalleOpen] = useState(false)
   const [historialOpen, setHistorialOpen] = useState(false)
   const [historialLoading, setHistorialLoading] = useState(false)
@@ -258,6 +259,21 @@ export default function CuotasModule() {
       setPagoDialogError(message)
     } finally {
       setProcessing(false)
+    }
+  }
+
+  const enviarNotificacionEmail = async row => {
+    setError('')
+    setSuccess('')
+    setNotifyingPrestamoId(String(row.id))
+
+    try {
+      await enviarNotificacionCuotaEmail(row.id)
+      setSuccess(`Notificación enviada por correo a ${row.nombre_completo || 'cliente'}.`)
+    } catch (err) {
+      setError(err.message || 'No se pudo enviar la notificación por correo.')
+    } finally {
+      setNotifyingPrestamoId('')
     }
   }
 
@@ -589,6 +605,22 @@ export default function CuotasModule() {
                             <IconButton size='small' color='error' onClick={() => openPagoDialog(row)}>
                               <i className='tabler-cash text-3xl' />
                             </IconButton>
+                          </Tooltip>
+                          <Tooltip title='Enviar notificación por correo'>
+                            <span>
+                              <IconButton
+                                size='small'
+                                color='primary'
+                                onClick={() => enviarNotificacionEmail(row)}
+                                disabled={notifyingPrestamoId === String(row.id)}
+                              >
+                                {notifyingPrestamoId === String(row.id) ? (
+                                  <CircularProgress size={20} color='inherit' />
+                                ) : (
+                                  <i className='tabler-mail text-3xl' />
+                                )}
+                              </IconButton>
+                            </span>
                           </Tooltip>
                           <Tooltip title='Historial'>
                             <IconButton size='small' color='secondary' onClick={() => openHistorial(row)}>
