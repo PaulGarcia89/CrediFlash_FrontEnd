@@ -13,10 +13,10 @@ export const listarPrestamos = ({
     query: { page, limit, status, cliente_id, fecha_desde, fecha_hasta }
   })
 
-export const registrarPagoSemanal = (prestamoId, monto_pago) =>
+export const registrarPagoSemanal = (prestamoId, monto_pago, monto_penalizacion = 0) =>
   apiRequest(`/prestamos/${prestamoId}/pago-semanal`, {
     method: 'POST',
-    body: { monto_pago }
+    body: { monto_pago, monto_penalizacion }
   })
 
 export const generarCuotasSemanales = (prestamoId, payload) =>

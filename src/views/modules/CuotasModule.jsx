@@ -107,6 +107,8 @@ const getStatusColor = status => {
   return 'warning'
 }
 
+const parseDecimalInput = value => Number(String(value ?? '').replace(',', '.'))
+
 export default function CuotasModule() {
   const [prestamos, setPrestamos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -123,6 +125,7 @@ export default function CuotasModule() {
   const [pagoDialogOpen, setPagoDialogOpen] = useState(false)
   const [selectedPrestamo, setSelectedPrestamo] = useState(null)
   const [montoPago, setMontoPago] = useState('')
+  const [montoPenalizacion, setMontoPenalizacion] = useState('0')
   const [pagoDialogError, setPagoDialogError] = useState('')
   const [pagoDialogInfo, setPagoDialogInfo] = useState('')
   const [processing, setProcessing] = useState(false)
@@ -135,6 +138,13 @@ export default function CuotasModule() {
   const [historialRows, setHistorialRows] = useState([])
   const [historialPage, setHistorialPage] = useState(1)
   const [historialPagination, setHistorialPagination] = useState({ page: 1, pages: 1, total: 0 })
+
+  const montoEsperadoPago = useMemo(() => {
+    const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
+    const penalizacion = parseDecimalInput(montoPenalizacion || 0)
+
+    return (Number.isFinite(cuotaSemanal) ? cuotaSemanal : 0) + (Number.isFinite(penalizacion) ? penalizacion : 0)
+  }, [selectedPrestamo, montoPenalizacion])
 
   const loadPrestamos = useCallback(async () => {
     setLoading(true)
@@ -177,6 +187,7 @@ export default function CuotasModule() {
     setPagoDialogInfo('')
     setSelectedPrestamo(row)
     setMontoPago(String(row.pagos_semanales || ''))
+    setMontoPenalizacion('0')
     setPagoDialogOpen(true)
   }
 
@@ -189,6 +200,7 @@ export default function CuotasModule() {
     setPagoDialogOpen(false)
     setSelectedPrestamo(null)
     setMontoPago('')
+    setMontoPenalizacion('0')
     setPagoDialogError('')
     setPagoDialogInfo('')
   }
@@ -196,10 +208,17 @@ export default function CuotasModule() {
   const confirmarPago = async () => {
     if (!selectedPrestamo) return
 
-    const parsedMonto = Number(String(montoPago || '').replace(',', '.'))
+    const parsedMonto = parseDecimalInput(montoPago || '')
+    const parsedPenalizacion = parseDecimalInput(montoPenalizacion || '0')
 
     if (!Number.isFinite(parsedMonto) || parsedMonto <= 0) {
-      setPagoDialogError('El monto_pago debe ser mayor que 0. Se permite pago parcial, exacto o mayor a la cuota.')
+      setPagoDialogError('El monto de pago debe ser mayor que 0.')
+
+      return
+    }
+
+    if (!Number.isFinite(parsedPenalizacion) || parsedPenalizacion < 0) {
+      setPagoDialogError('El monto de penalización debe ser mayor o igual a 0.')
 
       return
     }
@@ -209,7 +228,7 @@ export default function CuotasModule() {
     setPagoDialogInfo('')
 
     try {
-      await registrarPagoSemanal(selectedPrestamo.id, parsedMonto)
+      await registrarPagoSemanal(selectedPrestamo.id, parsedMonto, parsedPenalizacion)
       const nextStatus = getOperationalStatus({
         ...selectedPrestamo,
         pagos_hechos: Number(selectedPrestamo?.pagos_hechos || 0) + 1
@@ -239,7 +258,7 @@ export default function CuotasModule() {
             interes: Number(selectedPrestamo?.interes || 0)
           })
 
-          await registrarPagoSemanal(selectedPrestamo.id, parsedMonto)
+          await registrarPagoSemanal(selectedPrestamo.id, parsedMonto, parsedPenalizacion)
           setPagoDialogInfo(
             `Cuotas generadas y pago registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}.`
           )
@@ -685,13 +704,22 @@ export default function CuotasModule() {
               Cuotas restantes: <strong>{selectedPrestamo ? getCuotasRestantes(selectedPrestamo) : 0}</strong>
             </Typography>
             <TextField
-              label='Monto pago (parcial, exacto o mayor)'
+              label='Monto de penalización'
+              type='number'
+              value={montoPenalizacion}
+              onChange={event => setMontoPenalizacion(event.target.value)}
+              inputProps={{ min: 0, step: '0.01' }}
+              size='small'
+              helperText='Usa 0 si no aplica castigo por mora.'
+            />
+            <TextField
+              label='Monto pago'
               type='number'
               value={montoPago}
               onChange={event => setMontoPago(event.target.value)}
               inputProps={{ min: 0, step: '0.01' }}
               size='small'
-              helperText={`Cuota sugerida: ${formatCurrency(selectedPrestamo?.pagos_semanales)}. Puedes registrar un monto menor, igual o mayor.`}
+              helperText={`Monto esperado: ${formatCurrency(montoEsperadoPago)} (cuota semanal + penalización).`}
               required
             />
           </Stack>
