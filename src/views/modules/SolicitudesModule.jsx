@@ -832,7 +832,18 @@ export default function SolicitudesModule() {
                     const cliente = getClienteNombre(row)
 
                     return (
-                      <TableRow key={row.id} hover>
+                      <TableRow
+                        key={row.id}
+                        hover
+                        onDoubleClick={() => {
+                          const clienteId = row?.cliente_id || row?.cliente?.id || ''
+
+                          if (!clienteId) return
+
+                          router.push(`/clientes/${clienteId}/detalle`)
+                        }}
+                        sx={{ cursor: row?.cliente_id || row?.cliente?.id ? 'pointer' : 'default' }}
+                      >
                         <TableCell padding='checkbox'>
                           <Checkbox size='small' />
                         </TableCell>
