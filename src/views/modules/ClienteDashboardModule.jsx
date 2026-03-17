@@ -26,6 +26,7 @@ import { obtenerCliente, obtenerDocumentosCliente, verHistorialPrestamosCliente 
 import { eliminarDocumento } from '@/api/solicitudes'
 import { getToken } from '@/lib/auth/session'
 import { formatUSD } from '@/utils/currency'
+import { formatDateMMDDYYYY } from '@/utils/date'
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -62,15 +63,6 @@ const isActiveStatus = value => {
   const normalized = normalizeStatus(value)
 
   return ['ACTIVO', 'ACTIVA', 'ACTIVE', 'VIGENTE', 'EN CURSO', 'EN_CURSO', 'PENDIENTE'].includes(normalized)
-}
-
-const formatDate = value => {
-  if (!value) return '-'
-  const asDate = new Date(value)
-
-  if (Number.isNaN(asDate.getTime())) return String(value).slice(0, 10)
-
-  return asDate.toLocaleDateString('es-DO')
 }
 
 const normalizeBackendOrigin = () => {
@@ -245,7 +237,7 @@ export default function ClienteDashboardModule({ clienteId }) {
       return {
         id: `${prestamoPrincipal?.id || 'prestamo'}-${index}`,
         label: `Cuota #${index + 1}`,
-        fecha: formatDate(date),
+        fecha: formatDateMMDDYYYY(date),
         monto: amount,
         estado: index < cuotasPagadas ? 'Pagada' : 'Pendiente'
       }
@@ -516,8 +508,8 @@ export default function ClienteDashboardModule({ clienteId }) {
                 </Stack>
                 <Typography>Préstamo principal</Typography>
                 <Typography color='text.secondary'>
-                  Desembolsado: {formatDate(prestamoPrincipal?.fecha_inicio)} • Vence:{' '}
-                  {formatDate(prestamoPrincipal?.fecha_vencimiento)}
+                  Desembolsado: {formatDateMMDDYYYY(prestamoPrincipal?.fecha_inicio)} • Vence:{' '}
+                  {formatDateMMDDYYYY(prestamoPrincipal?.fecha_vencimiento)}
                 </Typography>
                 <Box sx={{ width: '100%', height: 10, bgcolor: 'action.hover', borderRadius: 999, overflow: 'hidden' }}>
                   <Box sx={{ width: `${progresoPrincipal}%`, height: '100%', bgcolor: 'success.main' }} />
@@ -547,7 +539,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                   <Box>
                     <Typography>Préstamo activo</Typography>
                     <Typography color='text.secondary'>
-                      Solicitado: {formatDate(item.fecha_inicio)} • Tasa: {item.interes ?? '-'}%
+                      Solicitado: {formatDateMMDDYYYY(item.fecha_inicio)} • Tasa: {item.interes ?? '-'}%
                     </Typography>
                   </Box>
                   <Typography variant='h5'>{formatCurrency(item.total_pagar)}</Typography>
@@ -569,7 +561,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                   <Box>
                     <Typography>Préstamo registrado</Typography>
                     <Typography color='text.secondary'>
-                      Estado: {item.status || '-'} • Inicio: {formatDate(item.fecha_inicio)}
+                      Estado: {item.status || '-'} • Inicio: {formatDateMMDDYYYY(item.fecha_inicio)}
                     </Typography>
                   </Box>
                   <Typography variant='h6' color={isActiveStatus(item.status || item?.estado) ? 'primary.main' : 'success.main'}>
@@ -615,7 +607,9 @@ export default function ClienteDashboardModule({ clienteId }) {
                 <Stack key={`pay-${item.id}`} direction='row' justifyContent='space-between' sx={{ py: 1.5 }}>
                   <Box>
                     <Typography>Pago semanal de préstamo</Typography>
-                    <Typography color='text.secondary'>{formatDate(item.fecha_inicio)} • Registro interno</Typography>
+                    <Typography color='text.secondary'>
+                      {formatDateMMDDYYYY(item.fecha_inicio)} • Registro interno
+                    </Typography>
                   </Box>
                   <Typography color='success.main'>-{formatCurrency(item.pagos_semanales)}</Typography>
                 </Stack>
@@ -639,7 +633,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                 <Stack key={`doc-active-${item.id}`} direction='row' justifyContent='space-between' sx={{ py: 1.5 }}>
                   <Box>
                     <Typography>Contrato de préstamo</Typography>
-                    <Typography color='text.secondary'>Firmado: {formatDate(item.fecha_inicio)} • PDF</Typography>
+                    <Typography color='text.secondary'>Firmado: {formatDateMMDDYYYY(item.fecha_inicio)} • PDF</Typography>
                   </Box>
                   <i className='tabler-download text-2xl' />
                 </Stack>

@@ -24,6 +24,7 @@ import Typography from '@mui/material/Typography'
 import { obtenerAnalyticsDashboard } from '@/api/analytics'
 import CustomAvatar from '@core/components/mui/Avatar'
 import { formatUSD } from '@/utils/currency'
+import { formatDateMMDDYYYY } from '@/utils/date'
 
 const formatNumber = value => new Intl.NumberFormat('es-DO').format(Number(value || 0))
 const formatPercent = value => `${Number(value || 0).toFixed(1)}%`
@@ -62,11 +63,7 @@ const getLastTwelveMonthsRange = () => {
 const formatPeriodLabel = value => {
   if (!value) return ''
 
-  const asDate = new Date(value)
-
-  if (Number.isNaN(asDate.getTime())) return String(value)
-
-  return asDate.toLocaleDateString('es-DO', { month: 'short', year: 'numeric' })
+  return formatDateMMDDYYYY(value)
 }
 
 const MetricCard = ({ icon, color, title, value, subtitle, trend }) => (
@@ -429,7 +426,7 @@ export default function AnalyticsModule() {
                   {series.length ? (
                     series.map(item => (
                       <TableRow key={`${item.mes}-${item.total}`}>
-                        <TableCell>{String(item.mes || '').slice(0, 10)}</TableCell>
+                        <TableCell>{formatDateMMDDYYYY(item.mes)}</TableCell>
                         <TableCell>{formatNumber(item.total)}</TableCell>
                         <TableCell>{formatUSD(item.monto)}</TableCell>
                       </TableRow>

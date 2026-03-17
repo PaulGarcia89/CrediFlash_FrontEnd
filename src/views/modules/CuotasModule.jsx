@@ -32,6 +32,7 @@ import Typography from '@mui/material/Typography'
 import { verHistorialPrestamosCliente } from '@/api/clientes'
 import { enviarNotificacionCuotaEmail, generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
 import { formatUSD } from '@/utils/currency'
+import { formatDateMMDDYYYY } from '@/utils/date'
 
 const formatCurrency = value => formatUSD(value)
 const formatNaturalNumber = value => new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
@@ -763,11 +764,10 @@ export default function CuotasModule() {
               Pagos pendientes: <strong>{formatNaturalNumber(selectedPrestamo?.pagos_pendientes)}</strong>
             </Typography>
             <Typography>
-              Fecha inicio: <strong>{String(selectedPrestamo?.fecha_inicio || '').slice(0, 10) || '-'}</strong>
+              Fecha inicio: <strong>{formatDateMMDDYYYY(selectedPrestamo?.fecha_inicio)}</strong>
             </Typography>
             <Typography>
-              Fecha vencimiento:{' '}
-              <strong>{String(selectedPrestamo?.fecha_vencimiento || '').slice(0, 10) || '-'}</strong>
+              Fecha vencimiento: <strong>{formatDateMMDDYYYY(selectedPrestamo?.fecha_vencimiento)}</strong>
             </Typography>
             <Typography>
               Estado: <strong>{selectedPrestamo?.status || '-'}</strong>
@@ -832,8 +832,8 @@ export default function CuotasModule() {
                           </Tooltip>
                         </Stack>
                       </TableCell>
-                      <TableCell>{String(row.fecha_inicio || '').slice(0, 10) || '-'}</TableCell>
-                      <TableCell>{String(row.fecha_vencimiento || '').slice(0, 10) || '-'}</TableCell>
+                      <TableCell>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
+                      <TableCell>{formatDateMMDDYYYY(row.fecha_vencimiento)}</TableCell>
                     </TableRow>
                   ))}
                   {historialRows.length === 0 ? (
