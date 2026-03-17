@@ -159,6 +159,31 @@ const BASE_PERMISSION_CODES = [
   'roles.manage'
 ]
 
+const normalizeRoleText = value =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim()
+
+const resolveRoleIdFromAnalista = (item, roles = []) => {
+  const directRoleId = String(item?.rol_id || item?.role_id || item?.rol_acceso_id || '').trim()
+
+  if (directRoleId) return directRoleId
+
+  const analistaRoleName = normalizeRoleText(item?.rol || item?.rol_acceso || item?.role || '')
+
+  if (!analistaRoleName) return ''
+
+  const matchedRole = (roles || []).find(role => {
+    const roleName = normalizeRoleText(role?.nombre || role?.name || '')
+
+    return roleName === analistaRoleName
+  })
+
+  return String(matchedRole?.id || '').trim()
+}
+
 export default function SettingsModule() {
   const { can, canAny } = usePermissions()
   const [ready, setReady] = useState(false)
@@ -469,7 +494,7 @@ export default function SettingsModule() {
   const showPermisosEfectivos = async item => {
     const analistaId = item?.id
     const analistaNombre = [item?.nombre, item?.apellido].filter(Boolean).join(' ') || 'Analista'
-    const rolId = String(item?.rol_id || item?.role_id || item?.rol_acceso_id || '').trim()
+    const rolId = resolveRoleIdFromAnalista(item, roles)
     const rolNombre = String(item?.rol || item?.rol_acceso || '').trim()
 
     setError('')
@@ -797,6 +822,7 @@ export default function SettingsModule() {
                   <TableBody>
                     {analistas.map(item => {
                       const analistaNombre = [item.nombre, item.apellido].filter(Boolean).join(' ') || 'Analista'
+                      const assignedRoleId = resolveRoleIdFromAnalista(item, roles)
 
                       return (
                       <TableRow key={item.id} hover>
@@ -808,7 +834,7 @@ export default function SettingsModule() {
                             <TextField
                               select
                               size='small'
-                              defaultValue={item.rol_id || ''}
+                              value={assignedRoleId}
                               sx={{ minWidth: 220 }}
                               onChange={event => assignRolToAnalista(item.id, event.target.value)}
                             >
