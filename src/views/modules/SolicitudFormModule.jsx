@@ -23,10 +23,16 @@ import { listarClientes } from '@/api/clientes'
 import { actualizarSolicitud, crearSolicitud, obtenerSolicitud } from '@/api/solicitudes'
 
 const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
+const MODALIDAD_OPTIONS = [
+  { value: 'SEMANAL', label: 'Semanal' },
+  { value: 'QUINCENAL', label: 'Quincenal' },
+  { value: 'MENSUAL', label: 'Mensual' }
+]
 
 const initialForm = {
   cliente_id: '',
   monto_solicitado: '',
+  modalidad: 'SEMANAL',
   plazo_semanas: '',
   tasa_variable_pct: '',
   modelo_calificacion: 'CLIENTE_NUEVO',
@@ -59,6 +65,24 @@ const clienteOptionLabel = cliente => {
   const nombre = [cliente?.nombre, cliente?.apellido].filter(Boolean).join(' ')
 
   return `${nombre || 'Sin nombre'} — ${cliente?.telefono || 'Sin teléfono'} — ${cliente?.email || 'Sin email'}`
+}
+
+const calculateTasaVariable = (tasaPct, modalidad, plazoSemanas) => {
+  const baseRate = Number(tasaPct || 0) / 100
+  const normalizedModalidad = String(modalidad || 'SEMANAL').toUpperCase()
+  const semanas = Number(plazoSemanas || 0)
+
+  if (normalizedModalidad === 'QUINCENAL') {
+    return baseRate * 2
+  }
+
+  if (normalizedModalidad === 'MENSUAL') {
+    const meses = Math.max(Math.ceil(semanas / 4), 1)
+
+    return baseRate / meses
+  }
+
+  return baseRate
 }
 
 export default function SolicitudFormModule({ solicitudId = null }) {
@@ -100,6 +124,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         setForm({
           cliente_id: solicitud?.cliente_id || '',
           monto_solicitado: solicitud?.monto_solicitado || '',
+          modalidad: String(solicitud?.modalidad || 'SEMANAL').toUpperCase(),
           plazo_semanas: solicitud?.plazo_semanas || '',
           tasa_variable_pct: Number.isFinite(tasaPct) ? String(tasaPct) : '',
           modelo_calificacion: solicitud?.modelo_calificacion || 'CLIENTE_NUEVO',
@@ -222,16 +247,30 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         throw new Error('Debes seleccionar un cliente activo.')
       }
 
-      const tasaVariable = Number(form.tasa_variable_pct || 0) / 100
+      if (!form.modalidad) {
+        throw new Error('Debes seleccionar una modalidad de préstamo.')
+      }
 
-      if (tasaVariable < 0.01 || tasaVariable > 1) {
+      const tasaVariablePct = Number(form.tasa_variable_pct || 0)
+
+      if (!Number.isFinite(tasaVariablePct) || tasaVariablePct < 1 || tasaVariablePct > 100) {
         throw new Error('La tasa variable (%) debe estar entre 1 y 100.')
+      }
+
+      const tasaVariableBase = tasaVariablePct / 100
+      const tasaVariable = solicitudId
+        ? tasaVariableBase
+        : calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
+
+      if (!Number.isFinite(tasaVariable) || tasaVariable <= 0) {
+        throw new Error('No se pudo calcular una tasa válida para la modalidad seleccionada.')
       }
 
       if (solicitudId) {
         await actualizarSolicitud(solicitudId, {
           cliente_id: form.cliente_id,
           monto_solicitado: Number(form.monto_solicitado || 0),
+          modalidad: form.modalidad,
           plazo_semanas: Number(form.plazo_semanas || 0),
           tasa_variable: tasaVariable,
           modelo_calificacion: form.modelo_calificacion,
@@ -241,6 +280,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         const basePayload = {
           cliente_id: form.cliente_id,
           monto_solicitado: Number(form.monto_solicitado || 0),
+          modalidad: form.modalidad,
           plazo_semanas: Number(form.plazo_semanas || 0),
           tasa_variable: tasaVariable,
           modelo_calificacion: form.modelo_calificacion,
@@ -254,6 +294,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
           payload.append('cliente_id', form.cliente_id)
           payload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
+          payload.append('modalidad', form.modalidad)
           payload.append('plazo_semanas', String(Number(form.plazo_semanas || 0)))
           payload.append('tasa_variable', String(tasaVariable))
           payload.append('modelo_calificacion', form.modelo_calificacion)
@@ -388,6 +429,23 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                     </Grid>
                     <Grid size={{ xs: 12, md: 4 }}>
                       <TextField
+                        select
+                        label='Modalidad'
+                        name='modalidad'
+                        value={form.modalidad}
+                        onChange={handleChange}
+                        fullWidth
+                        required
+                      >
+                        {MODALIDAD_OPTIONS.map(option => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
                         label='Plazo (semanas)'
                         name='plazo_semanas'
                         type='number'
@@ -397,7 +455,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                         required
                       />
                     </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         label='Tasa variable (%)'
                         name='tasa_variable_pct'
