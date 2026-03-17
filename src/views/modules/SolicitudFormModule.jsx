@@ -14,6 +14,9 @@ import CardHeader from '@mui/material/CardHeader'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
+import Step from '@mui/material/Step'
+import StepLabel from '@mui/material/StepLabel'
+import Stepper from '@mui/material/Stepper'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
@@ -23,10 +26,18 @@ import { listarClientes } from '@/api/clientes'
 import { actualizarSolicitud, crearSolicitud, obtenerSolicitud } from '@/api/solicitudes'
 
 const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
+const MODELO_APROBACION_OPTIONS = ['AUTOMATICO', 'MANUAL']
 const MODALIDAD_OPTIONS = [
   { value: 'SEMANAL', label: 'Semanal' },
   { value: 'QUINCENAL', label: 'Quincenal' },
   { value: 'MENSUAL', label: 'Mensual' }
+]
+const STEP_LABELS = [
+  'Cliente',
+  'Condiciones del crédito',
+  'Modelos',
+  'Documento de identidad',
+  'Estado de cuenta'
 ]
 
 const initialForm = {
@@ -36,6 +47,7 @@ const initialForm = {
   plazo_semanas: '',
   tasa_variable_pct: '',
   modelo_calificacion: 'CLIENTE_NUEVO',
+  modelo_aprobacion: 'AUTOMATICO',
   destino: ''
 }
 
@@ -100,13 +112,16 @@ export default function SolicitudFormModule({ solicitudId = null }) {
   const [clientesLoading, setClientesLoading] = useState(false)
   const [clientesPagination, setClientesPagination] = useState({ page: 1, pages: 1, total: 0 })
 
-  const [files, setFiles] = useState([])
+  const [activeStep, setActiveStep] = useState(0)
+  const [documentoIdentidad, setDocumentoIdentidad] = useState(null)
+  const [documentosEstadoCuenta, setDocumentosEstadoCuenta] = useState([])
   const [snackbar, setSnackbar] = useState({ open: false, message: '' })
 
   const canLoadMoreClientes = useMemo(
     () => clientesPagination.page < clientesPagination.pages,
     [clientesPagination.page, clientesPagination.pages]
   )
+  const flowSteps = useMemo(() => (solicitudId ? STEP_LABELS.slice(0, 3) : STEP_LABELS), [solicitudId])
 
   useEffect(() => {
     if (!solicitudId) return
@@ -128,6 +143,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
           plazo_semanas: solicitud?.plazo_semanas || '',
           tasa_variable_pct: Number.isFinite(tasaPct) ? String(tasaPct) : '',
           modelo_calificacion: solicitud?.modelo_calificacion || 'CLIENTE_NUEVO',
+          modelo_aprobacion: solicitud?.modelo_aprobacion || 'AUTOMATICO',
           destino: solicitud?.destino || ''
         })
 
@@ -204,13 +220,9 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     setForm(previous => ({ ...previous, [name]: value }))
   }
 
-  const handleFiles = event => {
-    const selected = Array.from(event.target.files || [])
-
-    if (selected.length > 3) {
-      setSnackbar({ open: true, message: 'Solo se permiten 0, 1, 2 o 3 documentos por solicitud.' })
-
-      return
+  const validatePdfFiles = ({ selected, min = 0, max = 3 }) => {
+    if (selected.length < min || selected.length > max) {
+      return `Debes cargar entre ${min} y ${max} documento(s) PDF.`
     }
 
     const invalidType = selected.find(file => {
@@ -221,20 +233,115 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     })
 
     if (invalidType) {
-      setSnackbar({ open: true, message: 'Solo se permiten documentos en formato PDF.' })
-
-      return
+      return 'Solo se permiten documentos en formato PDF.'
     }
 
     const oversized = selected.find(file => file.size > 10 * 1024 * 1024)
 
     if (oversized) {
-      setSnackbar({ open: true, message: 'Cada documento debe pesar máximo 10MB.' })
+      return 'Cada documento debe pesar máximo 10MB.'
+    }
+
+    return ''
+  }
+
+  const handleDocumentoIdentidad = event => {
+    const selected = Array.from(event.target.files || [])
+    const validationError = validatePdfFiles({ selected, min: 1, max: 1 })
+
+    if (validationError) {
+      setSnackbar({ open: true, message: validationError })
 
       return
     }
 
-    setFiles(selected)
+    setDocumentoIdentidad(selected[0] || null)
+  }
+
+  const handleEstadoCuentaFiles = event => {
+    const selected = Array.from(event.target.files || [])
+    const validationError = validatePdfFiles({ selected, min: 2, max: 3 })
+
+    if (validationError) {
+      setSnackbar({ open: true, message: validationError })
+
+      return
+    }
+
+    setDocumentosEstadoCuenta(selected)
+  }
+
+  const validateCurrentStep = () => {
+    if (solicitudId && activeStep >= 3) return true
+
+    if (activeStep === 0) return Boolean(form.cliente_id)
+
+    if (activeStep === 1) {
+      const monto = Number(form.monto_solicitado || 0)
+      const plazo = Number(form.plazo_semanas || 0)
+      const tasa = Number(form.tasa_variable_pct || 0)
+
+      return Boolean(monto > 0 && plazo > 0 && tasa > 0 && form.modalidad && String(form.destino || '').trim())
+    }
+
+    if (activeStep === 2) {
+      return Boolean(form.modelo_calificacion && form.modelo_aprobacion)
+    }
+
+    if (activeStep === 3) {
+      return Boolean(documentoIdentidad)
+    }
+
+    if (activeStep === 4) {
+      return documentosEstadoCuenta.length >= 2
+    }
+
+    return true
+  }
+
+  const isStepCompleted = stepIndex => {
+    if (stepIndex === 0) return Boolean(form.cliente_id)
+
+    if (stepIndex === 1) {
+      const monto = Number(form.monto_solicitado || 0)
+      const plazo = Number(form.plazo_semanas || 0)
+      const tasa = Number(form.tasa_variable_pct || 0)
+
+      return Boolean(monto > 0 && plazo > 0 && tasa > 0 && form.modalidad && String(form.destino || '').trim())
+    }
+
+    if (stepIndex === 2) {
+      return Boolean(form.modelo_calificacion && form.modelo_aprobacion)
+    }
+
+    if (stepIndex === 3) return Boolean(documentoIdentidad)
+    if (stepIndex === 4) return documentosEstadoCuenta.length >= 2
+
+    return false
+  }
+
+  const handleNextStep = () => {
+    if (validateCurrentStep()) {
+      setError('')
+      setActiveStep(previous => Math.min(previous + 1, flowSteps.length - 1))
+
+      return
+    }
+
+    const stepMessages = [
+      'Debes seleccionar un cliente para continuar.',
+      'Completa monto, modalidad, plazo, tasa y destino para continuar.',
+      'Debes completar modelo de calificación y modelo de aprobación.',
+      'Debes cargar un documento de identidad (licencia o pasaporte) en PDF.',
+      'Debes cargar mínimo 2 estados de cuenta en PDF.'
+    ]
+
+    setError(stepMessages[activeStep] || 'Completa los campos requeridos para continuar.')
+  }
+
+  const handleBackStep = () => {
+    setError('')
+    setActiveStep(previous => Math.max(previous - 1, 0))
   }
 
   const handleSubmit = async event => {
@@ -249,6 +356,16 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
       if (!form.modalidad) {
         throw new Error('Debes seleccionar una modalidad de préstamo.')
+      }
+
+      if (!solicitudId) {
+        if (!documentoIdentidad) {
+          throw new Error('Debes cargar el documento de identidad (licencia o pasaporte) en PDF.')
+        }
+
+        if (documentosEstadoCuenta.length < 2) {
+          throw new Error('Debes cargar mínimo 2 estados de cuenta en PDF.')
+        }
       }
 
       const tasaVariablePct = Number(form.tasa_variable_pct || 0)
@@ -277,37 +394,25 @@ export default function SolicitudFormModule({ solicitudId = null }) {
           destino: form.destino
         })
       } else {
-        const basePayload = {
-          cliente_id: form.cliente_id,
-          monto_solicitado: Number(form.monto_solicitado || 0),
-          modalidad: form.modalidad,
-          plazo_semanas: Number(form.plazo_semanas || 0),
-          tasa_variable: tasaVariable,
-          modelo_calificacion: form.modelo_calificacion,
-          destino: form.destino
-        }
-
         let created
 
-        if (files.length) {
-          const payload = new FormData()
+        const payload = new FormData()
 
-          payload.append('cliente_id', form.cliente_id)
-          payload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
-          payload.append('modalidad', form.modalidad)
-          payload.append('plazo_semanas', String(Number(form.plazo_semanas || 0)))
-          payload.append('tasa_variable', String(tasaVariable))
-          payload.append('modelo_calificacion', form.modelo_calificacion)
-          payload.append('destino', form.destino)
+        payload.append('cliente_id', form.cliente_id)
+        payload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
+        payload.append('modalidad', form.modalidad)
+        payload.append('plazo_semanas', String(Number(form.plazo_semanas || 0)))
+        payload.append('tasa_variable', String(tasaVariable))
+        payload.append('modelo_calificacion', form.modelo_calificacion)
+        payload.append('destino', form.destino)
+        payload.append('tipo_documento_identidad', 'ID')
+        payload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
 
-          files.forEach(file => {
-            payload.append('documentos', file)
-          })
+        ;[documentoIdentidad, ...documentosEstadoCuenta].forEach(file => {
+          if (file) payload.append('documentos', file)
+        })
 
-          created = await crearSolicitud(payload)
-        } else {
-          created = await crearSolicitud(basePayload)
-        }
+        created = await crearSolicitud(payload)
 
         const createdSolicitudId = extractSolicitudId(created)
         const params = new URLSearchParams()
@@ -361,8 +466,19 @@ export default function SolicitudFormModule({ solicitudId = null }) {
             >
               Guardar borrador
             </Button>
-            <Button variant='contained' type='submit' disabled={saving || loading}>
-              {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
+            <Button
+              variant='contained'
+              type={activeStep === flowSteps.length - 1 ? 'submit' : 'button'}
+              disabled={saving || loading}
+              onClick={activeStep === flowSteps.length - 1 ? undefined : handleNextStep}
+            >
+              {saving
+                ? 'Guardando...'
+                : activeStep === flowSteps.length - 1
+                  ? solicitudId
+                    ? 'Actualizar solicitud'
+                    : 'Publicar solicitud'
+                  : 'Siguiente'}
             </Button>
           </Stack>
         </Stack>
@@ -377,157 +493,233 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                 <CardHeader title='Información de la solicitud' />
                 <Divider />
                 <CardContent>
-                  <Grid container spacing={2}>
-                    <Grid size={{ xs: 12 }}>
-                      <Autocomplete
-                        options={clientesOptions}
-                        value={clienteValue}
-                        loading={clientesLoading}
-                        disabled={Boolean(solicitudId)}
-                        onChange={(_, value) => {
-                          setClienteValue(value)
-                          setForm(previous => ({ ...previous, cliente_id: value?.id || '' }))
-                        }}
-                        onInputChange={(_, value) => {
-                          setClienteSearch(value)
-                        }}
-                        getOptionLabel={option => clienteOptionLabel(option)}
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                        renderInput={params => (
+                  <Stack spacing={2.5}>
+                    <Stack
+                      direction={{ xs: 'column', md: 'row' }}
+                      justifyContent='space-between'
+                      alignItems={{ xs: 'flex-start', md: 'center' }}
+                      spacing={1.5}
+                    >
+                      <Typography variant='h6'>
+                        Paso {activeStep + 1} de {flowSteps.length}
+                      </Typography>
+                      <Stack direction='row' spacing={1} flexWrap='wrap'>
+                        {flowSteps.map((label, index) => {
+                          const completed = isStepCompleted(index)
+                          const isActive = index === activeStep
+
+                          return (
+                            <Box
+                              key={`resume-step-${label}`}
+                              sx={{
+                                px: 1.25,
+                                py: 0.5,
+                                borderRadius: 1,
+                                border: theme => `1px solid ${theme.palette.divider}`,
+                                bgcolor: isActive ? 'primary.lighter' : 'background.paper',
+                                color: completed ? 'success.main' : 'text.secondary',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.75
+                              }}
+                            >
+                              <i className={completed ? 'tabler-circle-check text-base' : 'tabler-circle text-base'} />
+                              <Typography variant='caption' sx={{ fontWeight: 600 }}>
+                                {label}
+                              </Typography>
+                            </Box>
+                          )
+                        })}
+                      </Stack>
+                    </Stack>
+
+                    <Stepper activeStep={activeStep} alternativeLabel>
+                      {flowSteps.map(label => (
+                        <Step key={label}>
+                          <StepLabel>{label}</StepLabel>
+                        </Step>
+                      ))}
+                    </Stepper>
+
+                    {activeStep === 0 ? (
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12 }}>
+                          <Autocomplete
+                            options={clientesOptions}
+                            value={clienteValue}
+                            loading={clientesLoading}
+                            disabled={Boolean(solicitudId)}
+                            onChange={(_, value) => {
+                              setClienteValue(value)
+                              setForm(previous => ({ ...previous, cliente_id: value?.id || '' }))
+                            }}
+                            onInputChange={(_, value) => {
+                              setClienteSearch(value)
+                            }}
+                            getOptionLabel={option => clienteOptionLabel(option)}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                            renderInput={params => (
+                              <TextField
+                                {...params}
+                                label='Clientes Activos'
+                                placeholder='Buscar por teléfono o email'
+                                required
+                              />
+                            )}
+                          />
+                          {canLoadMoreClientes ? (
+                            <Box mt={1}>
+                              <Button
+                                variant='text'
+                                size='small'
+                                onClick={handleLoadMoreClientes}
+                                disabled={clientesLoading}
+                              >
+                                Cargar más clientes
+                              </Button>
+                            </Box>
+                          ) : null}
+                        </Grid>
+                      </Grid>
+                    ) : null}
+
+                    {activeStep === 1 ? (
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                           <TextField
-                            {...params}
-                            label='Clientes Activos'
-                            placeholder='Buscar por teléfono o email'
+                            label='Monto solicitado'
+                            name='monto_solicitado'
+                            type='number'
+                            value={form.monto_solicitado}
+                            onChange={handleChange}
+                            fullWidth
                             required
                           />
-                        )}
-                      />
-                      {canLoadMoreClientes ? (
-                        <Box mt={1}>
-                          <Button
-                            variant='text'
-                            size='small'
-                            onClick={handleLoadMoreClientes}
-                            disabled={clientesLoading}
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <TextField
+                            select
+                            label='Modalidad'
+                            name='modalidad'
+                            value={form.modalidad}
+                            onChange={handleChange}
+                            fullWidth
+                            required
                           >
-                            Cargar más clientes
-                          </Button>
-                        </Box>
-                      ) : null}
-                    </Grid>
+                            {MODALIDAD_OPTIONS.map(option => (
+                              <MenuItem key={option.value} value={option.value}>
+                                {option.label}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <TextField
+                            label='Plazo (semanas)'
+                            name='plazo_semanas'
+                            type='number'
+                            value={form.plazo_semanas}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <TextField
+                            label='Tasa variable (%)'
+                            name='tasa_variable_pct'
+                            type='number'
+                            value={form.tasa_variable_pct}
+                            onChange={handleChange}
+                            inputProps={{ min: 1, max: 100 }}
+                            fullWidth
+                            required
+                          />
+                        </Grid>
+                        <Grid size={{ xs: 12 }}>
+                          <TextField
+                            label='Destino del crédito'
+                            name='destino'
+                            value={form.destino}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                          />
+                        </Grid>
+                      </Grid>
+                    ) : null}
 
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <TextField
-                        label='Monto solicitado'
-                        name='monto_solicitado'
-                        type='number'
-                        value={form.monto_solicitado}
-                        onChange={handleChange}
-                        fullWidth
-                        required
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <TextField
-                        select
-                        label='Modalidad'
-                        name='modalidad'
-                        value={form.modalidad}
-                        onChange={handleChange}
-                        fullWidth
-                        required
-                      >
-                        {MODALIDAD_OPTIONS.map(option => (
-                          <MenuItem key={option.value} value={option.value}>
-                            {option.label}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <TextField
-                        label='Plazo (semanas)'
-                        name='plazo_semanas'
-                        type='number'
-                        value={form.plazo_semanas}
-                        onChange={handleChange}
-                        fullWidth
-                        required
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label='Tasa variable (%)'
-                        name='tasa_variable_pct'
-                        type='number'
-                        value={form.tasa_variable_pct}
-                        onChange={handleChange}
-                        inputProps={{ min: 1, max: 100 }}
-                        fullWidth
-                        required
-                      />
-                    </Grid>
+                    {activeStep === 2 ? (
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <TextField
+                            select
+                            label='Modelo de calificación'
+                            name='modelo_calificacion'
+                            value={form.modelo_calificacion}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                          >
+                            {MODELO_OPTIONS.map(model => (
+                              <MenuItem key={model} value={model}>
+                                {model}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                          <TextField
+                            select
+                            label='Modelo de aprobación'
+                            name='modelo_aprobacion'
+                            value={form.modelo_aprobacion}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                          >
+                            {MODELO_APROBACION_OPTIONS.map(model => (
+                              <MenuItem key={model} value={model}>
+                                {model}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                      </Grid>
+                    ) : null}
 
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        select
-                        label='Modelo de calificación'
-                        name='modelo_calificacion'
-                        value={form.modelo_calificacion}
-                        onChange={handleChange}
-                        fullWidth
-                        required
-                      >
-                        {MODELO_OPTIONS.map(model => (
-                          <MenuItem key={model} value={model}>
-                            {model}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label='Modelo de aprobación'
-                        value=''
-                        fullWidth
-                        disabled
-                        helperText='Se asigna en el flujo de revisión.'
-                      />
-                    </Grid>
+                    {activeStep === 3 && !solicitudId ? (
+                      <Stack spacing={1.5}>
+                        <Typography color='text.secondary'>
+                          Carga un documento de identidad del cliente (licencia o pasaporte) en formato PDF.
+                        </Typography>
+                        <Button variant='outlined' component='label'>
+                          Cargar documento ID (obligatorio)
+                          <input hidden type='file' accept='application/pdf,.pdf' onChange={handleDocumentoIdentidad} />
+                        </Button>
+                        <Typography variant='caption' color='text.secondary'>
+                          {documentoIdentidad ? `Archivo seleccionado: ${documentoIdentidad.name}` : 'Aún no has cargado el documento ID.'}
+                        </Typography>
+                      </Stack>
+                    ) : null}
 
-                    <Grid size={{ xs: 12 }}>
-                      <TextField
-                        label='Destino del crédito'
-                        name='destino'
-                        value={form.destino}
-                        onChange={handleChange}
-                        fullWidth
-                        required
-                      />
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader title='Documentos' subheader='Carga opcional de 0, 1, 2 o 3 archivos PDF por solicitud.' />
-                <Divider />
-                <CardContent>
-                  {!solicitudId ? (
-                    <>
-                      <Button variant='outlined' component='label'>
-                        Cargar documentos PDF (0 a 3)
-                        <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleFiles} />
-                      </Button>
-                      <Typography variant='caption' color='text.secondary' display='block' mt={1}>
-                        {files.length > 0 ? `${files.length} archivo(s) seleccionado(s)` : 'Sin documentos cargados'}
-                      </Typography>
-                    </>
-                  ) : (
-                    <Typography variant='caption' color='text.secondary'>
-                      La edición de documentos no está habilitada en esta versión.
-                    </Typography>
-                  )}
+                    {activeStep === 4 && !solicitudId ? (
+                      <Stack spacing={1.5}>
+                        <Typography color='text.secondary'>
+                          Carga documentos de estado de cuenta en PDF (mínimo 2, máximo 3).
+                        </Typography>
+                        <Button variant='outlined' component='label'>
+                          Cargar estados de cuenta (mínimo 2)
+                          <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
+                        </Button>
+                        <Typography variant='caption' color='text.secondary'>
+                          {documentosEstadoCuenta.length
+                            ? `${documentosEstadoCuenta.length} archivo(s) seleccionado(s)`
+                            : 'No hay estados de cuenta cargados'}
+                        </Typography>
+                      </Stack>
+                    ) : null}
+                  </Stack>
                 </CardContent>
               </Card>
             </Stack>
@@ -540,8 +732,23 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                 <Divider />
                 <CardContent>
                   <Stack spacing={1.5}>
-                    <Button variant='contained' type='submit' disabled={saving || loading} fullWidth>
-                      {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
+                    <Button variant='outlined' onClick={handleBackStep} disabled={saving || loading || activeStep === 0} fullWidth>
+                      Anterior
+                    </Button>
+                    <Button
+                      variant='contained'
+                      type={activeStep === flowSteps.length - 1 ? 'submit' : 'button'}
+                      onClick={activeStep === flowSteps.length - 1 ? undefined : handleNextStep}
+                      disabled={saving || loading}
+                      fullWidth
+                    >
+                      {saving
+                        ? 'Guardando...'
+                        : activeStep === flowSteps.length - 1
+                          ? solicitudId
+                            ? 'Actualizar solicitud'
+                            : 'Publicar solicitud'
+                          : 'Siguiente'}
                     </Button>
                     <Button variant='outlined' onClick={() => router.push('/solicitudes')} disabled={saving} fullWidth>
                       Cancelar
