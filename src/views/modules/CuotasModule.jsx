@@ -704,15 +704,6 @@ export default function CuotasModule() {
               Cuotas restantes: <strong>{selectedPrestamo ? getCuotasRestantes(selectedPrestamo) : 0}</strong>
             </Typography>
             <TextField
-              label='Monto de penalización'
-              type='number'
-              value={montoPenalizacion}
-              onChange={event => setMontoPenalizacion(event.target.value)}
-              inputProps={{ min: 0, step: '0.01' }}
-              size='small'
-              helperText='Usa 0 si no aplica castigo por mora.'
-            />
-            <TextField
               label='Monto pago'
               type='number'
               value={montoPago}
@@ -721,6 +712,15 @@ export default function CuotasModule() {
               size='small'
               helperText={`Monto esperado: ${formatCurrency(montoEsperadoPago)} (cuota semanal + penalización).`}
               required
+            />
+            <TextField
+              label='Monto de penalización'
+              type='number'
+              value={montoPenalizacion}
+              onChange={event => setMontoPenalizacion(event.target.value)}
+              inputProps={{ min: 0, step: '0.01' }}
+              size='small'
+              helperText='Usa 0 si no aplica castigo por mora.'
             />
           </Stack>
         </DialogContent>
