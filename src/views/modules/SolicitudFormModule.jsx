@@ -346,6 +346,14 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
   const handleSubmit = async event => {
     event.preventDefault()
+
+    // Evita validaciones finales si se dispara submit antes del último paso.
+    if (activeStep < flowSteps.length - 1) {
+      handleNextStep()
+
+      return
+    }
+
     setSaving(true)
     setError('')
 
