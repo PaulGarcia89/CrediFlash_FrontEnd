@@ -46,8 +46,8 @@ const UserDropdown = () => {
 
   const router = useRouter()
   const { settings } = useSettings()
-  const { can } = usePermissions()
-  const canOpenSettings = can('roles.view')
+  const { canAny } = usePermissions()
+  const canOpenSettings = canAny(['roles.view', 'analistas.view'])
 
   useEffect(() => {
     const syncAnalista = () => {

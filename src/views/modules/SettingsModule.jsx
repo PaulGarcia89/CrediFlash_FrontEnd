@@ -424,22 +424,15 @@ export default function SettingsModule() {
       return
     }
 
-    if (!rolId) {
-      setError('Debes seleccionar un rol válido para el analista.')
-      setSuccess('')
-
-      return
-    }
-
     setError('')
     setSuccess('')
 
     try {
-      await asignarRolAnalista(analistaId, { role_id: rolId })
-      setSuccess('Rol de acceso asignado al analista.')
+      await asignarRolAnalista(analistaId, { role_id: rolId || null })
+      setSuccess(rolId ? 'Rol de acceso asignado al analista.' : 'Rol removido del analista.')
       await loadAnalistas()
     } catch (err) {
-      setError(err.message || 'No se pudo asignar rol al analista.')
+      setError(err.message || 'No se pudo actualizar el rol del analista.')
     }
   }
 
@@ -716,7 +709,7 @@ export default function SettingsModule() {
                               sx={{ minWidth: 220 }}
                               onChange={event => assignRolToAnalista(item.id, event.target.value)}
                             >
-                              <MenuItem value=''>Sin rol</MenuItem>
+                              <MenuItem value=''>Quitar rol (sin rol)</MenuItem>
                               {roles.map(rol => (
                                 <MenuItem key={rol.id} value={rol.id}>
                                   {rol.nombre || rol.name}
