@@ -31,6 +31,7 @@ import Typography from '@mui/material/Typography'
 
 import { verHistorialPrestamosCliente } from '@/api/clientes'
 import { enviarNotificacionCuotaEmail, generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
+import { obtenerDocumentoUrl } from '@/api/solicitudes'
 import { getToken } from '@/lib/auth/session'
 import { formatUSD } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
@@ -171,6 +172,15 @@ const getContractOpenUrl = row => {
 
   return urls[0] || ''
 }
+const getContractDocumentId = row =>
+  String(
+    row?.contrato_credito_id ||
+      row?.contrato_id ||
+      row?.documento_id ||
+      row?.contrato?.id ||
+      row?.contrato?.documento_id ||
+      ''
+  ).trim()
 
 export default function CuotasModule() {
   const [prestamos, setPrestamos] = useState([])
@@ -348,15 +358,30 @@ export default function CuotasModule() {
 
   const handleOpenContratoPdf = async row => {
     setDetalleDialogError('')
-    const url = getContractOpenUrl(row)
-
-    if (!url) {
-      setDetalleDialogError('No se encontró URL del contrato para este préstamo.')
-
-      return
-    }
+    let url = getContractOpenUrl(row)
 
     try {
+      if (!url) {
+        const documentId = getContractDocumentId(row)
+
+        if (documentId) {
+          const response = await obtenerDocumentoUrl(documentId)
+          const resolvedUrl = response?.data?.url || response?.url || response?.data?.url_descarga || ''
+
+          if (resolvedUrl) {
+            const candidates = buildCandidateUrls(resolvedUrl)
+
+            url = candidates[0] || resolvedUrl
+          }
+        }
+      }
+
+      if (!url) {
+        setDetalleDialogError('No se encontró URL del contrato para este préstamo.')
+
+        return
+      }
+
       const token = getToken()
       const headers = token ? { Authorization: `Bearer ${token}` } : {}
       const response = await fetch(url, {
