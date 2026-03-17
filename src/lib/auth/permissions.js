@@ -15,6 +15,12 @@ const normalizePermissionList = input => {
   return Array.from(unique)
 }
 
+const isAdminRole = source => {
+  const role = String(source?.rol || source?.role || source?.rol_acceso || '').toUpperCase()
+
+  return role.includes('ADMIN')
+}
+
 export const extractPermissionCodes = source => {
   if (Array.isArray(source)) {
     return normalizePermissionList(source)
@@ -26,6 +32,11 @@ export const extractPermissionCodes = source => {
   )
 
   if (permissionCodes.length) return permissionCodes
+
+  if (isAdminRole(analista)) {
+    // Fallback temporal: si backend aún no devuelve permission_codes para admin, se habilita acceso completo en UI.
+    return ['*']
+  }
 
   return normalizePermissionList(getPermissionCodes())
 }
