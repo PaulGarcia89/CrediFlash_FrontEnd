@@ -10,6 +10,7 @@ import classnames from 'classnames'
 
 // Component Imports
 import ModeDropdown from '@components/layout/shared/ModeDropdown'
+import LanguageToggle from '@components/layout/shared/LanguageToggle'
 import UserDropdown from '@components/layout/shared/UserDropdown'
 
 // Util Imports
@@ -38,6 +39,7 @@ const NavbarContent = () => {
 
       <Stack direction='row' spacing={0.5} alignItems='center'>
         <ModeDropdown />
+        <LanguageToggle />
         <IconButton size='small'>
           <i className='tabler-bell text-xl' />
         </IconButton>
