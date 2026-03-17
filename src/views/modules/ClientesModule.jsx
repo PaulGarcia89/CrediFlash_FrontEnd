@@ -170,7 +170,7 @@ export default function ClientesModule() {
           item?.estado,
           parseBoolean(item?.es_referido) ? 'referido' : 'no referido',
           item?.referido_por,
-          item?.porcentaje_referido
+          item?.monto_referido
         ]
           .map(normalizeText)
           .join(' ')
@@ -238,7 +238,7 @@ export default function ClientesModule() {
       'Estado',
       'Es referido',
       'Referido por',
-      'Porcentaje referido'
+      'Monto referido (USD)'
     ]
 
     const lines = tableRows.map(item =>
@@ -250,7 +250,7 @@ export default function ClientesModule() {
         item?.estado || '',
         parseBoolean(item?.es_referido) ? 'SI' : 'NO',
         item?.referido_por || '',
-        item?.porcentaje_referido ?? 0
+        item?.monto_referido ?? 0
       ]
         .map(value => `"${String(value).replaceAll('"', '""')}"`)
         .join(',')
@@ -464,7 +464,7 @@ export default function ClientesModule() {
                   <TableCell>Email</TableCell>
                   <TableCell>Teléfono</TableCell>
                   <TableCell>Referido</TableCell>
-                  <TableCell>% Referido</TableCell>
+                  <TableCell>Monto referido (USD)</TableCell>
                   <TableCell>Acciones</TableCell>
                 </TableRow>
               </TableHead>
@@ -507,7 +507,14 @@ export default function ClientesModule() {
                             variant='tonal'
                           />
                         </TableCell>
-                        <TableCell>{parseBoolean(row.es_referido) ? `${Number(row.porcentaje_referido || 0)}%` : '0%'}</TableCell>
+                        <TableCell>
+                          {parseBoolean(row.es_referido)
+                            ? Number(row.monto_referido || 0).toLocaleString('en-US', {
+                                style: 'currency',
+                                currency: 'USD'
+                              })
+                            : '$0.00'}
+                        </TableCell>
                         <TableCell>
                           <Stack direction='row' spacing={0.25} flexWrap='wrap'>
                             <Tooltip title='Ver detalle'>

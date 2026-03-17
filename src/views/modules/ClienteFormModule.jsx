@@ -28,7 +28,7 @@ const initialForm = {
   direccion: '',
   es_referido: false,
   referido_por: '',
-  porcentaje_referido: '0',
+  monto_referido: '0',
   nombre_contacto: '',
   apellido_contacto: '',
   telefono_contacto: '',
@@ -133,7 +133,7 @@ export default function ClienteFormModule({ clienteId = null }) {
           direccion: cliente?.direccion || '',
           es_referido: parseBoolean(cliente?.es_referido),
           referido_por: cliente?.referido_por || '',
-          porcentaje_referido: String(cliente?.porcentaje_referido ?? '0'),
+          monto_referido: String(cliente?.monto_referido ?? '0'),
           nombre_contacto: cliente?.nombre_contacto || '',
           apellido_contacto: cliente?.apellido_contacto || '',
           telefono_contacto: cliente?.telefono_contacto || '',
@@ -161,7 +161,7 @@ export default function ClienteFormModule({ clienteId = null }) {
         ...previous,
         es_referido: isReferido,
         referido_por: isReferido ? previous.referido_por : '',
-        porcentaje_referido: isReferido ? previous.porcentaje_referido : '0'
+        monto_referido: isReferido ? previous.monto_referido : '0'
       }))
 
       return
@@ -176,10 +176,10 @@ export default function ClienteFormModule({ clienteId = null }) {
     setError('')
 
     try {
-      const porcentaje = Number(String(form.porcentaje_referido || '0').replace(',', '.'))
+      const montoReferido = Number(String(form.monto_referido || '0').replace(',', '.'))
 
-      if (!Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 100) {
-        throw new Error('El porcentaje de referido debe estar entre 0 y 100.')
+      if (!Number.isFinite(montoReferido) || montoReferido < 0) {
+        throw new Error('El monto referido debe ser un valor mayor o igual a 0.')
       }
 
       const referidoPorCliente = clientesActivos.find(item => {
@@ -197,7 +197,7 @@ export default function ClienteFormModule({ clienteId = null }) {
         ...form,
         es_referido: Boolean(form.es_referido),
         referido_por: form.es_referido ? referidoPorNombre : '',
-        porcentaje_referido: form.es_referido ? Number(porcentaje.toFixed(2)) : 0
+        monto_referido: form.es_referido ? Number(montoReferido.toFixed(2)) : 0
       }
 
       if (clienteId) {
@@ -371,12 +371,13 @@ export default function ClienteFormModule({ clienteId = null }) {
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
-                      label='Porcentaje referido (%)'
-                      name='porcentaje_referido'
+                      label='Monto referido (USD)'
+                      name='monto_referido'
                       type='number'
-                      value={form.porcentaje_referido}
+                      value={form.monto_referido}
                       onChange={handleChange}
-                      inputProps={{ min: 0, max: 100, step: '0.01' }}
+                      inputProps={{ min: 0, step: '0.01' }}
+                      placeholder='0.00'
                       fullWidth
                       disabled={!form.es_referido}
                     />
