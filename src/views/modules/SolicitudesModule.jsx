@@ -536,7 +536,8 @@ export default function SolicitudesModule() {
           emailCliente,
           item?.estado,
           item?.modelo_calificacion,
-          item?.monto_solicitado
+          item?.monto_solicitado,
+          item?.modalidad
         ]
           .map(normalizeText)
           .join(' ')
@@ -576,11 +577,12 @@ export default function SolicitudesModule() {
     : []
 
   const handleExportCsv = () => {
-    const headers = ['Cliente', 'Monto', 'PlazoSemanas', 'TasaVariablePct', 'Estado']
+    const headers = ['Cliente', 'Monto', 'Modalidad', 'PlazoSemanas', 'TasaVariablePct', 'Estado']
 
     const lines = tableRows.map(item => [
       getClienteNombre(item) || '',
       item?.monto_solicitado || '',
+      item?.modalidad || '',
       item?.plazo_semanas || '',
       item?.tasa_variable || '',
       item?.estado || ''
@@ -817,6 +819,7 @@ export default function SolicitudesModule() {
                     </TableCell>
                     <TableCell>Cliente</TableCell>
                     <TableCell>Monto</TableCell>
+                    <TableCell>Modalidad</TableCell>
                     <TableCell>Plazo (semanas)</TableCell>
                     <TableCell>Tasa variable (%)</TableCell>
                     <TableCell>Estado</TableCell>
@@ -836,6 +839,7 @@ export default function SolicitudesModule() {
                         </TableCell>
                         <TableCell>{cliente || '-'}</TableCell>
                         <TableCell>{formatUSD(row.monto_solicitado)}</TableCell>
+                        <TableCell>{row.modalidad || '-'}</TableCell>
                         <TableCell>{row.plazo_semanas ?? '-'}</TableCell>
                         <TableCell>{row.tasa_variable ?? '-'}</TableCell>
                         <TableCell>
@@ -902,7 +906,7 @@ export default function SolicitudesModule() {
                   })}
                   {tableRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} align='center'>
+                      <TableCell colSpan={8} align='center'>
                         Sin resultados
                       </TableCell>
                     </TableRow>
