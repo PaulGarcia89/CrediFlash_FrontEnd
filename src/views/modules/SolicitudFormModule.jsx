@@ -344,15 +344,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     setActiveStep(previous => Math.max(previous - 1, 0))
   }
 
-  const handleSubmit = async event => {
-    event.preventDefault()
-
-    // Evita validaciones finales si se dispara submit antes del último paso.
-    if (activeStep < flowSteps.length - 1) {
-      handleNextStep()
-
-      return
-    }
+  const handleSubmit = async () => {
+    if (activeStep < flowSteps.length - 1) return
 
     setSaving(true)
     setError('')
@@ -445,7 +438,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
   return (
     <>
-      <Stack spacing={3} component='form' onSubmit={handleSubmit}>
+      <Stack spacing={3}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           justifyContent='space-between'
@@ -477,7 +470,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
               Guardar borrador
             </Button>
             {activeStep === flowSteps.length - 1 ? (
-              <Button variant='contained' type='submit' disabled={saving || loading}>
+              <Button variant='contained' type='button' onClick={handleSubmit} disabled={saving || loading}>
                 {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
               </Button>
             ) : (
@@ -741,7 +734,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                       Anterior
                     </Button>
                     {activeStep === flowSteps.length - 1 ? (
-                      <Button variant='contained' type='submit' disabled={saving || loading} fullWidth>
+                      <Button variant='contained' type='button' onClick={handleSubmit} disabled={saving || loading} fullWidth>
                         {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
                       </Button>
                     ) : (
