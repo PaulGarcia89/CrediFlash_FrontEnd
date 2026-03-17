@@ -18,7 +18,14 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
-import { actualizarCliente, crearCliente, listarClientes, obtenerCliente } from '@/api/clientes'
+import {
+  actualizarCliente,
+  crearCliente,
+  enviarCodigoVerificacionEmailCliente,
+  listarClientes,
+  obtenerCliente,
+  verificarCodigoEmailCliente
+} from '@/api/clientes'
 
 const initialForm = {
   nombre: '',
@@ -64,6 +71,7 @@ const isSameCliente = (left, right) => {
 
   return normalizeText(getClienteLabel(left)) === normalizeText(getClienteLabel(right))
 }
+const isValidEmailFormat = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())
 
 export default function ClienteFormModule({ clienteId = null }) {
   const router = useRouter()
@@ -74,6 +82,13 @@ export default function ClienteFormModule({ clienteId = null }) {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(Boolean(clienteId))
   const [error, setError] = useState('')
+  const [emailVerificationCode, setEmailVerificationCode] = useState('')
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false)
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [verifiedEmail, setVerifiedEmail] = useState('')
+  const [emailVerificationLoading, setEmailVerificationLoading] = useState(false)
+  const [emailCodeValidationLoading, setEmailCodeValidationLoading] = useState(false)
+  const [emailVerificationMessage, setEmailVerificationMessage] = useState('')
 
   useEffect(() => {
     const loadClientesActivos = async () => {
@@ -151,6 +166,16 @@ export default function ClienteFormModule({ clienteId = null }) {
     fetchCliente()
   }, [clienteId])
 
+  useEffect(() => {
+    if (clienteId) return
+
+    setEmailVerified(false)
+    setVerifiedEmail('')
+    setEmailVerificationSent(false)
+    setEmailVerificationCode('')
+    setEmailVerificationMessage('')
+  }, [form.email, clienteId])
+
   const handleChange = event => {
     const { name, value } = event.target
 
@@ -176,6 +201,22 @@ export default function ClienteFormModule({ clienteId = null }) {
     setError('')
 
     try {
+      const email = String(form.email || '').trim().toLowerCase()
+
+      if (!clienteId) {
+        if (!email) {
+          throw new Error('Debes ingresar un correo para registrar y verificar el cliente.')
+        }
+
+        if (!isValidEmailFormat(email)) {
+          throw new Error('Ingresa un correo con formato válido.')
+        }
+
+        if (!emailVerified || verifiedEmail !== email) {
+          throw new Error('Debes verificar el correo con código antes de publicar el cliente.')
+        }
+      }
+
       const montoReferido = Number(String(form.monto_referido || '0').replace(',', '.'))
 
       if (!Number.isFinite(montoReferido) || montoReferido < 0) {
@@ -195,6 +236,7 @@ export default function ClienteFormModule({ clienteId = null }) {
 
       const payload = {
         ...form,
+        email,
         es_referido: Boolean(form.es_referido),
         referido_por: form.es_referido ? referidoPorNombre : '',
         monto_referido: form.es_referido ? Number(montoReferido.toFixed(2)) : 0
@@ -211,6 +253,76 @@ export default function ClienteFormModule({ clienteId = null }) {
       setError(err.message || 'No se pudo guardar el cliente.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleSendVerificationCode = async () => {
+    if (clienteId) return
+
+    const email = String(form.email || '').trim().toLowerCase()
+
+    setError('')
+    setEmailVerificationMessage('')
+
+    if (!email) {
+      setError('Ingresa un correo para enviar código de verificación.')
+
+      return
+    }
+
+    if (!isValidEmailFormat(email)) {
+      setError('Ingresa un correo con formato válido.')
+
+      return
+    }
+
+    setEmailVerificationLoading(true)
+
+    try {
+      await enviarCodigoVerificacionEmailCliente(email)
+      setEmailVerificationSent(true)
+      setEmailVerificationMessage('Código de verificación enviado al correo.')
+    } catch (err) {
+      setError(err.message || 'No se pudo enviar el código de verificación.')
+    } finally {
+      setEmailVerificationLoading(false)
+    }
+  }
+
+  const handleVerifyCode = async () => {
+    if (clienteId) return
+
+    const email = String(form.email || '').trim().toLowerCase()
+    const codigo = String(emailVerificationCode || '').trim()
+
+    setError('')
+    setEmailVerificationMessage('')
+
+    if (!email || !isValidEmailFormat(email)) {
+      setError('Debes ingresar un correo válido antes de verificar.')
+
+      return
+    }
+
+    if (!codigo) {
+      setError('Ingresa el código de verificación recibido por correo.')
+
+      return
+    }
+
+    setEmailCodeValidationLoading(true)
+
+    try {
+      await verificarCodigoEmailCliente(email, codigo)
+      setEmailVerified(true)
+      setVerifiedEmail(email)
+      setEmailVerificationMessage('Correo verificado correctamente.')
+    } catch (err) {
+      setEmailVerified(false)
+      setVerifiedEmail('')
+      setError(err.message || 'No se pudo verificar el código.')
+    } finally {
+      setEmailCodeValidationLoading(false)
     }
   }
 
@@ -304,8 +416,47 @@ export default function ClienteFormModule({ clienteId = null }) {
                       onChange={handleChange}
                       placeholder='cliente@correo.com'
                       fullWidth
+                      required={!clienteId}
                     />
                   </Grid>
+                  {!clienteId ? (
+                    <Grid size={{ xs: 12 }}>
+                      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
+                        <Button
+                          type='button'
+                          variant='tonal'
+                          color='info'
+                          onClick={handleSendVerificationCode}
+                          disabled={emailVerificationLoading || emailCodeValidationLoading || !form.email}
+                        >
+                          {emailVerificationLoading ? 'Enviando código...' : 'Enviar código de verificación'}
+                        </Button>
+                        <TextField
+                          size='small'
+                          label='Código de verificación'
+                          value={emailVerificationCode}
+                          onChange={event => setEmailVerificationCode(event.target.value)}
+                          placeholder='Ingresa el código'
+                          sx={{ minWidth: { xs: '100%', md: 240 } }}
+                        />
+                        <Button
+                          type='button'
+                          variant='contained'
+                          color='success'
+                          onClick={handleVerifyCode}
+                          disabled={!emailVerificationSent || emailCodeValidationLoading || !emailVerificationCode}
+                        >
+                          {emailCodeValidationLoading ? 'Verificando...' : 'Verificar correo'}
+                        </Button>
+                        {emailVerified ? <Alert severity='success'>Correo verificado</Alert> : null}
+                      </Stack>
+                      {emailVerificationMessage ? (
+                        <Typography variant='caption' color='text.secondary' sx={{ mt: 1, display: 'block' }}>
+                          {emailVerificationMessage}
+                        </Typography>
+                      ) : null}
+                    </Grid>
+                  ) : null}
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
                       label='Dirección'

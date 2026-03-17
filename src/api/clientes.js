@@ -38,3 +38,15 @@ export const obtenerDocumentosCliente = clienteId =>
   apiRequest(`/clientes/${clienteId}/documentos`, {
     method: 'GET'
   })
+
+export const enviarCodigoVerificacionEmailCliente = email =>
+  apiRequest('/clientes/verificacion-email/enviar', {
+    method: 'POST',
+    body: { email }
+  })
+
+export const verificarCodigoEmailCliente = (email, codigo) =>
+  apiRequest('/clientes/verificacion-email/verificar', {
+    method: 'POST',
+    body: { email, codigo }
+  })
