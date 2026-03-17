@@ -41,6 +41,7 @@ import {
   listarSolicitudes,
   rechazarSolicitud
 } from '@/api/solicitudes'
+import usePermissions from '@/hooks/usePermissions'
 import { formatUSD } from '@/utils/currency'
 
 const LABEL_MAP = {
@@ -303,6 +304,7 @@ const initialModeloForm = {
 }
 
 export default function SolicitudesModule() {
+  const { can, canAny } = usePermissions()
   const router = useRouter()
   const searchParams = useSearchParams()
   const focusSolicitudId = searchParams.get('focusSolicitudId') || ''
@@ -334,6 +336,12 @@ export default function SolicitudesModule() {
   const [solicitudAprobacion, setSolicitudAprobacion] = useState(null)
   const [contratoAprobacionFile, setContratoAprobacionFile] = useState(null)
   const [aprobacionDialogError, setAprobacionDialogError] = useState('')
+  const canViewSolicitudes = can('solicitudes.view')
+  const canCreateSolicitud = can('solicitudes.create')
+  const canApproveSolicitud = can('solicitudes.approve')
+  const canRejectSolicitud = can('solicitudes.reject')
+  const canRunRatings = can('ratings.run')
+  const canEditSolicitud = canAny(['solicitudes.edit', 'solicitudes.create'])
 
   const loadSolicitudes = useCallback(async () => {
     setLoading(true)
@@ -673,6 +681,10 @@ export default function SolicitudesModule() {
     URL.revokeObjectURL(url)
   }
 
+  if (!canViewSolicitudes) {
+    return <Alert severity='warning'>No tienes permisos para ver el listado de solicitudes.</Alert>
+  }
+
   return (
     <Stack spacing={2}>
       <Card>
@@ -829,9 +841,11 @@ export default function SolicitudesModule() {
                 <Button variant='tonal' color='secondary' onClick={handleExportCsv}>
                   Exportar
                 </Button>
-                <Button variant='contained' component={Link} href='/solicitudes/nueva'>
-                  + Ingresar solicitud
-                </Button>
+                {canCreateSolicitud ? (
+                  <Button variant='contained' component={Link} href='/solicitudes/nueva'>
+                    + Ingresar solicitud
+                  </Button>
+                ) : null}
               </Stack>
               <Stack direction='row' spacing={1.5}>
                 <TextField
@@ -933,53 +947,66 @@ export default function SolicitudesModule() {
                         </TableCell>
                         <TableCell>
                           <Stack direction='row' spacing={0.25} flexWrap='wrap'>
-                            <Tooltip title='Editar'>
-                              <span>
-                                <IconButton
-                                  size='small'
-                                  disabled={!isPendiente || isBusy}
-                                  onClick={() => router.push(`/solicitudes/${row.id}/editar`)}
-                                >
-                                  <i className='tabler-edit text-3xl' />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                            <Tooltip title='Ejecutar modelo'>
-                              <span>
-                                <IconButton
-                                  size='small'
-                                  color='warning'
-                                  disabled={!isPendiente || isBusy}
-                                  onClick={() => openModeloDialog(row)}
-                                >
-                                  <i className='tabler-player-play text-3xl' />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                            <Tooltip title='Aprobar'>
-                              <span>
-                                <IconButton
-                                  size='small'
-                                  color='success'
-                                  disabled={!isPendiente || isBusy}
-                                  onClick={() => openAprobacionDialog(row)}
-                                >
-                                  <i className='tabler-check text-3xl' />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                            <Tooltip title='Rechazar'>
-                              <span>
-                                <IconButton
-                                  size='small'
-                                  color='error'
-                                  disabled={!isPendiente || isBusy}
-                                  onClick={() => runRechazo(row)}
-                                >
-                                  <i className='tabler-x text-3xl' />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
+                            {canEditSolicitud ? (
+                              <Tooltip title='Editar'>
+                                <span>
+                                  <IconButton
+                                    size='small'
+                                    disabled={!isPendiente || isBusy}
+                                    onClick={() => router.push(`/solicitudes/${row.id}/editar`)}
+                                  >
+                                    <i className='tabler-edit text-3xl' />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            ) : null}
+                            {canRunRatings ? (
+                              <Tooltip title='Ejecutar modelo'>
+                                <span>
+                                  <IconButton
+                                    size='small'
+                                    color='warning'
+                                    disabled={!isPendiente || isBusy}
+                                    onClick={() => openModeloDialog(row)}
+                                  >
+                                    <i className='tabler-player-play text-3xl' />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            ) : null}
+                            {canApproveSolicitud ? (
+                              <Tooltip title='Aprobar'>
+                                <span>
+                                  <IconButton
+                                    size='small'
+                                    color='success'
+                                    disabled={!isPendiente || isBusy}
+                                    onClick={() => openAprobacionDialog(row)}
+                                  >
+                                    <i className='tabler-check text-3xl' />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            ) : null}
+                            {canRejectSolicitud ? (
+                              <Tooltip title='Rechazar'>
+                                <span>
+                                  <IconButton
+                                    size='small'
+                                    color='error'
+                                    disabled={!isPendiente || isBusy}
+                                    onClick={() => runRechazo(row)}
+                                  >
+                                    <i className='tabler-x text-3xl' />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            ) : null}
+                            {!canEditSolicitud && !canRunRatings && !canApproveSolicitud && !canRejectSolicitud ? (
+                              <Typography variant='body2' color='text.secondary'>
+                                Sin acciones
+                              </Typography>
+                            ) : null}
                           </Stack>
                         </TableCell>
                       </TableRow>

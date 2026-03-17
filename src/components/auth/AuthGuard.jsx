@@ -7,7 +7,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 
-import { getToken } from '@/lib/auth/session'
+import { obtenerPerfilAnalista } from '@/api/auth'
+import { getToken, setSession } from '@/lib/auth/session'
 
 export default function AuthGuard({ children }) {
   const router = useRouter()
@@ -15,6 +16,7 @@ export default function AuthGuard({ children }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     const token = getToken()
 
     if (!token) {
@@ -25,7 +27,26 @@ export default function AuthGuard({ children }) {
       return
     }
 
-    setReady(true)
+    const hydrateSession = async () => {
+      try {
+        const response = await obtenerPerfilAnalista()
+        const analista = response?.data?.analista || response?.data?.user || response?.data || response?.analista || null
+
+        if (analista && !cancelled) {
+          setSession({ token, analista })
+        }
+      } catch {
+        // Si falla perfil, mantenemos sesión con token local.
+      } finally {
+        if (!cancelled) setReady(true)
+      }
+    }
+
+    hydrateSession()
+
+    return () => {
+      cancelled = true
+    }
   }, [pathname, router])
 
   if (!ready) {

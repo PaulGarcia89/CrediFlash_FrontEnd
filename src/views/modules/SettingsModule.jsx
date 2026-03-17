@@ -35,6 +35,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
 import { listarAnalistas, resetPasswordAnalista } from '@/api/auth'
+import usePermissions from '@/hooks/usePermissions'
 import {
   asignarRolAnalista,
   actualizarRol,
@@ -46,7 +47,6 @@ import {
   obtenerPermisosRol,
   seedRolesPermisos
 } from '@/api/roles'
-import { getAnalista } from '@/lib/auth/session'
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -138,13 +138,8 @@ const extractPermisosSeleccionados = payload => {
   return []
 }
 
-const isAdmin = analista => {
-  const role = String(analista?.rol || analista?.role || '').toUpperCase()
-
-  return role.includes('ADMIN')
-}
-
 export default function SettingsModule() {
+  const { can, canAny } = usePermissions()
   const [ready, setReady] = useState(false)
   const [tab, setTab] = useState('roles')
   const [roles, setRoles] = useState([])
@@ -184,10 +179,36 @@ export default function SettingsModule() {
     setReady(true)
   }, [])
 
-  const currentAnalista = useMemo(() => (ready ? getAnalista() : null), [ready])
-  const allowSettings = useMemo(() => isAdmin(currentAnalista), [currentAnalista])
+  const canViewRoles = can('roles.view')
+  const canManageRoles = can('roles.manage')
+  const canViewAnalistas = can('analistas.view')
+  const canManageAnalistas = can('analistas.manage')
+  const allowSettings = useMemo(() => canAny(['roles.view', 'analistas.view']), [canAny])
+  const activeTab = useMemo(() => {
+    if (tab === 'roles' && !canViewRoles && canViewAnalistas) return 'analistas'
+    if (tab === 'analistas' && !canViewAnalistas && canViewRoles) return 'roles'
+
+    return tab
+  }, [canViewAnalistas, canViewRoles, tab])
+
+  useEffect(() => {
+    if (!allowSettings) return
+    if (canViewRoles && tab !== 'roles' && tab !== 'analistas') {
+      setTab('roles')
+    }
+    if (!canViewRoles && canViewAnalistas && tab !== 'analistas') {
+      setTab('analistas')
+    }
+  }, [allowSettings, canViewAnalistas, canViewRoles, tab])
 
   const loadRoles = useCallback(async () => {
+    if (!canViewRoles && !canManageAnalistas) {
+      setRoles([])
+      setRolesLoading(false)
+
+      return
+    }
+
     setRolesLoading(true)
 
     try {
@@ -199,9 +220,15 @@ export default function SettingsModule() {
     } finally {
       setRolesLoading(false)
     }
-  }, [])
+  }, [canManageAnalistas, canViewRoles])
 
   const loadCatalogo = useCallback(async () => {
+    if (!canViewRoles) {
+      setCatalogo([])
+
+      return
+    }
+
     try {
       const response = await obtenerCatalogoPermisos()
       const raw = response?.data || response
@@ -210,9 +237,16 @@ export default function SettingsModule() {
     } catch (err) {
       setError(err.message || 'No se pudo cargar catálogo de permisos.')
     }
-  }, [])
+  }, [canViewRoles])
 
   const loadAnalistas = useCallback(async () => {
+    if (!canViewAnalistas) {
+      setAnalistas([])
+      setAnalistasLoading(false)
+
+      return
+    }
+
     setAnalistasLoading(true)
 
     try {
@@ -225,20 +259,25 @@ export default function SettingsModule() {
     } finally {
       setAnalistasLoading(false)
     }
-  }, [pageAnalistas, searchAnalista])
+  }, [canViewAnalistas, pageAnalistas, searchAnalista])
 
   useEffect(() => {
     if (!allowSettings) return
 
-    loadRoles()
-    loadCatalogo()
-  }, [allowSettings, loadCatalogo, loadRoles])
+    if (canViewRoles || canManageAnalistas) {
+      loadRoles()
+    }
+
+    if (canViewRoles) {
+      loadCatalogo()
+    }
+  }, [allowSettings, canManageAnalistas, canViewRoles, loadCatalogo, loadRoles])
 
   useEffect(() => {
-    if (!allowSettings || tab !== 'analistas') return
+    if (!allowSettings || tab !== 'analistas' || !canViewAnalistas) return
 
     loadAnalistas()
-  }, [allowSettings, tab, loadAnalistas])
+  }, [allowSettings, tab, canViewAnalistas, loadAnalistas])
 
   const openRoleDrawer = async rol => {
     setError('')
@@ -292,6 +331,12 @@ export default function SettingsModule() {
   }
 
   const saveRoleMeta = async () => {
+    if (!canManageRoles) {
+      setError('No tienes permisos para gestionar roles.')
+
+      return
+    }
+
     if (!rolForm.nombre.trim()) {
       setError('El nombre del rol es obligatorio.')
 
@@ -326,6 +371,12 @@ export default function SettingsModule() {
   }
 
   const saveRolePermisos = async () => {
+    if (!canManageRoles) {
+      setError('No tienes permisos para gestionar permisos de roles.')
+
+      return
+    }
+
     if (!selectedRol?.id) {
       setError('Selecciona un rol para guardar permisos.')
 
@@ -347,6 +398,12 @@ export default function SettingsModule() {
   }
 
   const handleSeedRoles = async () => {
+    if (!canManageRoles) {
+      setError('No tienes permisos para inicializar catálogo de roles.')
+
+      return
+    }
+
     setError('')
     setSuccess('')
 
@@ -361,6 +418,12 @@ export default function SettingsModule() {
   }
 
   const assignRolToAnalista = async (analistaId, rolId) => {
+    if (!canManageAnalistas) {
+      setError('No tienes permisos para asignar roles a analistas.')
+
+      return
+    }
+
     if (!rolId) {
       setError('Debes seleccionar un rol válido para el analista.')
       setSuccess('')
@@ -407,6 +470,12 @@ export default function SettingsModule() {
   }
 
   const openResetPasswordDialog = (analistaId, analistaNombre) => {
+    if (!canManageAnalistas) {
+      setError('No tienes permisos para resetear contraseñas.')
+
+      return
+    }
+
     setError('')
     setSuccess('')
     setResetPasswordValue('')
@@ -499,7 +568,7 @@ export default function SettingsModule() {
   }
 
   if (!allowSettings) {
-    return <Alert severity='warning'>Solo el usuario administrador tiene acceso a esta configuración.</Alert>
+    return <Alert severity='warning'>No tienes permisos para acceder a Configuración.</Alert>
   }
 
   return (
@@ -516,34 +585,36 @@ export default function SettingsModule() {
 
       <Card>
         <CardContent>
-          <Tabs value={tab} onChange={(_, value) => setTab(value)}>
-            <Tab value='roles' label='Roles y permisos' />
-            <Tab value='analistas' label='Acceso por analista' />
+          <Tabs value={activeTab} onChange={(_, value) => setTab(value)}>
+            {canViewRoles ? <Tab value='roles' label='Roles y permisos' /> : null}
+            {canViewAnalistas ? <Tab value='analistas' label='Acceso por analista' /> : null}
           </Tabs>
         </CardContent>
       </Card>
 
-      {tab === 'roles' ? (
+      {activeTab === 'roles' && canViewRoles ? (
         <Card>
           <CardContent>
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent='space-between' spacing={1.5} mb={2}>
               <Typography variant='h5'>Roles</Typography>
-              <Stack direction='row' spacing={1.5}>
-                <Button variant='tonal' color='secondary' onClick={handleSeedRoles}>
-                  Inicializar catálogo base
-                </Button>
-                <Button
-                  variant='contained'
-                  onClick={() => {
-                    setSelectedRol(null)
-                    setSelectedPermisos(new Set())
-                    setRolForm({ nombre: '', prioridad: 1, descripcion: '', estado: 'ACTIVO' })
-                    setDrawerOpen(true)
-                  }}
-                >
-                  + Crear rol
-                </Button>
-              </Stack>
+              {canManageRoles ? (
+                <Stack direction='row' spacing={1.5}>
+                  <Button variant='tonal' color='secondary' onClick={handleSeedRoles}>
+                    Inicializar catálogo base
+                  </Button>
+                  <Button
+                    variant='contained'
+                    onClick={() => {
+                      setSelectedRol(null)
+                      setSelectedPermisos(new Set())
+                      setRolForm({ nombre: '', prioridad: 1, descripcion: '', estado: 'ACTIVO' })
+                      setDrawerOpen(true)
+                    }}
+                  >
+                    + Crear rol
+                  </Button>
+                </Stack>
+              ) : null}
             </Stack>
 
             {rolesLoading ? (
@@ -561,7 +632,16 @@ export default function SettingsModule() {
                 </TableHead>
                 <TableBody>
                   {roles.map(rol => (
-                    <TableRow key={rol.id} hover onClick={() => openRoleDrawer(rol)} sx={{ cursor: 'pointer' }}>
+                    <TableRow
+                      key={rol.id}
+                      hover
+                      onClick={() => {
+                        if (!canManageRoles) return
+
+                        openRoleDrawer(rol)
+                      }}
+                      sx={{ cursor: canManageRoles ? 'pointer' : 'default' }}
+                    >
                       <TableCell>{rol.nombre || rol.name || '-'}</TableCell>
                       <TableCell>{rol.prioridad || rol.priority || '-'}</TableCell>
                       <TableCell>
@@ -588,7 +668,7 @@ export default function SettingsModule() {
         </Card>
       ) : null}
 
-      {tab === 'analistas' ? (
+      {activeTab === 'analistas' && canViewAnalistas ? (
         <Card>
           <CardContent>
             <Stack spacing={2}>
@@ -628,20 +708,24 @@ export default function SettingsModule() {
                         <TableCell>{item.email || '-'}</TableCell>
                         <TableCell>{item.rol || item.rol_acceso || '-'}</TableCell>
                         <TableCell>
-                          <TextField
-                            select
-                            size='small'
-                            defaultValue={item.rol_id || ''}
-                            sx={{ minWidth: 220 }}
-                            onChange={event => assignRolToAnalista(item.id, event.target.value)}
-                          >
-                            <MenuItem value=''>Sin rol</MenuItem>
-                            {roles.map(rol => (
-                              <MenuItem key={rol.id} value={rol.id}>
-                                {rol.nombre || rol.name}
-                              </MenuItem>
-                            ))}
-                          </TextField>
+                          {canManageAnalistas ? (
+                            <TextField
+                              select
+                              size='small'
+                              defaultValue={item.rol_id || ''}
+                              sx={{ minWidth: 220 }}
+                              onChange={event => assignRolToAnalista(item.id, event.target.value)}
+                            >
+                              <MenuItem value=''>Sin rol</MenuItem>
+                              {roles.map(rol => (
+                                <MenuItem key={rol.id} value={rol.id}>
+                                  {rol.nombre || rol.name}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          ) : (
+                            <Typography color='text.secondary'>{item.rol || item.rol_acceso || 'Sin rol'}</Typography>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Button size='small' variant='tonal' onClick={() => showPermisosEfectivos(item.id, analistaNombre)}>
@@ -649,14 +733,18 @@ export default function SettingsModule() {
                           </Button>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size='small'
-                            variant='tonal'
-                            color='warning'
-                            onClick={() => openResetPasswordDialog(item.id, analistaNombre)}
-                          >
-                            Resetear contraseña
-                          </Button>
+                          {canManageAnalistas ? (
+                            <Button
+                              size='small'
+                              variant='tonal'
+                              color='warning'
+                              onClick={() => openResetPasswordDialog(item.id, analistaNombre)}
+                            >
+                              Resetear contraseña
+                            </Button>
+                          ) : (
+                            <Typography color='text.secondary'>Sin permisos</Typography>
+                          )}
                         </TableCell>
                       </TableRow>
                     )})}
@@ -686,7 +774,7 @@ export default function SettingsModule() {
         </Card>
       ) : null}
 
-      <Drawer anchor='right' open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+      <Drawer anchor='right' open={drawerOpen && canManageRoles} onClose={() => setDrawerOpen(false)}>
         <Box sx={{ width: { xs: '100vw', sm: 760 }, p: 3 }}>
           <Stack spacing={2}>
             <Typography variant='h5'>{selectedRol?.id ? 'Editar rol' : 'Crear rol'}</Typography>
@@ -738,17 +826,19 @@ export default function SettingsModule() {
             <Typography variant='h6'>Permisos por categoría</Typography>
             <Stack spacing={1.5}>{catalogo.map(node => renderPermissionTree(node))}</Stack>
 
-            <Stack direction='row' spacing={1.5} justifyContent='flex-end' pt={1.5}>
-              <Button variant='text' onClick={() => setDrawerOpen(false)}>
-                Cancelar
-              </Button>
-              <Button variant='tonal' color='secondary' onClick={saveRoleMeta}>
-                Guardar rol
-              </Button>
-              <Button variant='contained' onClick={saveRolePermisos}>
-                Guardar permisos
-              </Button>
-            </Stack>
+            {canManageRoles ? (
+              <Stack direction='row' spacing={1.5} justifyContent='flex-end' pt={1.5}>
+                <Button variant='text' onClick={() => setDrawerOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button variant='tonal' color='secondary' onClick={saveRoleMeta}>
+                  Guardar rol
+                </Button>
+                <Button variant='contained' onClick={saveRolePermisos}>
+                  Guardar permisos
+                </Button>
+              </Stack>
+            ) : null}
           </Stack>
         </Box>
       </Drawer>

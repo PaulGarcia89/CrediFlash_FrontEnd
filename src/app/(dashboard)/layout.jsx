@@ -15,6 +15,7 @@ import VerticalFooter from '@components/layout/vertical/Footer'
 import HorizontalFooter from '@components/layout/horizontal/Footer'
 import ScrollToTop from '@core/components/scroll-to-top'
 import AuthGuard from '@components/auth/AuthGuard'
+import PermissionSnackbar from '@components/auth/PermissionSnackbar'
 
 // Util Imports
 import { getMode, getSystemMode } from '@core/utils/serverHelpers'
@@ -48,6 +49,7 @@ const Layout = async props => {
           <i className='tabler-arrow-up' />
         </Button>
       </ScrollToTop>
+      <PermissionSnackbar />
     </Providers>
   )
 }

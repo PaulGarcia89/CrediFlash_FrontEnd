@@ -24,6 +24,7 @@ import Typography from '@mui/material/Typography'
 
 import { obtenerCliente, obtenerDocumentosCliente, verHistorialPrestamosCliente } from '@/api/clientes'
 import { eliminarDocumento } from '@/api/solicitudes'
+import usePermissions from '@/hooks/usePermissions'
 import { getToken } from '@/lib/auth/session'
 import { formatUSD } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
@@ -134,6 +135,7 @@ const buildCandidateUrls = value => {
 
 export default function ClienteDashboardModule({ clienteId }) {
   const router = useRouter()
+  const { can } = usePermissions()
   const [tab, setTab] = useState('dashboard')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -147,6 +149,8 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [previewTitle, setPreviewTitle] = useState('')
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
   const lastPreviewTriggerRef = useRef(null)
+  const canViewDocumentos = can('documentos.view')
+  const canDeleteDocumentos = can('documentos.delete')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -156,7 +160,7 @@ export default function ClienteDashboardModule({ clienteId }) {
       const [clienteResponse, prestamosResponse, documentosResponse] = await Promise.allSettled([
         obtenerCliente(clienteId),
         verHistorialPrestamosCliente(clienteId, { page: 1, limit: 100 }),
-        obtenerDocumentosCliente(clienteId)
+        canViewDocumentos ? obtenerDocumentosCliente(clienteId) : Promise.resolve([])
       ])
 
       if (clienteResponse.status === 'fulfilled') {
@@ -179,7 +183,7 @@ export default function ClienteDashboardModule({ clienteId }) {
     } finally {
       setLoading(false)
     }
-  }, [clienteId])
+  }, [canViewDocumentos, clienteId])
 
   useEffect(() => {
     loadData()
@@ -646,6 +650,11 @@ export default function ClienteDashboardModule({ clienteId }) {
               <Typography variant='h5' sx={{ mb: 1.5 }}>
                 Documentos subidos
               </Typography>
+              {!canViewDocumentos ? (
+                <Alert severity='warning' sx={{ mb: 2 }}>
+                  No tienes permisos para visualizar documentos.
+                </Alert>
+              ) : null}
               {documentActionError ? (
                 <Alert severity='error' sx={{ mb: 2 }}>
                   {documentActionError}
@@ -667,21 +676,32 @@ export default function ClienteDashboardModule({ clienteId }) {
                     </Typography>
                   </Box>
                   <Stack direction='row' spacing={1}>
-                    <Button size='small' variant='tonal' color='primary' onClick={event => handleOpenDocument(item, event.currentTarget)}>
-                      Visualizar
-                    </Button>
-                    <Button size='small' variant='tonal' color='info' onClick={() => handleDownloadDocument(item)}>
-                      Descargar
-                    </Button>
-                    <Button
-                      size='small'
-                      variant='tonal'
-                      color='error'
-                      onClick={() => handleDeleteDocument(item)}
-                      disabled={Boolean(item?.id) && documentActionLoading === String(item.id)}
-                    >
-                      Eliminar
-                    </Button>
+                    {canViewDocumentos ? (
+                      <Button
+                        size='small'
+                        variant='tonal'
+                        color='primary'
+                        onClick={event => handleOpenDocument(item, event.currentTarget)}
+                      >
+                        Visualizar
+                      </Button>
+                    ) : null}
+                    {canViewDocumentos ? (
+                      <Button size='small' variant='tonal' color='info' onClick={() => handleDownloadDocument(item)}>
+                        Descargar
+                      </Button>
+                    ) : null}
+                    {canDeleteDocumentos ? (
+                      <Button
+                        size='small'
+                        variant='tonal'
+                        color='error'
+                        onClick={() => handleDeleteDocument(item)}
+                        disabled={Boolean(item?.id) && documentActionLoading === String(item.id)}
+                      >
+                        Eliminar
+                      </Button>
+                    ) : null}
                   </Stack>
                 </Stack>
               ))}

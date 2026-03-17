@@ -22,6 +22,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
 import { obtenerAnalyticsDashboard } from '@/api/analytics'
+import usePermissions from '@/hooks/usePermissions'
 import CustomAvatar from '@core/components/mui/Avatar'
 import { formatUSD } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
@@ -168,6 +169,7 @@ const CircleProgress = ({ value, color = 'var(--mui-palette-success-main)', labe
 }
 
 export default function AnalyticsModule() {
+  const { can } = usePermissions()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [analytics, setAnalytics] = useState(null)
@@ -237,6 +239,10 @@ export default function AnalyticsModule() {
 
     setFiltros(range)
     fetchAnalytics(range)
+  }
+
+  if (!can('analytics.view')) {
+    return <Alert severity='warning'>No tienes permisos para visualizar Analytics.</Alert>
   }
 
   return (

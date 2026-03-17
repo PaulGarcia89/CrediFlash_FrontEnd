@@ -31,6 +31,7 @@ import Typography from '@mui/material/Typography'
 
 import { verHistorialPrestamosCliente } from '@/api/clientes'
 import { enviarNotificacionCuotaEmail, generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
+import usePermissions from '@/hooks/usePermissions'
 import { obtenerDocumentoUrl } from '@/api/solicitudes'
 import { getToken } from '@/lib/auth/session'
 import { formatUSD } from '@/utils/currency'
@@ -183,6 +184,7 @@ const getContractDocumentId = row =>
   ).trim()
 
 export default function CuotasModule() {
+  const { can, canAny } = usePermissions()
   const [prestamos, setPrestamos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -212,6 +214,11 @@ export default function CuotasModule() {
   const [historialRows, setHistorialRows] = useState([])
   const [historialPage, setHistorialPage] = useState(1)
   const [historialPagination, setHistorialPagination] = useState({ page: 1, pages: 1, total: 0 })
+  const canViewCuotas = canAny(['cuotas.view', 'prestamos.view'])
+  const canRegistrarPago = can('prestamos.pay')
+  const canManageCuotas = can('cuotas.manage')
+  const canViewPrestamos = can('prestamos.view')
+  const canViewDocumentos = can('documentos.view')
 
   const montoEsperadoPago = useMemo(() => {
     const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
@@ -521,6 +528,10 @@ export default function CuotasModule() {
     URL.revokeObjectURL(url)
   }
 
+  if (!canViewCuotas) {
+    return <Alert severity='warning'>No tienes permisos para ver el registro de cuotas.</Alert>
+  }
+
   return (
     <>
       <Card>
@@ -732,8 +743,12 @@ export default function CuotasModule() {
                     <TableRow
                       key={row.id}
                       hover
-                      onDoubleClick={() => openDetalleDialog(row)}
-                      sx={{ cursor: 'pointer' }}
+                      onDoubleClick={() => {
+                        if (!canViewPrestamos) return
+
+                        openDetalleDialog(row)
+                      }}
+                      sx={{ cursor: canViewPrestamos ? 'pointer' : 'default' }}
                     >
                       <TableCell padding='checkbox'>
                         <Checkbox size='small' />
@@ -753,42 +768,57 @@ export default function CuotasModule() {
                       </TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.5} flexWrap='wrap'>
-                          <Tooltip title='Registrar pago'>
-                            <IconButton size='small' color='error' onClick={() => openPagoDialog(row)}>
-                              <i className='tabler-cash text-3xl' />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title='Historial'>
-                            <IconButton size='small' color='secondary' onClick={() => openHistorial(row)}>
-                              <i className='tabler-history text-3xl' />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title='Ver detalle'>
-                            <IconButton size='small' onClick={() => openDetalleDialog(row)}>
-                              <i className='tabler-eye text-3xl' />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title='Enviar notificación por correo'>
-                            <span>
-                              <IconButton
-                                size='small'
-                                color='info'
-                                onClick={() => enviarNotificacionEmail(row)}
-                                disabled={notifyingPrestamoId === String(row.id)}
-                              >
-                                {notifyingPrestamoId === String(row.id) ? (
-                                  <CircularProgress size={18} color='inherit' />
-                                ) : (
-                                  <i className='tabler-mail text-3xl' />
-                                )}
+                          {canRegistrarPago ? (
+                            <Tooltip title='Registrar pago'>
+                              <IconButton size='small' color='error' onClick={() => openPagoDialog(row)}>
+                                <i className='tabler-cash text-3xl' />
                               </IconButton>
-                            </span>
-                          </Tooltip>
-                          <Tooltip title='WhatsApp (próximamente)'>
-                            <IconButton size='small' color='success' onClick={() => {}}>
-                              <i className='tabler-brand-whatsapp-filled text-3xl' />
-                            </IconButton>
-                          </Tooltip>
+                            </Tooltip>
+                          ) : null}
+                          {canViewPrestamos ? (
+                            <Tooltip title='Historial'>
+                              <IconButton size='small' color='secondary' onClick={() => openHistorial(row)}>
+                                <i className='tabler-history text-3xl' />
+                              </IconButton>
+                            </Tooltip>
+                          ) : null}
+                          {canViewPrestamos ? (
+                            <Tooltip title='Ver detalle'>
+                              <IconButton size='small' onClick={() => openDetalleDialog(row)}>
+                                <i className='tabler-eye text-3xl' />
+                              </IconButton>
+                            </Tooltip>
+                          ) : null}
+                          {canManageCuotas ? (
+                            <Tooltip title='Enviar notificación por correo'>
+                              <span>
+                                <IconButton
+                                  size='small'
+                                  color='info'
+                                  onClick={() => enviarNotificacionEmail(row)}
+                                  disabled={notifyingPrestamoId === String(row.id)}
+                                >
+                                  {notifyingPrestamoId === String(row.id) ? (
+                                    <CircularProgress size={18} color='inherit' />
+                                  ) : (
+                                    <i className='tabler-mail text-3xl' />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          ) : null}
+                          {canViewPrestamos ? (
+                            <Tooltip title='WhatsApp (próximamente)'>
+                              <IconButton size='small' color='success' onClick={() => {}}>
+                                <i className='tabler-brand-whatsapp-filled text-3xl' />
+                              </IconButton>
+                            </Tooltip>
+                          ) : null}
+                          {!canRegistrarPago && !canViewPrestamos && !canManageCuotas ? (
+                            <Typography variant='body2' color='text.secondary'>
+                              Sin acciones
+                            </Typography>
+                          ) : null}
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -921,7 +951,7 @@ export default function CuotasModule() {
               variant='tonal'
               color='info'
               onClick={() => handleOpenContratoPdf(selectedPrestamo)}
-              disabled={!getContractOpenUrl(selectedPrestamo)}
+              disabled={!canViewDocumentos || !getContractOpenUrl(selectedPrestamo)}
               sx={{ alignSelf: 'flex-start', textTransform: 'none' }}
             >
               Visualizar contrato PDF
@@ -967,8 +997,12 @@ export default function CuotasModule() {
                     <TableRow
                       key={row.id}
                       hover
-                      onDoubleClick={() => openDetalleDialog(row)}
-                      sx={{ cursor: 'pointer' }}
+                      onDoubleClick={() => {
+                        if (!canViewPrestamos) return
+
+                        openDetalleDialog(row)
+                      }}
+                      sx={{ cursor: canViewPrestamos ? 'pointer' : 'default' }}
                     >
                       <TableCell>{formatCurrency(row.monto_solicitado)}</TableCell>
                       <TableCell>{row.interes ?? '-'}</TableCell>
@@ -979,11 +1013,13 @@ export default function CuotasModule() {
                       <TableCell>{row.status || '-'}</TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.5}>
-                          <Tooltip title='Ver detalle'>
-                            <IconButton size='small' onClick={() => openDetalleDialog(row)}>
-                              <i className='tabler-eye text-3xl' />
-                            </IconButton>
-                          </Tooltip>
+                          {canViewPrestamos ? (
+                            <Tooltip title='Ver detalle'>
+                              <IconButton size='small' onClick={() => openDetalleDialog(row)}>
+                                <i className='tabler-eye text-3xl' />
+                              </IconButton>
+                            </Tooltip>
+                          ) : null}
                         </Stack>
                       </TableCell>
                       <TableCell>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>

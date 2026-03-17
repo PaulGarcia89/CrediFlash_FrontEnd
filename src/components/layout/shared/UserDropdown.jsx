@@ -18,6 +18,7 @@ import Popper from '@mui/material/Popper'
 import Typography from '@mui/material/Typography'
 
 import { useSettings } from '@core/hooks/useSettings'
+import usePermissions from '@/hooks/usePermissions'
 
 import { clearSession, getAnalista } from '@/lib/auth/session'
 
@@ -37,12 +38,6 @@ const getInitials = analista => {
   return `${nombre.slice(0, 1)}${apellido.slice(0, 1)}`.toUpperCase() || 'AN'
 }
 
-const isAdmin = analista => {
-  const role = String(analista?.rol || analista?.role || '').toUpperCase()
-
-  return role.includes('ADMIN')
-}
-
 const UserDropdown = () => {
   const [open, setOpen] = useState(false)
   const [analista, setAnalista] = useState(null)
@@ -51,10 +46,22 @@ const UserDropdown = () => {
 
   const router = useRouter()
   const { settings } = useSettings()
-  const canOpenSettings = isAdmin(analista)
+  const { can } = usePermissions()
+  const canOpenSettings = can('roles.view')
 
   useEffect(() => {
-    setAnalista(getAnalista())
+    const syncAnalista = () => {
+      setAnalista(getAnalista())
+    }
+
+    syncAnalista()
+    window.addEventListener('storage', syncAnalista)
+    window.addEventListener('cf:session-updated', syncAnalista)
+
+    return () => {
+      window.removeEventListener('storage', syncAnalista)
+      window.removeEventListener('cf:session-updated', syncAnalista)
+    }
   }, [])
 
   const handleDropdownOpen = () => {

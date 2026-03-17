@@ -48,12 +48,23 @@ const buildUrl = (path, query) => {
 }
 
 const shouldForceLogin = (status, message = '') => {
-  if (status === 401 || status === 403) return true
+  if (status === 401) return true
 
   const normalized = String(message || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+
+  if (status === 403) {
+    return (
+      normalized.includes('token') &&
+      (normalized.includes('expir') ||
+        normalized.includes('caduc') ||
+        normalized.includes('inval') ||
+        normalized.includes('requer') ||
+        normalized.includes('autentic'))
+    )
+  }
 
   return (
     normalized.includes('token') &&
@@ -102,8 +113,9 @@ export const apiRequest = async (path, { method = 'GET', query, body, auth = tru
 
   if (!response.ok) {
     const backendMessage = payload?.message || payload?.error || ''
+    const forceLogin = shouldForceLogin(response.status, backendMessage)
 
-    if (shouldForceLogin(response.status, backendMessage)) {
+    if (forceLogin) {
       clearSession()
 
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
@@ -111,7 +123,19 @@ export const apiRequest = async (path, { method = 'GET', query, body, auth = tru
       }
     }
 
-    const message = backendMessage || `HTTP ${response.status}`
+    const message =
+      response.status === 403 && !forceLogin
+        ? backendMessage || 'No tienes permisos para realizar esta acción.'
+        : backendMessage || `HTTP ${response.status}`
+
+    if (response.status === 403 && typeof window !== 'undefined' && !forceLogin) {
+      window.dispatchEvent(
+        new CustomEvent('cf:forbidden', {
+          detail: { message: 'No tienes permisos para realizar esta acción.' }
+        })
+      )
+    }
+
     const error = new Error(message)
 
     error.status = response.status
