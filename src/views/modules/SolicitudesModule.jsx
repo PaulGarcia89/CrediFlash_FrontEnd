@@ -330,6 +330,10 @@ export default function SolicitudesModule() {
   const [modeloDialogError, setModeloDialogError] = useState('')
   const [modeloDialogInfo, setModeloDialogInfo] = useState('')
   const [resultadoModelo, setResultadoModelo] = useState(null)
+  const [aprobacionDialogOpen, setAprobacionDialogOpen] = useState(false)
+  const [solicitudAprobacion, setSolicitudAprobacion] = useState(null)
+  const [contratoAprobacionFile, setContratoAprobacionFile] = useState(null)
+  const [aprobacionDialogError, setAprobacionDialogError] = useState('')
 
   const loadSolicitudes = useCallback(async () => {
     setLoading(true)
@@ -363,21 +367,32 @@ export default function SolicitudesModule() {
     setPage(1)
   }, [estado, limit, search])
 
-  const runAprobacion = async row => {
+  const runAprobacion = async (row, contratoFile = null) => {
     setProcessingId(row.id)
     setError('')
     setSuccess('')
+    setAprobacionDialogError('')
 
     try {
-      const response = await aprobarSolicitud(row.id, {
-        num_semanas: Number(row?.plazo_semanas || row?.num_semanas || 0) || undefined
-      })
-      const payload = response?.data || response || {}
-      const nombreCliente = getClienteNombre(row) || payload?.prestamo?.nombre_completo || 'cliente seleccionado'
-      const cuotasGeneradasRaw = payload?.cuotas_generadas
+      const numSemanas = Number(row?.plazo_semanas || row?.num_semanas || 0) || undefined
+      let approvalRequestBody
+
+      if (contratoFile) {
+        approvalRequestBody = new FormData()
+        if (numSemanas) approvalRequestBody.append('num_semanas', String(numSemanas))
+        approvalRequestBody.append('contrato_credito', contratoFile)
+        approvalRequestBody.append('documentos', contratoFile)
+      } else {
+        approvalRequestBody = { num_semanas: numSemanas }
+      }
+
+      const response = await aprobarSolicitud(row.id, approvalRequestBody)
+      const responsePayload = response?.data || response || {}
+      const nombreCliente = getClienteNombre(row) || responsePayload?.prestamo?.nombre_completo || 'cliente seleccionado'
+      const cuotasGeneradasRaw = responsePayload?.cuotas_generadas
       const cuotasGeneradas = Array.isArray(cuotasGeneradasRaw)
         ? cuotasGeneradasRaw.length
-        : Number(cuotasGeneradasRaw || payload?.cuotas || 0)
+        : Number(cuotasGeneradasRaw || responsePayload?.cuotas || 0)
       const suffix = [
         `Préstamo de ${nombreCliente} creado.`,
         Number.isFinite(cuotasGeneradas) && cuotasGeneradas > 0 ? `${cuotasGeneradas} cuota(s) generada(s).` : ''
@@ -387,11 +402,67 @@ export default function SolicitudesModule() {
 
       setSuccess(`Solicitud aprobada.${suffix ? ` ${suffix}` : ''}`)
       await loadSolicitudes()
+      setAprobacionDialogOpen(false)
+      setSolicitudAprobacion(null)
+      setContratoAprobacionFile(null)
     } catch (err) {
-      setError(err.message || 'No se pudo aprobar la solicitud.')
+      const message = err.message || 'No se pudo aprobar la solicitud.'
+
+      if (aprobacionDialogOpen) {
+        setAprobacionDialogError(message)
+      } else {
+        setError(message)
+      }
     } finally {
       setProcessingId('')
     }
+  }
+
+  const openAprobacionDialog = row => {
+    setAprobacionDialogError('')
+    setSolicitudAprobacion(row)
+    setContratoAprobacionFile(null)
+    setAprobacionDialogOpen(true)
+  }
+
+  const closeAprobacionDialog = () => {
+    if (processingId === solicitudAprobacion?.id) return
+
+    setAprobacionDialogOpen(false)
+    setAprobacionDialogError('')
+    setSolicitudAprobacion(null)
+    setContratoAprobacionFile(null)
+  }
+
+  const handleContratoAprobacionFile = event => {
+    const selected = Array.from(event.target.files || [])
+    const file = selected[0] || null
+
+    if (!file) {
+      setContratoAprobacionFile(null)
+
+      return
+    }
+
+    const mime = String(file?.type || '').toLowerCase()
+    const name = String(file?.name || '').toLowerCase()
+
+    if (mime !== 'application/pdf' && !name.endsWith('.pdf')) {
+      setAprobacionDialogError('El contrato debe ser un documento PDF.')
+      setContratoAprobacionFile(null)
+
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setAprobacionDialogError('El contrato debe pesar máximo 10MB.')
+      setContratoAprobacionFile(null)
+
+      return
+    }
+
+    setAprobacionDialogError('')
+    setContratoAprobacionFile(file)
   }
 
   const runRechazo = async row => {
@@ -891,7 +962,7 @@ export default function SolicitudesModule() {
                                   size='small'
                                   color='success'
                                   disabled={!isPendiente || isBusy}
-                                  onClick={() => runAprobacion(row)}
+                                  onClick={() => openAprobacionDialog(row)}
                                 >
                                   <i className='tabler-check text-3xl' />
                                 </IconButton>
@@ -1043,6 +1114,38 @@ export default function SolicitudesModule() {
           </Button>
           <Button variant='contained' onClick={ejecutarModelo} disabled={ratingLoading}>
             Ejecutar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={aprobacionDialogOpen} onClose={closeAprobacionDialog} fullWidth maxWidth='sm'>
+        <DialogTitle>Aprobar solicitud</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            {aprobacionDialogError ? <Alert severity='error'>{aprobacionDialogError}</Alert> : null}
+            <Typography color='text.secondary'>
+              Carga el contrato de aceptación del crédito firmado por ambas partes (PDF) y confirma para aprobar.
+            </Typography>
+            <Button variant='outlined' component='label' disabled={processingId === solicitudAprobacion?.id}>
+              Cargar contrato (PDF)
+              <input hidden type='file' accept='application/pdf,.pdf' onChange={handleContratoAprobacionFile} />
+            </Button>
+            <Typography variant='caption' color='text.secondary'>
+              {contratoAprobacionFile ? `Archivo seleccionado: ${contratoAprobacionFile.name}` : 'Aún no has cargado el contrato.'}
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button variant='text' onClick={closeAprobacionDialog} disabled={processingId === solicitudAprobacion?.id}>
+            Cancelar
+          </Button>
+          <Button
+            variant='contained'
+            color='success'
+            onClick={() => runAprobacion(solicitudAprobacion, contratoAprobacionFile)}
+            disabled={!solicitudAprobacion || !contratoAprobacionFile || processingId === solicitudAprobacion?.id}
+          >
+            {processingId === solicitudAprobacion?.id ? 'Aprobando...' : 'Aprobar solicitud'}
           </Button>
         </DialogActions>
       </Dialog>
