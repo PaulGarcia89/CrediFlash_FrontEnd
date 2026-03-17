@@ -315,7 +315,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     }
 
     if (stepIndex === 3) return Boolean(documentoIdentidad)
-    if (stepIndex === 4) return documentosEstadoCuenta.length >= 2
+    if (stepIndex === 4) return documentosEstadoCuenta.length >= 1
 
     return false
   }
@@ -476,20 +476,15 @@ export default function SolicitudFormModule({ solicitudId = null }) {
             >
               Guardar borrador
             </Button>
-            <Button
-              variant='contained'
-              type={activeStep === flowSteps.length - 1 ? 'submit' : 'button'}
-              disabled={saving || loading}
-              onClick={activeStep === flowSteps.length - 1 ? undefined : handleNextStep}
-            >
-              {saving
-                ? 'Guardando...'
-                : activeStep === flowSteps.length - 1
-                  ? solicitudId
-                    ? 'Actualizar solicitud'
-                    : 'Publicar solicitud'
-                  : 'Siguiente'}
-            </Button>
+            {activeStep === flowSteps.length - 1 ? (
+              <Button variant='contained' type='submit' disabled={saving || loading}>
+                {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
+              </Button>
+            ) : (
+              <Button variant='contained' type='button' disabled={saving || loading} onClick={handleNextStep}>
+                Siguiente
+              </Button>
+            )}
           </Stack>
         </Stack>
 
@@ -745,21 +740,15 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                     <Button variant='outlined' onClick={handleBackStep} disabled={saving || loading || activeStep === 0} fullWidth>
                       Anterior
                     </Button>
-                    <Button
-                      variant='contained'
-                      type={activeStep === flowSteps.length - 1 ? 'submit' : 'button'}
-                      onClick={activeStep === flowSteps.length - 1 ? undefined : handleNextStep}
-                      disabled={saving || loading}
-                      fullWidth
-                    >
-                      {saving
-                        ? 'Guardando...'
-                        : activeStep === flowSteps.length - 1
-                          ? solicitudId
-                            ? 'Actualizar solicitud'
-                            : 'Publicar solicitud'
-                          : 'Siguiente'}
-                    </Button>
+                    {activeStep === flowSteps.length - 1 ? (
+                      <Button variant='contained' type='submit' disabled={saving || loading} fullWidth>
+                        {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
+                      </Button>
+                    ) : (
+                      <Button variant='contained' type='button' onClick={handleNextStep} disabled={saving || loading} fullWidth>
+                        Siguiente
+                      </Button>
+                    )}
                     <Button variant='outlined' onClick={() => router.push('/solicitudes')} disabled={saving} fullWidth>
                       Cancelar
                     </Button>
