@@ -112,6 +112,22 @@ const getStatusColor = status => {
 }
 
 const parseDecimalInput = value => Number(String(value ?? '').replace(',', '.'))
+const roundToCents = value => Number((Number(value || 0) + Number.EPSILON).toFixed(2))
+const getEscenarioPago = (montoPago, cuotaObjetivo) => {
+  const monto = roundToCents(montoPago)
+  const cuota = roundToCents(cuotaObjetivo)
+  const diferencia = roundToCents(Math.abs(monto - cuota))
+
+  if (diferencia <= 0.009) {
+    return { tipo: 'COMPLETO', diferencia: 0 }
+  }
+
+  if (monto < cuota) {
+    return { tipo: 'PARCIAL', diferencia }
+  }
+
+  return { tipo: 'ADELANTADO', diferencia }
+}
 const normalizeBackendOrigin = () => {
   const raw = String(process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/$/, '')
 
@@ -226,6 +242,15 @@ export default function CuotasModule() {
 
     return (Number.isFinite(cuotaSemanal) ? cuotaSemanal : 0) + (Number.isFinite(penalizacion) ? penalizacion : 0)
   }, [selectedPrestamo, montoPenalizacion])
+  const escenarioPago = useMemo(() => {
+    const parsedMonto = parseDecimalInput(montoPago || 0)
+
+    if (!Number.isFinite(parsedMonto) || parsedMonto <= 0) {
+      return null
+    }
+
+    return getEscenarioPago(parsedMonto, montoEsperadoPago)
+  }, [montoEsperadoPago, montoPago])
 
   const loadPrestamos = useCallback(async () => {
     setLoading(true)
@@ -316,8 +341,16 @@ export default function CuotasModule() {
         pagos_hechos: Number(selectedPrestamo?.pagos_hechos || 0) + 1
       })
 
+      const escenario = getEscenarioPago(parsedMonto, montoEsperadoPago)
+      const ajusteSiguienteCuota =
+        escenario.tipo === 'PARCIAL'
+          ? `Faltante ${formatCurrency(escenario.diferencia)}: se suma a la próxima cuota.`
+          : escenario.tipo === 'ADELANTADO'
+            ? `Excedente ${formatCurrency(escenario.diferencia)}: se descuenta de la próxima cuota.`
+            : 'Pago completo de cuota.'
+
       setPagoDialogInfo(
-        `Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}. Estado: ${nextStatus}.`
+        `Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}. ${ajusteSiguienteCuota} Estado: ${nextStatus}.`
       )
       await loadPrestamos()
       setTimeout(() => {
@@ -873,9 +906,18 @@ export default function CuotasModule() {
               onChange={event => setMontoPago(event.target.value)}
               inputProps={{ min: 0, step: '0.01' }}
               size='small'
-              helperText={`Monto esperado: ${formatCurrency(montoEsperadoPago)} puede ser mayor o menor `}
+              helperText={`Cuota base: ${formatCurrency(montoEsperadoPago)}. Puedes pagar un monto mayor, menor o igual.`}
               required
             />
+            {escenarioPago ? (
+              <Alert severity={escenarioPago.tipo === 'COMPLETO' ? 'success' : 'info'}>
+                {escenarioPago.tipo === 'COMPLETO'
+                  ? 'Pago completo: se registra la cuota actual.'
+                  : escenarioPago.tipo === 'PARCIAL'
+                    ? `Pago parcial: faltan ${formatCurrency(escenarioPago.diferencia)} y se sumarán a la próxima cuota.`
+                    : `Pago mayor: excedente ${formatCurrency(escenarioPago.diferencia)} y se descontará de la próxima cuota.`}
+              </Alert>
+            ) : null}
             <TextField
               label='Monto de penalización'
               type='number'
