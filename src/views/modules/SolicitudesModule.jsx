@@ -547,12 +547,11 @@ export default function SolicitudesModule() {
     }
 
     if (focusActive) {
-      output = output.filter(item => {
-        const matchSolicitud = focusSolicitudId ? String(item?.id || '') === String(focusSolicitudId) : false
-        const matchCliente = focusClienteId ? String(item?.cliente_id || '') === String(focusClienteId) : false
-
-        return matchSolicitud || matchCliente
-      })
+      if (focusSolicitudId) {
+        output = output.filter(item => String(item?.id || '') === String(focusSolicitudId))
+      } else if (focusClienteId) {
+        output = output.filter(item => String(item?.cliente_id || '') === String(focusClienteId))
+      }
     }
 
     return output
