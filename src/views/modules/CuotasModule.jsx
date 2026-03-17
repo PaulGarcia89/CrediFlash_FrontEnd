@@ -710,7 +710,7 @@ export default function CuotasModule() {
               onChange={event => setMontoPago(event.target.value)}
               inputProps={{ min: 0, step: '0.01' }}
               size='small'
-              helperText={`Monto esperado: ${formatCurrency(montoEsperadoPago)} (cuota semanal + penalización).`}
+              helperText={`Monto esperado: ${formatCurrency(montoEsperadoPago)} puede ser mayor o menor `}
               required
             />
             <TextField
