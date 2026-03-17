@@ -260,7 +260,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
   const handleEstadoCuentaFiles = event => {
     const selected = Array.from(event.target.files || [])
-    const validationError = validatePdfFiles({ selected, min: 2, max: 3 })
+    const validationError = validatePdfFiles({ selected, min: 1, max: 2 })
 
     if (validationError) {
       setSnackbar({ open: true, message: validationError })
@@ -293,7 +293,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     }
 
     if (activeStep === 4) {
-      return documentosEstadoCuenta.length >= 2
+      return documentosEstadoCuenta.length >= 1
     }
 
     return true
@@ -333,7 +333,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       'Completa monto, modalidad, plazo, tasa y destino para continuar.',
       'Debes completar modelo de calificación y modelo de aprobación.',
       'Debes cargar un documento de identidad (licencia o pasaporte) en PDF.',
-      'Debes cargar mínimo 2 estados de cuenta en PDF.'
+      'Debes cargar 1 o 2 estados de cuenta en PDF.'
     ]
 
     setError(stepMessages[activeStep] || 'Completa los campos requeridos para continuar.')
@@ -363,8 +363,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
           throw new Error('Debes cargar el documento de identidad (licencia o pasaporte) en PDF.')
         }
 
-        if (documentosEstadoCuenta.length < 2) {
-          throw new Error('Debes cargar mínimo 2 estados de cuenta en PDF.')
+        if (documentosEstadoCuenta.length < 1) {
+          throw new Error('Debes cargar 1 o 2 estados de cuenta en PDF.')
         }
       }
 
@@ -391,6 +391,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
           plazo_semanas: Number(form.plazo_semanas || 0),
           tasa_variable: tasaVariable,
           modelo_calificacion: form.modelo_calificacion,
+          modelo_aprobacion: form.modelo_aprobacion,
           destino: form.destino
         })
       } else {
@@ -404,6 +405,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         payload.append('plazo_semanas', String(Number(form.plazo_semanas || 0)))
         payload.append('tasa_variable', String(tasaVariable))
         payload.append('modelo_calificacion', form.modelo_calificacion)
+        payload.append('modelo_aprobacion', form.modelo_aprobacion)
         payload.append('destino', form.destino)
         payload.append('tipo_documento_identidad', 'ID')
         payload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
@@ -706,10 +708,10 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                     {activeStep === 4 && !solicitudId ? (
                       <Stack spacing={1.5}>
                         <Typography color='text.secondary'>
-                          Carga documentos de estado de cuenta en PDF (mínimo 2, máximo 3).
+                          Carga documentos de estado de cuenta en PDF (mínimo 1, máximo 2).
                         </Typography>
                         <Button variant='outlined' component='label'>
-                          Cargar estados de cuenta (mínimo 2)
+                          Cargar estados de cuenta (1 o 2)
                           <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
                         </Button>
                         <Typography variant='caption' color='text.secondary'>
