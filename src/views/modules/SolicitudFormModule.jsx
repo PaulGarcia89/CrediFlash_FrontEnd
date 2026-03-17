@@ -113,6 +113,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
   const [clientesPagination, setClientesPagination] = useState({ page: 1, pages: 1, total: 0 })
 
   const [activeStep, setActiveStep] = useState(0)
+  const [stepAttempted, setStepAttempted] = useState({})
   const [documentoIdentidad, setDocumentoIdentidad] = useState(null)
   const [documentosEstadoCuenta, setDocumentosEstadoCuenta] = useState([])
   const [snackbar, setSnackbar] = useState({ open: false, message: '' })
@@ -328,6 +329,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       return
     }
 
+    setStepAttempted(previous => ({ ...previous, [activeStep]: true }))
+
     const stepMessages = [
       'Debes seleccionar un cliente para continuar.',
       'Completa monto, modalidad, plazo, tasa y destino para continuar.',
@@ -346,6 +349,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
   const handleSubmit = async () => {
     if (activeStep < flowSteps.length - 1) return
+
+    setStepAttempted(previous => ({ ...previous, [activeStep]: true }))
 
     setSaving(true)
     setError('')
@@ -434,6 +439,31 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     } finally {
       setSaving(false)
     }
+  }
+
+  const isStepFieldMissing = field => {
+    const attempted = Boolean(stepAttempted[activeStep])
+    if (!attempted) return false
+
+    if (activeStep === 0) return field === 'cliente_id' && !String(form.cliente_id || '').trim()
+
+    if (activeStep === 1) {
+      if (field === 'monto_solicitado') return !(Number(form.monto_solicitado || 0) > 0)
+      if (field === 'plazo_semanas') return !(Number(form.plazo_semanas || 0) > 0)
+      if (field === 'tasa_variable_pct') return !(Number(form.tasa_variable_pct || 0) > 0)
+      if (field === 'destino') return !String(form.destino || '').trim()
+      if (field === 'modalidad') return !String(form.modalidad || '').trim()
+    }
+
+    if (activeStep === 2) {
+      if (field === 'modelo_calificacion') return !String(form.modelo_calificacion || '').trim()
+      if (field === 'modelo_aprobacion') return !String(form.modelo_aprobacion || '').trim()
+    }
+
+    if (activeStep === 3) return field === 'documento_identidad' && !documentoIdentidad
+    if (activeStep === 4) return field === 'estado_cuenta' && documentosEstadoCuenta.length < 1
+
+    return false
   }
 
   return (
@@ -562,6 +592,12 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                                 label='Clientes Activos'
                                 placeholder='Buscar por teléfono o email'
                                 required
+                                error={isStepFieldMissing('cliente_id')}
+                                helperText={
+                                  isStepFieldMissing('cliente_id')
+                                    ? 'Campo obligatorio'
+                                    : 'Ejemplo: Juan Pérez — 8090000000 — cliente@correo.com'
+                                }
                               />
                             )}
                           />
@@ -592,6 +628,10 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                             onChange={handleChange}
                             fullWidth
                             required
+                            error={isStepFieldMissing('monto_solicitado')}
+                            helperText={
+                              isStepFieldMissing('monto_solicitado') ? 'Campo obligatorio' : 'Ejemplo: 2000'
+                            }
                           />
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
@@ -603,6 +643,12 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                             onChange={handleChange}
                             fullWidth
                             required
+                            error={isStepFieldMissing('modalidad')}
+                            helperText={
+                              isStepFieldMissing('modalidad')
+                                ? 'Campo obligatorio'
+                                : 'Selecciona semanal, quincenal o mensual'
+                            }
                           >
                             {MODALIDAD_OPTIONS.map(option => (
                               <MenuItem key={option.value} value={option.value}>
@@ -620,6 +666,10 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                             onChange={handleChange}
                             fullWidth
                             required
+                            error={isStepFieldMissing('plazo_semanas')}
+                            helperText={
+                              isStepFieldMissing('plazo_semanas') ? 'Campo obligatorio' : 'Ejemplo: 8'
+                            }
                           />
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
@@ -632,6 +682,10 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                             inputProps={{ min: 1, max: 100 }}
                             fullWidth
                             required
+                            error={isStepFieldMissing('tasa_variable_pct')}
+                            helperText={
+                              isStepFieldMissing('tasa_variable_pct') ? 'Campo obligatorio' : 'Ejemplo: 23'
+                            }
                           />
                         </Grid>
                         <Grid size={{ xs: 12 }}>
@@ -642,6 +696,10 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                             onChange={handleChange}
                             fullWidth
                             required
+                            error={isStepFieldMissing('destino')}
+                            helperText={
+                              isStepFieldMissing('destino') ? 'Campo obligatorio' : 'Ejemplo: inversión'
+                            }
                           />
                         </Grid>
                       </Grid>
@@ -658,6 +716,12 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                             onChange={handleChange}
                             fullWidth
                             required
+                            error={isStepFieldMissing('modelo_calificacion')}
+                            helperText={
+                              isStepFieldMissing('modelo_calificacion')
+                                ? 'Campo obligatorio'
+                                : 'Ejemplo: CLIENTE_NUEVO'
+                            }
                           >
                             {MODELO_OPTIONS.map(model => (
                               <MenuItem key={model} value={model}>
@@ -675,6 +739,12 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                             onChange={handleChange}
                             fullWidth
                             required
+                            error={isStepFieldMissing('modelo_aprobacion')}
+                            helperText={
+                              isStepFieldMissing('modelo_aprobacion')
+                                ? 'Campo obligatorio'
+                                : 'Ejemplo: AUTOMATICO'
+                            }
                           >
                             {MODELO_APROBACION_OPTIONS.map(model => (
                               <MenuItem key={model} value={model}>
@@ -688,14 +758,17 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
                     {activeStep === 3 && !solicitudId ? (
                       <Stack spacing={1.5}>
-                        <Typography color='text.secondary'>
+                        <Typography color={isStepFieldMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
                           Carga un documento de identidad del cliente (licencia o pasaporte) en formato PDF.
                         </Typography>
                         <Button variant='outlined' component='label'>
                           Cargar documento ID (obligatorio)
                           <input hidden type='file' accept='application/pdf,.pdf' onChange={handleDocumentoIdentidad} />
                         </Button>
-                        <Typography variant='caption' color='text.secondary'>
+                        <Typography
+                          variant='caption'
+                          color={isStepFieldMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
+                        >
                           {documentoIdentidad ? `Archivo seleccionado: ${documentoIdentidad.name}` : 'Aún no has cargado el documento ID.'}
                         </Typography>
                       </Stack>
@@ -703,14 +776,14 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
                     {activeStep === 4 && !solicitudId ? (
                       <Stack spacing={1.5}>
-                        <Typography color='text.secondary'>
+                        <Typography color={isStepFieldMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
                           Carga documentos de estado de cuenta en PDF (mínimo 1, máximo 2).
                         </Typography>
                         <Button variant='outlined' component='label'>
                           Cargar estados de cuenta (1 o 2)
                           <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
                         </Button>
-                        <Typography variant='caption' color='text.secondary'>
+                        <Typography variant='caption' color={isStepFieldMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
                           {documentosEstadoCuenta.length
                             ? `${documentosEstadoCuenta.length} archivo(s) seleccionado(s)`
                             : 'No hay estados de cuenta cargados'}

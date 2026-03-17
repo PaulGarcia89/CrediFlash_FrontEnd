@@ -82,6 +82,7 @@ export default function ClienteFormModule({ clienteId = null }) {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(Boolean(clienteId))
   const [error, setError] = useState('')
+  const [submitAttempted, setSubmitAttempted] = useState(false)
   const [emailVerificationCode, setEmailVerificationCode] = useState('')
   const [emailVerificationSent, setEmailVerificationSent] = useState(false)
   const [emailVerified, setEmailVerified] = useState(false)
@@ -197,6 +198,7 @@ export default function ClienteFormModule({ clienteId = null }) {
 
   const handleSubmit = async event => {
     event.preventDefault()
+    setSubmitAttempted(true)
     setSaving(true)
     setError('')
 
@@ -326,6 +328,17 @@ export default function ClienteFormModule({ clienteId = null }) {
     }
   }
 
+  const isRequiredMissing = field => {
+    if (!submitAttempted) return false
+
+    if (field === 'nombre') return !String(form.nombre || '').trim()
+    if (field === 'apellido') return !String(form.apellido || '').trim()
+    if (field === 'email') return !clienteId && !String(form.email || '').trim()
+    if (field === 'referido_por') return Boolean(form.es_referido) && !String(form.referido_por || '').trim()
+
+    return false
+  }
+
   return (
     <Stack spacing={3} component='form' onSubmit={handleSubmit}>
       <Stack
@@ -384,6 +397,8 @@ export default function ClienteFormModule({ clienteId = null }) {
                       placeholder='Nombre del cliente'
                       fullWidth
                       required
+                      error={isRequiredMissing('nombre')}
+                      helperText={isRequiredMissing('nombre') ? 'Campo obligatorio' : 'Ejemplo: Juan'}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -395,6 +410,8 @@ export default function ClienteFormModule({ clienteId = null }) {
                       placeholder='Apellido del cliente'
                       fullWidth
                       required
+                      error={isRequiredMissing('apellido')}
+                      helperText={isRequiredMissing('apellido') ? 'Campo obligatorio' : 'Ejemplo: Pérez'}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -417,6 +434,10 @@ export default function ClienteFormModule({ clienteId = null }) {
                       placeholder='cliente@correo.com'
                       fullWidth
                       required={!clienteId}
+                      error={isRequiredMissing('email')}
+                      helperText={
+                        isRequiredMissing('email') ? 'Campo obligatorio' : 'Ejemplo: cliente@correo.com'
+                      }
                     />
                   </Grid>
                   {!clienteId ? (
@@ -507,8 +528,12 @@ export default function ClienteFormModule({ clienteId = null }) {
                           {...params}
                           label='Referido por'
                           placeholder='Seleccionar cliente activo'
+                          required={Boolean(form.es_referido)}
+                          error={isRequiredMissing('referido_por')}
                           helperText={
-                            form.es_referido
+                            isRequiredMissing('referido_por')
+                              ? 'Campo obligatorio'
+                              : form.es_referido
                               ? loadingClientesActivos
                                 ? 'Cargando clientes activos...'
                                 : clientesActivos.length
