@@ -31,6 +31,7 @@ import Typography from '@mui/material/Typography'
 
 import { verHistorialPrestamosCliente } from '@/api/clientes'
 import { enviarNotificacionCuotaEmail, generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
+import { getToken } from '@/lib/auth/session'
 import { formatUSD } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
 
@@ -109,6 +110,67 @@ const getStatusColor = status => {
 }
 
 const parseDecimalInput = value => Number(String(value ?? '').replace(',', '.'))
+const normalizeBackendOrigin = () => {
+  const raw = String(process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/$/, '')
+
+  if (!raw) return ''
+  if (raw.endsWith('/api')) return raw.slice(0, -4)
+
+  return raw
+}
+const forceHttpsIfNeeded = inputUrl => {
+  const raw = String(inputUrl || '').trim()
+
+  if (!raw) return ''
+
+  try {
+    const parsed = new URL(raw)
+    const currentProtocol = typeof window !== 'undefined' ? window.location.protocol : ''
+
+    if (currentProtocol === 'https:' && parsed.protocol === 'http:') {
+      parsed.protocol = 'https:'
+    }
+
+    return parsed.toString()
+  } catch {
+    return raw
+  }
+}
+const buildCandidateUrls = value => {
+  const raw = String(value || '').trim()
+
+  if (!raw) return []
+  if (/^https?:\/\//i.test(raw)) return [forceHttpsIfNeeded(raw)]
+
+  const backendOrigin = forceHttpsIfNeeded(normalizeBackendOrigin())
+
+  if (!backendOrigin) return [raw]
+
+  if (raw.startsWith('/uploads/')) {
+    return [forceHttpsIfNeeded(`${backendOrigin}/api${raw}`), forceHttpsIfNeeded(`${backendOrigin}${raw}`)]
+  }
+
+  if (raw.startsWith('uploads/')) {
+    return [forceHttpsIfNeeded(`${backendOrigin}/api/${raw}`), forceHttpsIfNeeded(`${backendOrigin}/${raw}`)]
+  }
+
+  if (raw.startsWith('/')) return [forceHttpsIfNeeded(`${backendOrigin}${raw}`)]
+
+  return [forceHttpsIfNeeded(`${backendOrigin}/${raw}`)]
+}
+const getContractOpenUrl = row => {
+  const raw =
+    row?.contrato_credito_url ||
+    row?.contrato_url ||
+    row?.url_contrato ||
+    row?.contrato?.url_descarga ||
+    row?.contrato?.download_url ||
+    row?.contrato?.url ||
+    ''
+  const urls = buildCandidateUrls(raw)
+
+  return urls[0] || ''
+}
 
 export default function CuotasModule() {
   const [prestamos, setPrestamos] = useState([])
@@ -131,6 +193,7 @@ export default function CuotasModule() {
   const [pagoDialogInfo, setPagoDialogInfo] = useState('')
   const [processing, setProcessing] = useState(false)
   const [notifyingPrestamoId, setNotifyingPrestamoId] = useState('')
+  const [detalleDialogError, setDetalleDialogError] = useState('')
   const [detalleOpen, setDetalleOpen] = useState(false)
   const [historialOpen, setHistorialOpen] = useState(false)
   const [historialLoading, setHistorialLoading] = useState(false)
@@ -194,6 +257,7 @@ export default function CuotasModule() {
 
   const openDetalleDialog = row => {
     setSelectedPrestamo(row)
+    setDetalleDialogError('')
     setDetalleOpen(true)
   }
 
@@ -279,6 +343,49 @@ export default function CuotasModule() {
       setPagoDialogError(message)
     } finally {
       setProcessing(false)
+    }
+  }
+
+  const handleOpenContratoPdf = async row => {
+    setDetalleDialogError('')
+    const url = getContractOpenUrl(row)
+
+    if (!url) {
+      setDetalleDialogError('No se encontró URL del contrato para este préstamo.')
+
+      return
+    }
+
+    try {
+      const token = getToken()
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+        cache: 'no-store'
+      })
+
+      if (!response.ok) {
+        const opened = window.open(url, '_blank', 'noopener,noreferrer')
+
+        if (!opened) {
+          setDetalleDialogError('No se pudo abrir el contrato PDF.')
+        }
+
+        return
+      }
+
+      const blob = await response.blob()
+      const objectUrl = window.URL.createObjectURL(blob)
+
+      window.open(objectUrl, '_blank', 'noopener,noreferrer')
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 5000)
+    } catch {
+      const opened = window.open(url, '_blank', 'noopener,noreferrer')
+
+      if (!opened) {
+        setDetalleDialogError('No se pudo abrir el contrato PDF.')
+      }
     }
   }
 
@@ -735,10 +842,19 @@ export default function CuotasModule() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={detalleOpen} onClose={() => setDetalleOpen(false)} fullWidth maxWidth='md'>
+      <Dialog
+        open={detalleOpen}
+        onClose={() => {
+          setDetalleOpen(false)
+          setDetalleDialogError('')
+        }}
+        fullWidth
+        maxWidth='md'
+      >
         <DialogTitle>Detalle del préstamo</DialogTitle>
         <DialogContent>
           <Stack spacing={1.2} mt={1}>
+            {detalleDialogError ? <Alert severity='error'>{detalleDialogError}</Alert> : null}
             <Typography>
               Cliente: <strong>{selectedPrestamo?.nombre_completo || '-'}</strong>
             </Typography>
@@ -772,6 +888,19 @@ export default function CuotasModule() {
             <Typography>
               Estado: <strong>{selectedPrestamo?.status || '-'}</strong>
             </Typography>
+            <Typography>
+              Contrato PDF:{' '}
+              <strong>{getContractOpenUrl(selectedPrestamo) ? 'Disponible para visualización' : 'No disponible'}</strong>
+            </Typography>
+            <Button
+              variant='tonal'
+              color='info'
+              onClick={() => handleOpenContratoPdf(selectedPrestamo)}
+              disabled={!getContractOpenUrl(selectedPrestamo)}
+              sx={{ alignSelf: 'flex-start', textTransform: 'none' }}
+            >
+              Visualizar contrato PDF
+            </Button>
           </Stack>
         </DialogContent>
         <DialogActions>
