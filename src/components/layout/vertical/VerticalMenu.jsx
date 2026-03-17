@@ -40,7 +40,6 @@ const VerticalMenu = ({ scrollMenu }) => {
   const showSolicitudes = can('solicitudes.view')
   const showSolicitudesCreate = can('solicitudes.create')
   const showCuotas = canAny(['prestamos.view', 'cuotas.view'])
-  const showSettings = canAny(['roles.view', 'analistas.view'])
 
   return (
     <ScrollWrapper
@@ -92,11 +91,6 @@ const VerticalMenu = ({ scrollMenu }) => {
           </SubMenu>
         ) : null}
 
-        {showSettings ? (
-          <MenuItem href='/settings' icon={<i className='tabler-settings' />}>
-            Configuración de acceso
-          </MenuItem>
-        ) : null}
       </Menu>
     </ScrollWrapper>
   )
