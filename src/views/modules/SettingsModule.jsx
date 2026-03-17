@@ -17,9 +17,6 @@ import DialogTitle from '@mui/material/DialogTitle'
 import Drawer from '@mui/material/Drawer'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Grid from '@mui/material/Grid'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemText from '@mui/material/ListItemText'
 import MenuItem from '@mui/material/MenuItem'
 import Pagination from '@mui/material/Pagination'
 import Stack from '@mui/material/Stack'
@@ -138,6 +135,30 @@ const extractPermisosSeleccionados = payload => {
   return []
 }
 
+const BASE_PERMISSION_CODES = [
+  'dashboard.view',
+  'clientes.view',
+  'clientes.create',
+  'clientes.edit',
+  'solicitudes.view',
+  'solicitudes.create',
+  'solicitudes.approve',
+  'solicitudes.reject',
+  'prestamos.view',
+  'prestamos.create',
+  'prestamos.pay',
+  'cuotas.view',
+  'cuotas.manage',
+  'documentos.view',
+  'documentos.delete',
+  'ratings.run',
+  'analytics.view',
+  'analistas.view',
+  'analistas.manage',
+  'roles.view',
+  'roles.manage'
+]
+
 export default function SettingsModule() {
   const { can, canAny } = usePermissions()
   const [ready, setReady] = useState(false)
@@ -161,8 +182,12 @@ export default function SettingsModule() {
   const [paginationAnalistas, setPaginationAnalistas] = useState({ page: 1, pages: 1, total: 0 })
   const [permisosDialog, setPermisosDialog] = useState({
     open: false,
+    analistaId: '',
     analista: '',
+    rolId: '',
+    rolNombre: '',
     permisos: [],
+    seleccionados: [],
     loading: false
   })
   const [resetDialog, setResetDialog] = useState({
@@ -184,6 +209,11 @@ export default function SettingsModule() {
   const canViewAnalistas = can('analistas.view')
   const canManageAnalistas = can('analistas.manage')
   const allowSettings = useMemo(() => canAny(['roles.view', 'analistas.view']), [canAny])
+  const allPermissionCodes = useMemo(() => {
+    const catalogPermissions = flattenLeafIds(catalogo || [])
+
+    return Array.from(new Set([...BASE_PERMISSION_CODES, ...catalogPermissions]))
+  }, [catalogo])
   const activeTab = useMemo(() => {
     if (tab === 'roles' && !canViewRoles && canViewAnalistas) return 'analistas'
     if (tab === 'analistas' && !canViewAnalistas && canViewRoles) return 'roles'
@@ -436,13 +466,22 @@ export default function SettingsModule() {
     }
   }
 
-  const showPermisosEfectivos = async (analistaId, analistaNombre) => {
+  const showPermisosEfectivos = async item => {
+    const analistaId = item?.id
+    const analistaNombre = [item?.nombre, item?.apellido].filter(Boolean).join(' ') || 'Analista'
+    const rolId = String(item?.rol_id || item?.role_id || item?.rol_acceso_id || '').trim()
+    const rolNombre = String(item?.rol || item?.rol_acceso || '').trim()
+
     setError('')
     setSuccess('')
     setPermisosDialog({
       open: true,
+      analistaId: String(analistaId || ''),
       analista: analistaNombre || 'Analista',
+      rolId,
+      rolNombre,
       permisos: [],
+      seleccionados: [],
       loading: true
     })
 
@@ -452,13 +491,77 @@ export default function SettingsModule() {
 
       setPermisosDialog({
         open: true,
+        analistaId: String(analistaId || ''),
         analista: analistaNombre || 'Analista',
+        rolId,
+        rolNombre,
         permisos,
+        seleccionados: permisos,
         loading: false
       })
     } catch (err) {
       setPermisosDialog(previous => ({ ...previous, loading: false }))
       setError(err.message || 'No se pudieron consultar permisos efectivos.')
+    }
+  }
+
+  const togglePermisoDialog = (permisoCode, checked) => {
+    setPermisosDialog(previous => {
+      const set = new Set(previous.seleccionados || [])
+
+      if (checked) set.add(permisoCode)
+      else set.delete(permisoCode)
+
+      return {
+        ...previous,
+        seleccionados: Array.from(set)
+      }
+    })
+  }
+
+  const savePermisosAnalistaDialog = async () => {
+    if (!canManageRoles) {
+      setError('No tienes permisos para editar permisos de roles.')
+
+      return
+    }
+
+    if (!permisosDialog.rolId) {
+      setError('Este analista no tiene rol asignado. Asigna un rol antes de editar permisos.')
+
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    setPermisosDialog(previous => ({ ...previous, loading: true }))
+
+    try {
+      await guardarPermisosRol(permisosDialog.rolId, {
+        permisos: permisosDialog.seleccionados || []
+      })
+      setSuccess(
+        `Permisos actualizados para el rol ${permisosDialog.rolNombre || 'asignado'}. Se aplican a todos los analistas con ese rol.`
+      )
+      await loadRoles()
+      if (tab === 'analistas') await loadAnalistas()
+
+      if (permisosDialog.analistaId) {
+        const response = await obtenerPermisosEfectivosAnalista(permisosDialog.analistaId)
+        const permisos = extractPermisosSeleccionados(response)
+
+        setPermisosDialog(previous => ({
+          ...previous,
+          permisos,
+          seleccionados: permisos,
+          loading: false
+        }))
+      } else {
+        setPermisosDialog(previous => ({ ...previous, loading: false }))
+      }
+    } catch (err) {
+      setPermisosDialog(previous => ({ ...previous, loading: false }))
+      setError(err.message || 'No se pudieron guardar permisos del rol asignado.')
     }
   }
 
@@ -721,7 +824,7 @@ export default function SettingsModule() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button size='small' variant='tonal' onClick={() => showPermisosEfectivos(item.id, analistaNombre)}>
+                          <Button size='small' variant='tonal' onClick={() => showPermisosEfectivos(item)}>
                             Ver permisos
                           </Button>
                         </TableCell>
@@ -839,28 +942,59 @@ export default function SettingsModule() {
       <Dialog
         open={permisosDialog.open}
         fullWidth
-        maxWidth='sm'
+        maxWidth='md'
         onClose={() => setPermisosDialog(previous => ({ ...previous, open: false }))}
       >
         <DialogTitle>Permisos efectivos: {permisosDialog.analista}</DialogTitle>
         <DialogContent dividers>
+          <Stack spacing={1.5}>
+            <Alert severity='info'>
+              {permisosDialog.rolId
+                ? `Editando permisos del rol ${permisosDialog.rolNombre || 'asignado'}. Los cambios aplican a todos los analistas con ese rol.`
+                : 'Este analista no tiene rol asignado. Primero asigna un rol para habilitar edición de permisos.'}
+            </Alert>
+
           {permisosDialog.loading ? (
             <Stack alignItems='center' py={3}>
               <CircularProgress size={22} />
             </Stack>
-          ) : permisosDialog.permisos.length ? (
-            <List dense>
-              {permisosDialog.permisos.map(permiso => (
-                <ListItem key={permiso}>
-                  <ListItemText primary={permiso} />
-                </ListItem>
-              ))}
-            </List>
           ) : (
-            <Typography color='text.secondary'>Este analista no tiene permisos efectivos asignados.</Typography>
+            <Grid container spacing={1}>
+              {allPermissionCodes.map(permissionCode => {
+                const checked = (permisosDialog.seleccionados || []).includes(permissionCode)
+
+                return (
+                  <Grid key={permissionCode} size={{ xs: 12, sm: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={checked}
+                          onChange={event => togglePermisoDialog(permissionCode, event.target.checked)}
+                          disabled={!canManageRoles || !permisosDialog.rolId}
+                        />
+                      }
+                      label={permissionCode}
+                    />
+                  </Grid>
+                )
+              })}
+            </Grid>
           )}
+            {!permisosDialog.loading && !(permisosDialog.permisos || []).length ? (
+              <Typography color='text.secondary'>Este analista no tiene permisos efectivos asignados actualmente.</Typography>
+            ) : null}
+          </Stack>
         </DialogContent>
         <DialogActions>
+          {canManageRoles ? (
+            <Button
+              variant='contained'
+              onClick={savePermisosAnalistaDialog}
+              disabled={permisosDialog.loading || !permisosDialog.rolId}
+            >
+              Guardar permisos
+            </Button>
+          ) : null}
           <Button onClick={() => setPermisosDialog(previous => ({ ...previous, open: false }))}>Cerrar</Button>
         </DialogActions>
       </Dialog>
