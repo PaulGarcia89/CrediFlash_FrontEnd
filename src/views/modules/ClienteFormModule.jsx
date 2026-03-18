@@ -16,6 +16,7 @@ import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
 import {
@@ -547,7 +548,14 @@ export default function ClienteFormModule({ clienteId = null }) {
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
-                      label='Monto referido (USD)'
+                      label={
+                        <Stack direction='row' spacing={0.75} alignItems='center'>
+                          <span>Monto referido (USD)</span>
+                          <Tooltip title='Este monto se descontará de la última cuota cuando el cliente tenga descuento disponible.'>
+                            <i className='tabler-info-circle text-base' />
+                          </Tooltip>
+                        </Stack>
+                      }
                       name='monto_referido'
                       type='number'
                       value={form.monto_referido}
