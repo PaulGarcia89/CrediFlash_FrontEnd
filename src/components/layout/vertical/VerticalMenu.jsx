@@ -28,7 +28,7 @@ const VerticalMenu = ({ scrollMenu }) => {
   // Hooks
   const theme = useTheme()
   const verticalNavOptions = useVerticalNav()
-  const { can, canAny } = usePermissions()
+  const { can, canAny, analista } = usePermissions()
 
   // Vars
   const { isBreakpointReached, transitionDuration } = verticalNavOptions
@@ -40,6 +40,7 @@ const VerticalMenu = ({ scrollMenu }) => {
   const showSolicitudes = can('solicitudes.view')
   const showSolicitudesCreate = can('solicitudes.create')
   const showCuotas = canAny(['prestamos.view', 'cuotas.view'])
+  const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
 
   return (
     <ScrollWrapper
@@ -89,6 +90,18 @@ const VerticalMenu = ({ scrollMenu }) => {
           <SubMenu label='Cuotas' icon={<i className='tabler-cash-banknote' />}>
             <MenuItem href='/cuotas'>Registro de cuotas</MenuItem>
           </SubMenu>
+        ) : null}
+
+        {isAdminProfile ? (
+          <MenuItem href='/reportes' icon={<i className='tabler-report-analytics' />}>
+            Reportes
+          </MenuItem>
+        ) : null}
+
+        {isAdminProfile ? (
+          <MenuItem href='/logs' icon={<i className='tabler-file-text' />}>
+            Logs
+          </MenuItem>
         ) : null}
 
       </Menu>
