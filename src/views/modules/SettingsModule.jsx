@@ -112,15 +112,35 @@ const flattenLeafIds = nodes => {
   return result
 }
 
-const extractPermisosSeleccionados = payload => {
-  const source =
-    payload?.data?.permisos ||
-    payload?.permisos ||
-    payload?.data?.permisosSeleccionados ||
-    payload?.permisosSeleccionados ||
-    []
+const normalizePermisosSource = source => {
+  if (Array.isArray(source)) {
+    const output = []
 
-  if (Array.isArray(source)) return source.map(item => String(item))
+    source.forEach(item => {
+      if (typeof item === 'string') {
+        output.push(String(item))
+
+        return
+      }
+
+      if (item && typeof item === 'object') {
+        const codigo = item?.codigo || item?.code || item?.permiso || item?.id || item?.key || ''
+        const activo =
+          item?.activo === undefined &&
+          item?.habilitado === undefined &&
+          item?.selected === undefined &&
+          item?.enabled === undefined
+            ? true
+            : Boolean(item?.activo ?? item?.habilitado ?? item?.selected ?? item?.enabled)
+
+        if (codigo && activo) {
+          output.push(String(codigo))
+        }
+      }
+    })
+
+    return output
+  }
 
   if (source && typeof source === 'object') {
     const output = []
@@ -133,6 +153,35 @@ const extractPermisosSeleccionados = payload => {
   }
 
   return []
+}
+
+const extractPermisosSeleccionados = payload => {
+  const candidates = [
+    payload?.data?.permisos,
+    payload?.permisos,
+    payload?.data?.permisosSeleccionados,
+    payload?.permisosSeleccionados,
+    payload?.data?.permission_codes,
+    payload?.permission_codes,
+    payload?.data?.permissions,
+    payload?.permissions,
+    payload?.data?.rol?.permisos,
+    payload?.data?.rol?.permission_codes,
+    payload?.data?.rol?.permissions,
+    payload?.data?.role?.permisos,
+    payload?.data?.role?.permission_codes,
+    payload?.data?.role?.permissions
+  ]
+
+  const merged = []
+
+  candidates.forEach(source => {
+    const values = normalizePermisosSource(source)
+
+    if (values.length) merged.push(...values)
+  })
+
+  return Array.from(new Set(merged))
 }
 
 const BASE_PERMISSION_CODES = [
@@ -447,8 +496,12 @@ export default function SettingsModule() {
     setSuccess('')
 
     try {
+      const permisosPayload = Array.from(selectedPermisos)
+
       await guardarPermisosRol(selectedRol.id, {
-        permisos: Array.from(selectedPermisos)
+        permisos: permisosPayload,
+        permission_codes: permisosPayload,
+        permisosSeleccionados: permisosPayload
       })
 
       setSuccess('Permisos del rol actualizados.')
@@ -516,8 +569,13 @@ export default function SettingsModule() {
     })
 
     try {
-      const response = await obtenerPermisosEfectivosAnalista(analistaId)
-      const permisos = extractPermisosSeleccionados(response)
+      const [responseEfectivos, responseRol] = await Promise.all([
+        obtenerPermisosEfectivosAnalista(analistaId),
+        rolId ? obtenerPermisosRol(rolId) : Promise.resolve({})
+      ])
+      const permisos = Array.from(
+        new Set([...extractPermisosSeleccionados(responseEfectivos), ...extractPermisosSeleccionados(responseRol)])
+      )
 
       setPermisosDialog({
         open: true,
@@ -567,8 +625,12 @@ export default function SettingsModule() {
     setPermisosDialog(previous => ({ ...previous, loading: true }))
 
     try {
+      const permisosPayload = permisosDialog.seleccionados || []
+
       await guardarPermisosRol(permisosDialog.rolId, {
-        permisos: permisosDialog.seleccionados || []
+        permisos: permisosPayload,
+        permission_codes: permisosPayload,
+        permisosSeleccionados: permisosPayload
       })
       setSuccess(
         `Permisos actualizados para el rol ${permisosDialog.rolNombre || 'asignado'}. Se aplican a todos los analistas con ese rol.`
@@ -576,19 +638,21 @@ export default function SettingsModule() {
       await loadRoles()
       if (tab === 'analistas') await loadAnalistas()
 
-      if (permisosDialog.analistaId) {
-        const response = await obtenerPermisosEfectivosAnalista(permisosDialog.analistaId)
-        const permisos = extractPermisosSeleccionados(response)
+      const [roleDetail, efectivosDetail] = await Promise.all([
+        obtenerPermisosRol(permisosDialog.rolId),
+        obtenerPermisosEfectivosAnalista(permisosDialog.analistaId)
+      ])
+      const permisosConfirmados = Array.from(
+        new Set([...extractPermisosSeleccionados(roleDetail), ...extractPermisosSeleccionados(efectivosDetail)])
+      )
+      const permisosFinales = permisosConfirmados.length ? permisosConfirmados : permisosPayload
 
-        setPermisosDialog(previous => ({
-          ...previous,
-          permisos,
-          seleccionados: permisos,
-          loading: false
-        }))
-      } else {
-        setPermisosDialog(previous => ({ ...previous, loading: false }))
-      }
+      setPermisosDialog(previous => ({
+        ...previous,
+        permisos: permisosFinales,
+        seleccionados: permisosFinales,
+        loading: false
+      }))
     } catch (err) {
       setPermisosDialog(previous => ({ ...previous, loading: false }))
       setError(err.message || 'No se pudieron guardar permisos del rol asignado.')
