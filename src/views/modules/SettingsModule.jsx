@@ -124,14 +124,33 @@ const normalizePermisosSource = source => {
       }
 
       if (item && typeof item === 'object') {
-        const codigo = item?.codigo || item?.code || item?.permiso || item?.id || item?.key || ''
+        const codigo =
+          item?.codigo ||
+          item?.code ||
+          item?.permission_code ||
+          item?.permissionCode ||
+          item?.permiso ||
+          item?.id ||
+          item?.key ||
+          ''
         const activo =
           item?.activo === undefined &&
           item?.habilitado === undefined &&
           item?.selected === undefined &&
-          item?.enabled === undefined
+          item?.enabled === undefined &&
+          item?.asignado === undefined &&
+          item?.granted === undefined &&
+          item?.value === undefined
             ? true
-            : Boolean(item?.activo ?? item?.habilitado ?? item?.selected ?? item?.enabled)
+            : Boolean(
+                item?.activo ??
+                  item?.habilitado ??
+                  item?.selected ??
+                  item?.enabled ??
+                  item?.asignado ??
+                  item?.granted ??
+                  item?.value
+              )
 
         if (codigo && activo) {
           output.push(String(codigo))
@@ -165,6 +184,10 @@ const extractPermisosSeleccionados = payload => {
     payload?.permission_codes,
     payload?.data?.permissions,
     payload?.permissions,
+    payload?.data?.catalogo,
+    payload?.catalogo,
+    payload?.data?.permisos_catalogo,
+    payload?.permisos_catalogo,
     payload?.data?.rol?.permisos,
     payload?.data?.rol?.permission_codes,
     payload?.data?.rol?.permissions,
@@ -182,6 +205,30 @@ const extractPermisosSeleccionados = payload => {
   })
 
   return Array.from(new Set(merged))
+}
+
+const buildPermisosPayload = selected => {
+  const permisosPayload = (selected || []).map(item => String(item))
+  const permisosMap = permisosPayload.reduce((acc, code) => {
+    acc[code] = true
+
+    return acc
+  }, {})
+  const permisosObjects = permisosPayload.map(code => ({
+    codigo: code,
+    activo: true
+  }))
+
+  return {
+    permisos: permisosPayload,
+    permission_codes: permisosPayload,
+    permisosSeleccionados: permisosPayload,
+    permissions: permisosPayload,
+    permisos_map: permisosMap,
+    permisosMap,
+    permisos_detalle: permisosObjects,
+    permisosDetalle: permisosObjects
+  }
 }
 
 const BASE_PERMISSION_CODES = [
@@ -498,11 +545,7 @@ export default function SettingsModule() {
     try {
       const permisosPayload = Array.from(selectedPermisos)
 
-      await guardarPermisosRol(selectedRol.id, {
-        permisos: permisosPayload,
-        permission_codes: permisosPayload,
-        permisosSeleccionados: permisosPayload
-      })
+      await guardarPermisosRol(selectedRol.id, buildPermisosPayload(permisosPayload))
 
       setSuccess('Permisos del rol actualizados.')
     } catch (err) {
@@ -627,11 +670,7 @@ export default function SettingsModule() {
     try {
       const permisosPayload = permisosDialog.seleccionados || []
 
-      await guardarPermisosRol(permisosDialog.rolId, {
-        permisos: permisosPayload,
-        permission_codes: permisosPayload,
-        permisosSeleccionados: permisosPayload
-      })
+      await guardarPermisosRol(permisosDialog.rolId, buildPermisosPayload(permisosPayload))
       setSuccess(
         `Permisos actualizados para el rol ${permisosDialog.rolNombre || 'asignado'}. Se aplican a todos los analistas con ese rol.`
       )
@@ -1075,7 +1114,7 @@ export default function SettingsModule() {
               })}
             </Grid>
           )}
-            {!permisosDialog.loading && !(permisosDialog.permisos || []).length ? (
+            {!permisosDialog.loading && !(permisosDialog.seleccionados || []).length ? (
               <Typography color='text.secondary'>Este analista no tiene permisos efectivos asignados actualmente.</Typography>
             ) : null}
           </Stack>
