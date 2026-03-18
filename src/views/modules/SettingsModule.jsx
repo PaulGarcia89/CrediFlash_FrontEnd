@@ -156,7 +156,9 @@ const BASE_PERMISSION_CODES = [
   'analistas.view',
   'analistas.manage',
   'roles.view',
-  'roles.manage'
+  'roles.manage',
+  'logs.view',
+  'logs.manage'
 ]
 
 const normalizeRoleText = value =>
