@@ -160,6 +160,8 @@ const BASE_PERMISSION_CODES = [
   'logs.view',
   'logs.manage'
 ]
+const REQUIRED_PERMISSION_CODES = ['logs.view', 'logs.manage']
+const isValidPermissionCode = value => /^[a-z]+(?:\.[a-z_]+)+$/.test(String(value || '').trim().toLowerCase())
 
 const normalizeRoleText = value =>
   String(value || '')
@@ -237,9 +239,10 @@ export default function SettingsModule() {
   const canManageAnalistas = can('analistas.manage')
   const allowSettings = useMemo(() => canAny(['roles.view', 'analistas.view']), [canAny])
   const allPermissionCodes = useMemo(() => {
-    const catalogPermissions = flattenLeafIds(catalogo || [])
+    const catalogPermissions = flattenLeafIds(catalogo || []).filter(isValidPermissionCode)
+    const merged = [...BASE_PERMISSION_CODES, ...REQUIRED_PERMISSION_CODES, ...catalogPermissions]
 
-    return Array.from(new Set([...BASE_PERMISSION_CODES, ...catalogPermissions]))
+    return Array.from(new Set(merged))
   }, [catalogo])
   const activeTab = useMemo(() => {
     if (tab === 'roles' && !canViewRoles && canViewAnalistas) return 'analistas'
