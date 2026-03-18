@@ -41,6 +41,8 @@ const VerticalMenu = ({ scrollMenu }) => {
   const showSolicitudesCreate = can('solicitudes.create')
   const showCuotas = canAny(['prestamos.view', 'cuotas.view'])
   const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
+  const showReportes = can('reportes.view') || isAdminProfile
+  const showLogs = can('logs.view') || isAdminProfile
 
   return (
     <ScrollWrapper
@@ -92,13 +94,13 @@ const VerticalMenu = ({ scrollMenu }) => {
           </SubMenu>
         ) : null}
 
-        {isAdminProfile ? (
+        {showReportes ? (
           <MenuItem href='/reportes' icon={<i className='tabler-report-analytics' />}>
             Reportes
           </MenuItem>
         ) : null}
 
-        {isAdminProfile ? (
+        {showLogs ? (
           <MenuItem href='/logs' icon={<i className='tabler-file-text' />}>
             Logs
           </MenuItem>

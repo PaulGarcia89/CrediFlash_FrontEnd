@@ -249,6 +249,8 @@ const BASE_PERMISSION_CODES = [
   'documentos.delete',
   'ratings.run',
   'analytics.view',
+  'reportes.view',
+  'reportes.manage',
   'analistas.view',
   'analistas.manage',
   'roles.view',
