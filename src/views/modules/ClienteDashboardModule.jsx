@@ -66,6 +66,34 @@ const isActiveStatus = value => {
   return ['ACTIVO', 'ACTIVA', 'ACTIVE', 'VIGENTE', 'EN CURSO', 'EN_CURSO', 'PENDIENTE'].includes(normalized)
 }
 
+const isMoraStatus = value => {
+  const normalized = normalizeStatus(value)
+
+  return ['MORA', 'MOROSO', 'MOROSA', 'VENCIDO', 'VENCIDA', 'ATRASADO', 'ATRASADA', 'OVERDUE'].includes(normalized)
+}
+
+const parseDateSafe = value => {
+  if (!value) return null
+  const date = new Date(value)
+
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+const toEndOfDay = date => {
+  if (!date) return null
+  const copy = new Date(date)
+
+  copy.setHours(23, 59, 59, 999)
+
+  return copy
+}
+
+const isAfterDate = (leftDate, rightDate) => {
+  if (!leftDate || !rightDate) return false
+
+  return leftDate.getTime() > rightDate.getTime()
+}
+
 const normalizeBackendOrigin = () => {
   const raw = String(process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/$/, '')
 
@@ -226,6 +254,38 @@ export default function ClienteDashboardModule({ clienteId }) {
   const proximosPagos = useMemo(() => {
     if (!prestamoPrincipal) return []
 
+    const rawCuotas =
+      (Array.isArray(prestamoPrincipal?.cuotas) && prestamoPrincipal.cuotas) ||
+      (Array.isArray(prestamoPrincipal?.detalle_cuotas) && prestamoPrincipal.detalle_cuotas) ||
+      (Array.isArray(prestamoPrincipal?.plan_pagos) && prestamoPrincipal.plan_pagos) ||
+      (Array.isArray(prestamoPrincipal?.calendario_pagos) && prestamoPrincipal.calendario_pagos) ||
+      []
+    const todayEnd = toEndOfDay(new Date())
+
+    if (rawCuotas.length) {
+      return rawCuotas.map((cuota, index) => {
+        const dueDate =
+          parseDateSafe(cuota?.fecha_vencimiento) || parseDateSafe(cuota?.vencimiento) || parseDateSafe(cuota?.fecha)
+        const paymentDate =
+          parseDateSafe(cuota?.fecha_pago) || parseDateSafe(cuota?.fecha_pagada) || parseDateSafe(cuota?.pagado_en)
+        const estado = cuota?.estado || cuota?.status || 'Pendiente'
+        const isPending = ['PENDIENTE', 'EN_MORA', 'MORA', 'VENCIDA', 'VENCIDO'].includes(normalizeStatus(estado))
+        const lateByDate = Boolean(dueDate && isPending && isAfterDate(todayEnd, toEndOfDay(dueDate)))
+        const lateByPayment = Boolean(dueDate && paymentDate && isAfterDate(paymentDate, toEndOfDay(dueDate)))
+        const morosa = isMoraStatus(estado) || lateByDate || lateByPayment
+
+        return {
+          id: String(cuota?.id || `${prestamoPrincipal?.id || 'prestamo'}-${index}`),
+          label: `Cuota #${Number(cuota?.numero || cuota?.numero_cuota || index + 1)}`,
+          fecha: formatDateMMDDYYYY(dueDate || cuota?.fecha_vencimiento || cuota?.vencimiento || cuota?.fecha),
+          monto:
+            Number(cuota?.monto_total ?? cuota?.monto_cuota ?? cuota?.monto ?? cuota?.valor ?? prestamoPrincipal?.pagos_semanales) || 0,
+          estado,
+          morosa
+        }
+      })
+    }
+
     const totalCuotas = Math.max(Number(prestamoPrincipal?.num_semanas || 0), 0)
     const cuotasPagadas = Math.max(Number(prestamoPrincipal?.pagos_hechos || 0), 0)
     const baseDate = prestamoPrincipal?.fecha_inicio ? new Date(prestamoPrincipal.fecha_inicio) : new Date()
@@ -237,16 +297,26 @@ export default function ClienteDashboardModule({ clienteId }) {
       const date = new Date(baseDate)
 
       date.setDate(date.getDate() + index * 7)
+      const isPending = index >= cuotasPagadas
+      const morosa = isPending && isAfterDate(todayEnd, toEndOfDay(date))
 
       return {
         id: `${prestamoPrincipal?.id || 'prestamo'}-${index}`,
         label: `Cuota #${index + 1}`,
         fecha: formatDateMMDDYYYY(date),
         monto: amount,
-        estado: index < cuotasPagadas ? 'Pagada' : 'Pendiente'
+        estado: index < cuotasPagadas ? 'Pagada' : 'Pendiente',
+        morosa
       }
     })
   }, [prestamoPrincipal])
+
+  const prestamoPrincipalEnMora = useMemo(() => {
+    if (!prestamoPrincipal) return false
+    if (isMoraStatus(prestamoPrincipal?.status || prestamoPrincipal?.estado)) return true
+
+    return proximosPagos.some(item => item?.morosa)
+  }, [prestamoPrincipal, proximosPagos])
 
   const getDocumentOpenUrl = item => {
     const raw = item?.url_ver || item?.url_descarga || item?.download_url || item?.url || ''
@@ -587,16 +657,21 @@ export default function ClienteDashboardModule({ clienteId }) {
               <Typography variant='h5' sx={{ mb: 1.5 }}>
                 Cuotas del crédito activo
               </Typography>
+              {prestamoPrincipalEnMora ? (
+                <Chip size='small' color='error' variant='tonal' label='Préstamo en mora' sx={{ mb: 1.5 }} />
+              ) : null}
               {!proximosPagos.length ? <Typography color='text.secondary'>No hay cuotas disponibles.</Typography> : null}
               {proximosPagos.map(item => (
                 <Stack key={item.id} direction='row' justifyContent='space-between' sx={{ py: 1.5 }}>
                   <Box>
-                    <Typography>{item.label}</Typography>
-                    <Typography color='text.secondary'>
+                    <Typography color={item?.morosa ? 'error.main' : 'text.primary'}>{item.label}</Typography>
+                    <Typography color={item?.morosa ? 'error.main' : 'text.secondary'}>
                       Vence: {item.fecha} • Estado: {item.estado}
                     </Typography>
                   </Box>
-                  <Typography variant='h6'>{formatCurrency(item.monto)}</Typography>
+                  <Typography variant='h6' color={item?.morosa ? 'error.main' : 'text.primary'}>
+                    {formatCurrency(item.monto)}
+                  </Typography>
                 </Stack>
               ))}
             </CardContent>
@@ -610,12 +685,16 @@ export default function ClienteDashboardModule({ clienteId }) {
               {prestamos.slice(0, 5).map(item => (
                 <Stack key={`pay-${item.id}`} direction='row' justifyContent='space-between' sx={{ py: 1.5 }}>
                   <Box>
-                    <Typography>Pago semanal de préstamo</Typography>
-                    <Typography color='text.secondary'>
+                    <Typography color={isMoraStatus(item?.status || item?.estado) ? 'error.main' : 'text.primary'}>
+                      Pago semanal de préstamo
+                    </Typography>
+                    <Typography color={isMoraStatus(item?.status || item?.estado) ? 'error.main' : 'text.secondary'}>
                       {formatDateMMDDYYYY(item.fecha_inicio)} • Registro interno
                     </Typography>
                   </Box>
-                  <Typography color='success.main'>-{formatCurrency(item.pagos_semanales)}</Typography>
+                  <Typography color={isMoraStatus(item?.status || item?.estado) ? 'error.main' : 'success.main'}>
+                    -{formatCurrency(item.pagos_semanales)}
+                  </Typography>
                 </Stack>
               ))}
             </CardContent>
