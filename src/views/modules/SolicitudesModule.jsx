@@ -68,6 +68,21 @@ const LABEL_MAP = {
   objetivoPrestamo: 'Objetivo préstamo',
   esReferido: 'Es referido',
   tieneGarantia: 'Tiene garantía',
+  egresosMensuales: 'Egresos mensuales',
+  otrasDeudasMensuales: 'Otras deudas mensuales',
+  antiguedadLaboralMeses: 'Antigüedad laboral (meses)',
+  documentosCompletos: 'Documentos completos',
+  statusLegal: 'Status legal',
+  tiempoTrabajo: 'Tiempo de trabajo (meses)',
+  casaPropiaAlquiler: 'Casa propia o alquiler',
+  montoAuto: 'Monto del auto',
+  pagoAuto: 'Pago auto mensual',
+  gastosMensualesEstimados: 'Estimado gastos mensuales',
+  deudasActualesPagosMinimos: 'Deudas actuales pagos mínimos',
+  valorGarantia: 'Valor de garantía',
+  capacidadPagoMensual: 'Capacidad de pago mensual',
+  capacidadPagoSemanal: 'Capacidad de pago semanal',
+  coberturaCuotaPct: 'Cobertura cuota (%)',
   maxPuntos: 'Puntos máximos'
 }
 
@@ -140,6 +155,20 @@ const shouldExcludeDetalleBloquesEntry = (sectionTitle, keyOrIndex) => {
   const normalizedEntry = normalizeField(String(keyOrIndex))
 
   return normalizedEntry === '3' || normalizedEntry === '4'
+}
+
+const getRequestErrorMessage = err => {
+  const base = err?.message || 'No se pudo completar la operación.'
+  const payloadErrores = err?.payload?.errores
+
+  if (!Array.isArray(payloadErrores) || payloadErrores.length === 0) return base
+
+  const detail = payloadErrores
+    .map(item => item?.msg || item?.message || '')
+    .filter(Boolean)
+    .join(' | ')
+
+  return detail ? `${base}: ${detail}` : base
 }
 
 const formatValue = value => {
@@ -302,6 +331,34 @@ const parseDescuentoReferido = payload => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
 }
 
+const MODEL_NUMERIC_FIELDS = [
+  'edad',
+  'tiempoSemanas',
+  'montoGarantia',
+  'montoSolicitado',
+  'ingresosMensuales',
+  'egresosMensuales',
+  'otrasDeudasMensuales',
+  'antiguedadLaboralMeses',
+  'tiempoTrabajo',
+  'montoAuto',
+  'pagoAuto',
+  'gastosMensualesEstimados',
+  'deudasActualesPagosMinimos',
+  'valorGarantia'
+]
+
+const parseNonNegativeNumber = (value, label) => {
+  if (value === '' || value === null || value === undefined) return 0
+  const parsed = Number(value)
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${label} debe ser un número mayor o igual a 0.`)
+  }
+
+  return parsed
+}
+
 const initialModeloForm = {
   edad: '',
   sexo: 'M',
@@ -311,7 +368,19 @@ const initialModeloForm = {
   tieneGarantia: false,
   montoGarantia: '',
   montoSolicitado: '0',
-  ingresosMensuales: ''
+  ingresosMensuales: '',
+  egresosMensuales: '',
+  otrasDeudasMensuales: '',
+  antiguedadLaboralMeses: '',
+  documentosCompletos: true,
+  statusLegal: 'FORMAL',
+  tiempoTrabajo: '',
+  casaPropiaAlquiler: 'ALQUILER',
+  montoAuto: '',
+  pagoAuto: '',
+  gastosMensualesEstimados: '',
+  deudasActualesPagosMinimos: '',
+  valorGarantia: ''
 }
 
 export default function SolicitudesModule() {
@@ -545,16 +614,42 @@ export default function SolicitudesModule() {
       if (modeloTipo === 'CLIENTE_NUEVO') {
         await ejecutarModeloNuevo(selectedSolicitud.id)
 
+        const numericValues = MODEL_NUMERIC_FIELDS.reduce((acc, key) => {
+          acc[key] = parseNonNegativeNumber(ratingForm[key], getLabel(key))
+
+          return acc
+        }, {})
+
         const payload = {
-          edad: Number(ratingForm.edad || 0),
+          edad: numericValues.edad,
           sexo: ratingForm.sexo,
-          tiempoSemanas: Number(ratingForm.tiempoSemanas || 0),
+          tiempoSemanas: numericValues.tiempoSemanas,
           objetivoPrestamo: ratingForm.objetivoPrestamo,
           esReferido: Boolean(ratingForm.esReferido),
           tieneGarantia: Boolean(ratingForm.tieneGarantia),
-          montoGarantia: Number(ratingForm.montoGarantia || 0),
-          montoSolicitado: Number(ratingForm.montoSolicitado || 0),
-          ingresosMensuales: Number(ratingForm.ingresosMensuales || 0)
+          montoGarantia: ratingForm.tieneGarantia ? numericValues.montoGarantia : 0,
+          montoSolicitado: numericValues.montoSolicitado,
+          ingresosMensuales: numericValues.ingresosMensuales,
+          egresosMensuales: numericValues.egresosMensuales,
+          otrasDeudasMensuales: numericValues.otrasDeudasMensuales,
+          antiguedadLaboralMeses: numericValues.antiguedadLaboralMeses,
+          documentosCompletos: Boolean(ratingForm.documentosCompletos),
+          statusLegal: ratingForm.statusLegal,
+          tiempoTrabajo: numericValues.tiempoTrabajo,
+          casaPropiaAlquiler: ratingForm.casaPropiaAlquiler,
+          montoAuto: numericValues.montoAuto,
+          pagoAuto: numericValues.pagoAuto,
+          gastosMensualesEstimados: numericValues.gastosMensualesEstimados,
+          deudasActualesPagosMinimos: numericValues.deudasActualesPagosMinimos,
+          valorGarantia: numericValues.valorGarantia,
+          status_legal: ratingForm.statusLegal,
+          tiempo_trabajo: numericValues.tiempoTrabajo,
+          casa_propia_alquiler: ratingForm.casaPropiaAlquiler,
+          monto_auto: numericValues.montoAuto,
+          pago_auto: numericValues.pagoAuto,
+          estimados_gastos_mensuales: numericValues.gastosMensualesEstimados,
+          deudas_actuales_pagos_minimos: numericValues.deudasActualesPagosMinimos,
+          valor_garantia: numericValues.valorGarantia
         }
 
         const response = await ejecutarRatingNuevoCliente(payload)
@@ -589,7 +684,7 @@ export default function SolicitudesModule() {
         setModeloDialogInfo('')
       }, 1200)
     } catch (err) {
-      setModeloDialogError(err.message || 'No se pudo ejecutar el modelo.')
+      setModeloDialogError(getRequestErrorMessage(err))
     } finally {
       setRatingLoading(false)
     }
@@ -1113,6 +1208,33 @@ export default function SolicitudesModule() {
                   onChange={event => handleModeloForm('ingresosMensuales', event.target.value)}
                 />
                 <TextField
+                  label='Egresos mensuales'
+                  type='number'
+                  value={ratingForm.egresosMensuales}
+                  onChange={event => handleModeloForm('egresosMensuales', event.target.value)}
+                />
+                <TextField
+                  label='Otras deudas mensuales'
+                  type='number'
+                  value={ratingForm.otrasDeudasMensuales}
+                  onChange={event => handleModeloForm('otrasDeudasMensuales', event.target.value)}
+                />
+                <TextField
+                  label='Antigüedad laboral (meses)'
+                  type='number'
+                  value={ratingForm.antiguedadLaboralMeses}
+                  onChange={event => handleModeloForm('antiguedadLaboralMeses', event.target.value)}
+                />
+                <TextField
+                  select
+                  label='¿Documentos completos?'
+                  value={ratingForm.documentosCompletos ? 'SI' : 'NO'}
+                  onChange={event => handleModeloForm('documentosCompletos', event.target.value === 'SI')}
+                >
+                  <MenuItem value='SI'>Sí</MenuItem>
+                  <MenuItem value='NO'>No</MenuItem>
+                </TextField>
+                <TextField
                   select
                   label='¿Es referido?'
                   value={ratingForm.esReferido ? 'SI' : 'NO'}
@@ -1136,6 +1258,63 @@ export default function SolicitudesModule() {
                   value={ratingForm.montoGarantia}
                   onChange={event => handleModeloForm('montoGarantia', event.target.value)}
                   disabled={!ratingForm.tieneGarantia}
+                />
+                <TextField
+                  select
+                  label='Status legal'
+                  value={ratingForm.statusLegal}
+                  onChange={event => handleModeloForm('statusLegal', event.target.value)}
+                >
+                  <MenuItem value='FORMAL'>FORMAL</MenuItem>
+                  <MenuItem value='EN_REGLA'>EN_REGLA</MenuItem>
+                  <MenuItem value='RESIDENTE'>RESIDENTE</MenuItem>
+                  <MenuItem value='TEMPORAL'>TEMPORAL</MenuItem>
+                  <MenuItem value='IRREGULAR'>IRREGULAR</MenuItem>
+                </TextField>
+                <TextField
+                  label='Tiempo de trabajo (meses)'
+                  type='number'
+                  value={ratingForm.tiempoTrabajo}
+                  onChange={event => handleModeloForm('tiempoTrabajo', event.target.value)}
+                />
+                <TextField
+                  select
+                  label='Casa propia o alquiler'
+                  value={ratingForm.casaPropiaAlquiler}
+                  onChange={event => handleModeloForm('casaPropiaAlquiler', event.target.value)}
+                >
+                  <MenuItem value='PROPIA'>PROPIA</MenuItem>
+                  <MenuItem value='ALQUILER'>ALQUILER</MenuItem>
+                </TextField>
+                <TextField
+                  label='Monto del auto'
+                  type='number'
+                  value={ratingForm.montoAuto}
+                  onChange={event => handleModeloForm('montoAuto', event.target.value)}
+                />
+                <TextField
+                  label='Pago auto mensual'
+                  type='number'
+                  value={ratingForm.pagoAuto}
+                  onChange={event => handleModeloForm('pagoAuto', event.target.value)}
+                />
+                <TextField
+                  label='Estimado de gastos mensuales'
+                  type='number'
+                  value={ratingForm.gastosMensualesEstimados}
+                  onChange={event => handleModeloForm('gastosMensualesEstimados', event.target.value)}
+                />
+                <TextField
+                  label='Deudas actuales pagos mínimos'
+                  type='number'
+                  value={ratingForm.deudasActualesPagosMinimos}
+                  onChange={event => handleModeloForm('deudasActualesPagosMinimos', event.target.value)}
+                />
+                <TextField
+                  label='Valor de garantía'
+                  type='number'
+                  value={ratingForm.valorGarantia}
+                  onChange={event => handleModeloForm('valorGarantia', event.target.value)}
                 />
               </Stack>
             ) : (
