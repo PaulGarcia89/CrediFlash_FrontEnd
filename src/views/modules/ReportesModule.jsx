@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import Alert from '@mui/material/Alert'
+import Accordion from '@mui/material/Accordion'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import AccordionSummary from '@mui/material/AccordionSummary'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -35,6 +38,15 @@ import { formatDateMMDDYYYY } from '@/utils/date'
 
 const ALLOWED_FILE_EXTENSIONS = ['.xlsx', '.xls', '.csv']
 const ESTADOS_OPTIONS = ['', 'VALIDO', 'INVALIDO', 'DUPLICADO', 'PROCESADO']
+const REPORT_OPTIONS = [
+  { value: 'ganancias-esperadas-cobradas', label: 'Ganancias esperadas vs cobradas' },
+  { value: 'saldo-pendiente-cliente', label: 'Saldo pendiente por cliente' },
+  { value: 'moras-historial-pagos', label: 'Pagos en mora en historial' },
+  { value: 'ano-contra-ano', label: 'Reporte año contra año' },
+  { value: 'metas', label: 'Reporte de metas' },
+  { value: 'top-moras-diarias', label: 'Top moras diarias' },
+  { value: 'cuotas-pendientes-correo-admin', label: 'Cuotas pendientes enviadas a admin' }
+]
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -77,6 +89,18 @@ export default function ReportesModule() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [rows, setRows] = useState([])
+  const [reportFilters, setReportFilters] = useState({
+    tipo: REPORT_OPTIONS[0].value,
+    fecha_inicio: '',
+    fecha_fin: ''
+  })
+  const [reportResult, setReportResult] = useState({
+    generated: false,
+    title: '',
+    columns: [],
+    rows: [],
+    note: ''
+  })
   const [selectedFile, setSelectedFile] = useState(null)
   const [filters, setFilters] = useState({
     search: '',
@@ -285,6 +309,112 @@ export default function ReportesModule() {
     return totals
   }, [rows])
 
+  const generateReport = () => {
+    setError('')
+    setSuccess('')
+
+    if (!reportFilters.tipo) {
+      setError('Selecciona un tipo de reporte.')
+
+      return
+    }
+
+    if (!reportFilters.fecha_inicio || !reportFilters.fecha_fin) {
+      setError('Selecciona fecha de inicio y fecha de fin para generar el reporte.')
+
+      return
+    }
+
+    const selectedLabel = REPORT_OPTIONS.find(item => item.value === reportFilters.tipo)?.label || 'Reporte'
+
+    if (reportFilters.tipo === 'saldo-pendiente-cliente') {
+      const byClient = new Map()
+
+      rows.forEach(item => {
+        const name = String(item?.nombre_completo || 'Sin nombre').trim()
+        const amount = Number(item?.monto || 0)
+        const previous = byClient.get(name) || 0
+
+        byClient.set(name, previous + amount)
+      })
+
+      const output = Array.from(byClient.entries()).map(([nombre, saldo]) => ({
+        nombre,
+        saldo
+      }))
+
+      setReportResult({
+        generated: true,
+        title: selectedLabel,
+        columns: [
+          { id: 'nombre', label: 'Nombre completo' },
+          { id: 'saldo', label: 'Saldo pendiente' }
+        ],
+        rows: output,
+        note: 'Reporte generado desde datos cargados de pagos bancarios.'
+      })
+      setSuccess('Reporte generado correctamente.')
+
+      return
+    }
+
+    if (reportFilters.tipo === 'moras-historial-pagos' || reportFilters.tipo === 'top-moras-diarias') {
+      const moraRows = rows.filter(item => String(item?.estado || '').toUpperCase().includes('MORA'))
+
+      if (reportFilters.tipo === 'moras-historial-pagos') {
+        setReportResult({
+          generated: true,
+          title: selectedLabel,
+          columns: [
+            { id: 'nombre_completo', label: 'Nombre completo' },
+            { id: 'monto', label: 'Monto' },
+            { id: 'fecha_pago', label: 'Fecha pago' },
+            { id: 'estado', label: 'Estado' }
+          ],
+          rows: moraRows,
+          note: 'Filtrado por filas en estado MORA.'
+        })
+      } else {
+        const dailyMap = new Map()
+
+        moraRows.forEach(item => {
+          const day = formatDateMMDDYYYY(item?.fecha_pago)
+          const previous = dailyMap.get(day) || { fecha: day, cantidad: 0, monto: 0 }
+
+          previous.cantidad += 1
+          previous.monto += Number(item?.monto || 0)
+          dailyMap.set(day, previous)
+        })
+
+        setReportResult({
+          generated: true,
+          title: selectedLabel,
+          columns: [
+            { id: 'fecha', label: 'Fecha' },
+            { id: 'cantidad', label: 'Cantidad de moras' },
+            { id: 'monto', label: 'Monto total mora' }
+          ],
+          rows: Array.from(dailyMap.values()).sort((a, b) => b.cantidad - a.cantidad),
+          note: 'Top de moras diarias calculado desde datos visibles.'
+        })
+      }
+
+      setSuccess('Reporte generado correctamente.')
+
+      return
+    }
+
+    setReportResult({
+      generated: true,
+      title: selectedLabel,
+      columns: [],
+      rows: [],
+      note:
+        'Este reporte requiere endpoint dedicado del backend para cálculo financiero completo con rango de fechas.'
+    })
+    setSuccess('Plantilla de reporte generada. Falta integración backend para métricas finales.')
+  }
+
   if (!canViewReportes) {
     return <Alert severity='warning'>No tienes permisos para visualizar Reportes.</Alert>
   }
@@ -310,6 +440,105 @@ export default function ReportesModule() {
                 <Chip color='warning' variant='tonal' label={`Duplicadas: ${summary.duplicadas}`} />
                 <Chip color='info' variant='tonal' label={`Procesadas: ${summary.procesadas}`} />
               </Stack>
+
+              <Accordion>
+                <AccordionSummary expandIcon={<i className='tabler-chevron-down' />}>
+                  <Typography variant='h6'>Generador de reportes</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack spacing={1.5}>
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+                      <TextField
+                        select
+                        label='Tipo de reporte'
+                        size='small'
+                        value={reportFilters.tipo}
+                        onChange={event => setReportFilters(previous => ({ ...previous, tipo: event.target.value }))}
+                        sx={{ minWidth: { xs: '100%', md: 360 } }}
+                      >
+                        {REPORT_OPTIONS.map(item => (
+                          <MenuItem key={item.value} value={item.value}>
+                            {item.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <TextField
+                        size='small'
+                        type='date'
+                        label='Fecha inicio'
+                        value={reportFilters.fecha_inicio}
+                        onChange={event => setReportFilters(previous => ({ ...previous, fecha_inicio: event.target.value }))}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <TextField
+                        size='small'
+                        type='date'
+                        label='Fecha fin'
+                        value={reportFilters.fecha_fin}
+                        onChange={event => setReportFilters(previous => ({ ...previous, fecha_fin: event.target.value }))}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <Button variant='contained' onClick={generateReport}>
+                        Generar reporte
+                      </Button>
+                    </Stack>
+
+                    {reportResult.generated ? (
+                      <Card variant='outlined'>
+                        <CardContent>
+                          <Stack spacing={1.5}>
+                            <Typography variant='h6'>{reportResult.title}</Typography>
+                            <Typography color='text.secondary'>
+                              Rango: {formatDateMMDDYYYY(reportFilters.fecha_inicio)} - {formatDateMMDDYYYY(reportFilters.fecha_fin)}
+                            </Typography>
+                            {reportResult.note ? <Alert severity='info'>{reportResult.note}</Alert> : null}
+
+                            {reportResult.columns.length ? (
+                              <TableContainer>
+                                <Table size='small'>
+                                  <TableHead>
+                                    <TableRow>
+                                      {reportResult.columns.map(column => (
+                                        <TableCell key={column.id}>{column.label}</TableCell>
+                                      ))}
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {reportResult.rows.map((row, index) => (
+                                      <TableRow key={`${index}-${row?.id || row?.nombre || 'item'}`}>
+                                        {reportResult.columns.map(column => {
+                                          const value = row?.[column.id]
+
+                                          if (column.id.includes('monto') || column.id === 'saldo') {
+                                            return <TableCell key={column.id}>{formatUSD(Number(value || 0))}</TableCell>
+                                          }
+
+                                          if (column.id.includes('fecha')) {
+                                            return <TableCell key={column.id}>{formatDateMMDDYYYY(value)}</TableCell>
+                                          }
+
+                                          return <TableCell key={column.id}>{value ?? '-'}</TableCell>
+                                        })}
+                                      </TableRow>
+                                    ))}
+                                    {!reportResult.rows.length ? (
+                                      <TableRow>
+                                        <TableCell colSpan={reportResult.columns.length} align='center'>
+                                          Sin datos para este reporte en el rango seleccionado.
+                                        </TableCell>
+                                      </TableRow>
+                                    ) : null}
+                                  </TableBody>
+                                </Table>
+                              </TableContainer>
+                            ) : null}
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    ) : null}
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
             </Stack>
           ) : null}
 
