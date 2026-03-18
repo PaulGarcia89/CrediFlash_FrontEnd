@@ -73,7 +73,6 @@ const LABEL_MAP = {
   antiguedadLaboralMeses: 'Antigüedad laboral (meses)',
   documentosCompletos: 'Documentos completos',
   statusLegal: 'Status legal',
-  tiempoTrabajo: 'Tiempo de trabajo (meses)',
   casaPropiaAlquiler: 'Casa propia o alquiler',
   montoAuto: 'Monto del auto',
   pagoAuto: 'Pago auto mensual',
@@ -340,7 +339,6 @@ const MODEL_NUMERIC_FIELDS = [
   'egresosMensuales',
   'otrasDeudasMensuales',
   'antiguedadLaboralMeses',
-  'tiempoTrabajo',
   'montoAuto',
   'pagoAuto',
   'gastosMensualesEstimados',
@@ -374,7 +372,6 @@ const initialModeloForm = {
   antiguedadLaboralMeses: '',
   documentosCompletos: true,
   statusLegal: 'FORMAL',
-  tiempoTrabajo: '',
   casaPropiaAlquiler: 'ALQUILER',
   montoAuto: '',
   pagoAuto: '',
@@ -635,7 +632,7 @@ export default function SolicitudesModule() {
           antiguedadLaboralMeses: numericValues.antiguedadLaboralMeses,
           documentosCompletos: Boolean(ratingForm.documentosCompletos),
           statusLegal: ratingForm.statusLegal,
-          tiempoTrabajo: numericValues.tiempoTrabajo,
+          tiempoTrabajo: numericValues.antiguedadLaboralMeses,
           casaPropiaAlquiler: ratingForm.casaPropiaAlquiler,
           montoAuto: numericValues.montoAuto,
           pagoAuto: numericValues.pagoAuto,
@@ -643,7 +640,7 @@ export default function SolicitudesModule() {
           deudasActualesPagosMinimos: numericValues.deudasActualesPagosMinimos,
           valorGarantia: numericValues.valorGarantia,
           status_legal: ratingForm.statusLegal,
-          tiempo_trabajo: numericValues.tiempoTrabajo,
+          tiempo_trabajo: numericValues.antiguedadLaboralMeses,
           casa_propia_alquiler: ratingForm.casaPropiaAlquiler,
           monto_auto: numericValues.montoAuto,
           pago_auto: numericValues.pagoAuto,
@@ -1271,12 +1268,6 @@ export default function SolicitudesModule() {
                   <MenuItem value='TEMPORAL'>TEMPORAL</MenuItem>
                   <MenuItem value='IRREGULAR'>IRREGULAR</MenuItem>
                 </TextField>
-                <TextField
-                  label='Tiempo de trabajo (meses)'
-                  type='number'
-                  value={ratingForm.tiempoTrabajo}
-                  onChange={event => handleModeloForm('tiempoTrabajo', event.target.value)}
-                />
                 <TextField
                   select
                   label='Casa propia o alquiler'
