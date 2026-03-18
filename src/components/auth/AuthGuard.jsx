@@ -8,6 +8,7 @@ import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 
 import { obtenerPerfilAnalista } from '@/api/auth'
+import { logRouteNavigation } from '@/lib/audit/logs'
 import { getToken, setSession } from '@/lib/auth/session'
 
 export default function AuthGuard({ children }) {
@@ -48,6 +49,13 @@ export default function AuthGuard({ children }) {
       cancelled = true
     }
   }, [pathname, router])
+
+  useEffect(() => {
+    if (!ready) return
+    if (!pathname) return
+
+    logRouteNavigation(pathname)
+  }, [pathname, ready])
 
   if (!ready) {
     return (

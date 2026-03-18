@@ -1,4 +1,5 @@
 import { clearSession } from '@/lib/auth/session'
+import { logApiMutation } from '@/lib/audit/logs'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
@@ -144,6 +145,14 @@ export const apiRequest = async (path, { method = 'GET', query, body, auth = tru
     error.method = method
 
     throw error
+  }
+
+  if (typeof window !== 'undefined') {
+    logApiMutation({
+      method,
+      path,
+      status: response.status
+    })
   }
 
   return payload
