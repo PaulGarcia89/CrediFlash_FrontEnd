@@ -33,7 +33,6 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
 import {
-  aprobarSolicitud,
   ejecutarModeloAntiguo,
   ejecutarModeloNuevo,
   ejecutarRatingClienteAntiguo,
@@ -41,6 +40,7 @@ import {
   listarSolicitudes,
   rechazarSolicitud
 } from '@/api/solicitudes'
+import { aprobarSolicitudComoPrestamo } from '@/api/prestamos'
 import usePermissions from '@/hooks/usePermissions'
 import { formatUSD } from '@/utils/currency'
 
@@ -290,6 +290,17 @@ const getClienteNombre = row => {
 
   return row?.cliente_nombre || row?.nombre_cliente || ''
 }
+const parseDescuentoReferido = payload => {
+  const raw =
+    payload?.descuento_referido_aplicado ??
+    payload?.descuentoReferidoAplicado ??
+    payload?.descuento_referido ??
+    payload?.monto_descuento_referido ??
+    0
+  const parsed = Number(raw)
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
 
 const initialModeloForm = {
   edad: '',
@@ -394,13 +405,14 @@ export default function SolicitudesModule() {
         approvalRequestBody = { num_semanas: numSemanas }
       }
 
-      const response = await aprobarSolicitud(row.id, approvalRequestBody)
+      const response = await aprobarSolicitudComoPrestamo(row.id, approvalRequestBody)
       const responsePayload = response?.data || response || {}
       const nombreCliente = getClienteNombre(row) || responsePayload?.prestamo?.nombre_completo || 'cliente seleccionado'
       const cuotasGeneradasRaw = responsePayload?.cuotas_generadas
       const cuotasGeneradas = Array.isArray(cuotasGeneradasRaw)
         ? cuotasGeneradasRaw.length
         : Number(cuotasGeneradasRaw || responsePayload?.cuotas || 0)
+      const descuentoReferidoAplicado = parseDescuentoReferido(responsePayload)
       const suffix = [
         `Préstamo de ${nombreCliente} creado.`,
         Number.isFinite(cuotasGeneradas) && cuotasGeneradas > 0 ? `${cuotasGeneradas} cuota(s) generada(s).` : ''
@@ -408,7 +420,12 @@ export default function SolicitudesModule() {
         .filter(Boolean)
         .join(' ')
 
-      setSuccess(`Solicitud aprobada.${suffix ? ` ${suffix}` : ''}`)
+      const descuentoMsg =
+        descuentoReferidoAplicado > 0
+          ? ` Descuento por referido aplicado: ${formatUSD(descuentoReferidoAplicado)} en la última cuota.`
+          : ''
+
+      setSuccess(`Préstamo aprobado correctamente.${suffix ? ` ${suffix}` : ''}${descuentoMsg}`)
       await loadSolicitudes()
       setAprobacionDialogOpen(false)
       setSolicitudAprobacion(null)

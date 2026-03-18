@@ -46,6 +46,33 @@ const normalizeText = value =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
+const parseDescuentoReferidoAplicado = row => {
+  const raw =
+    row?.descuento_referido_aplicado ??
+    row?.descuentoReferidoAplicado ??
+    row?.descuento_referido ??
+    row?.monto_descuento_referido ??
+    row?.prestamo?.descuento_referido_aplicado ??
+    0
+  const parsed = Number(raw)
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+const hasDescuentoReferidoObservacion = row => {
+  const observationCandidates = [
+    row?.observaciones,
+    row?.ultima_cuota_observacion,
+    row?.observacion_ultima_cuota,
+    row?.observacion,
+    row?.ultima_cuota?.observaciones,
+    row?.ultima_cuota?.observacion,
+    row?.ultimaCuota?.observaciones,
+    row?.ultimaCuota?.observacion
+  ]
+  const normalized = observationCandidates.map(normalizeText).join(' ')
+
+  return normalized.includes('descuento referido aplicado') || normalized.includes('descuento referido')
+}
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -792,12 +819,17 @@ export default function CuotasModule() {
                       <TableCell>{row.num_semanas ?? '-'}</TableCell>
                       <TableCell>{getCuotasRestantes(row)}</TableCell>
                       <TableCell>
-                        <Chip
-                          size='small'
-                          variant='tonal'
-                          label={getOperationalStatus(row)}
-                          color={getStatusColor(getOperationalStatus(row))}
-                        />
+                        <Stack direction='row' spacing={0.75} flexWrap='wrap' alignItems='center'>
+                          <Chip
+                            size='small'
+                            variant='tonal'
+                            label={getOperationalStatus(row)}
+                            color={getStatusColor(getOperationalStatus(row))}
+                          />
+                          {hasDescuentoReferidoObservacion(row) ? (
+                            <Chip size='small' variant='tonal' color='success' label='Descuento referido' />
+                          ) : null}
+                        </Stack>
                       </TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.5} flexWrap='wrap'>
@@ -985,6 +1017,14 @@ export default function CuotasModule() {
             <Typography>
               Estado: <strong>{selectedPrestamo?.status || '-'}</strong>
             </Typography>
+            {parseDescuentoReferidoAplicado(selectedPrestamo) > 0 ? (
+              <Chip
+                size='small'
+                variant='tonal'
+                color='success'
+                label={`Descuento por referido aplicado: ${formatCurrency(parseDescuentoReferidoAplicado(selectedPrestamo))}`}
+              />
+            ) : null}
             <Typography>
               Contrato PDF:{' '}
               <strong>{getContractOpenUrl(selectedPrestamo) ? 'Disponible para visualización' : 'No disponible'}</strong>
