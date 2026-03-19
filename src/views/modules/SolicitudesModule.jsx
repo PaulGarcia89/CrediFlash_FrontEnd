@@ -37,6 +37,7 @@ import {
   ejecutarModeloNuevo,
   ejecutarRatingClienteAntiguo,
   ejecutarRatingNuevoCliente,
+  ejecutarScoringSemanalNuevoCliente,
   listarSolicitudes,
   rechazarSolicitud
 } from '@/api/solicitudes'
@@ -79,6 +80,13 @@ const LABEL_MAP = {
   gastosMensualesEstimados: 'Estimado gastos mensuales',
   deudasActualesPagosMinimos: 'Deudas actuales pagos mínimos',
   valorGarantia: 'Valor de garantía',
+  tipoAmortizacion: 'Tipo amortización',
+  pd: 'PD',
+  score: 'Score',
+  rating: 'Rating',
+  paymentCapacityRatio: 'Índice de cobertura cuota',
+  cuotaSemanal: 'Cuota semanal',
+  montoAprobado: 'Monto aprobado',
   capacidadPagoMensual: 'Capacidad de pago mensual',
   capacidadPagoSemanal: 'Capacidad de pago semanal',
   coberturaCuotaPct: 'Cobertura cuota (%)',
@@ -357,6 +365,39 @@ const parseNonNegativeNumber = (value, label) => {
   return parsed
 }
 
+const extractResultadoModelo = payload => {
+  const source = payload?.data || payload || {}
+
+  if (!isPlainObject(source)) return {}
+
+  const decisionState = String(source?.decision?.estado || source?.decision?.status || '').toUpperCase()
+  const aprobado = decisionState === 'APROBADO' || decisionState === 'APPROVED'
+  const hasWeeklyStructure =
+    isPlainObject(source?.riesgo) ||
+    isPlainObject(source?.capacidadPago) ||
+    isPlainObject(source?.oferta) ||
+    isPlainObject(source?.decision)
+
+  if (!hasWeeklyStructure) return source
+
+  return {
+    ...source,
+    resumen: {
+      ...(isPlainObject(source?.resumen) ? source.resumen : {}),
+      decision: source?.decision?.estado || source?.decision?.status || source?.resumen?.decision || '',
+      aprobado,
+      pd: source?.riesgo?.pd,
+      score: source?.riesgo?.score,
+      rating: source?.riesgo?.rating,
+      capacidadPagoMensual: source?.resumen?.capacidadPagoMensual,
+      capacidadPagoSemanal: source?.capacidadPago?.capacidadPagoSemanal,
+      cuotaSemanal: source?.capacidadPago?.cuotaSemanal,
+      paymentCapacityRatio: source?.capacidadPago?.paymentCapacityRatio,
+      montoAprobado: source?.oferta?.montoAprobado
+    }
+  }
+}
+
 const initialModeloForm = {
   edad: '',
   sexo: 'M',
@@ -377,7 +418,8 @@ const initialModeloForm = {
   pagoAuto: '',
   gastosMensualesEstimados: '',
   deudasActualesPagosMinimos: '',
-  valorGarantia: ''
+  valorGarantia: '',
+  tipoAmortizacion: 'SIMPLE'
 }
 
 export default function SolicitudesModule() {
@@ -636,9 +678,12 @@ export default function SolicitudesModule() {
           casaPropiaAlquiler: ratingForm.casaPropiaAlquiler,
           montoAuto: numericValues.montoAuto,
           pagoAuto: numericValues.pagoAuto,
+          pagoAutoMensual: numericValues.pagoAuto,
           gastosMensualesEstimados: numericValues.gastosMensualesEstimados,
           deudasActualesPagosMinimos: numericValues.deudasActualesPagosMinimos,
+          deudasActualesPagosMinimosMensuales: numericValues.deudasActualesPagosMinimos,
           valorGarantia: numericValues.valorGarantia,
+          tipoAmortizacion: ratingForm.tipoAmortizacion,
           status_legal: ratingForm.statusLegal,
           tiempo_trabajo: numericValues.antiguedadLaboralMeses,
           casa_propia_alquiler: ratingForm.casaPropiaAlquiler,
@@ -649,9 +694,20 @@ export default function SolicitudesModule() {
           valor_garantia: numericValues.valorGarantia
         }
 
-        const response = await ejecutarRatingNuevoCliente(payload)
+        let response
 
-        setResultadoModelo(response)
+        try {
+          response = await ejecutarScoringSemanalNuevoCliente(payload)
+        } catch (weeklyErr) {
+          if (Number(weeklyErr?.status) === 404 || Number(weeklyErr?.status) === 400) {
+            response = await ejecutarRatingNuevoCliente(payload)
+            setModeloDialogInfo('Se ejecutó el modelo clásico como respaldo mientras se habilita el scoring semanal.')
+          } else {
+            throw weeklyErr
+          }
+        }
+
+        setResultadoModelo(extractResultadoModelo(response))
       } else {
         await ejecutarModeloAntiguo(selectedSolicitud.id)
 
@@ -663,7 +719,7 @@ export default function SolicitudesModule() {
 
         const response = await ejecutarRatingClienteAntiguo(clienteNombre)
 
-        setResultadoModelo(response)
+        setResultadoModelo(extractResultadoModelo(response))
       }
 
       const elapsed = Date.now() - start
@@ -755,7 +811,18 @@ export default function SolicitudesModule() {
   }, [rows, pagination.total])
 
   const resumen = resultadoModelo?.resumen || {}
-  const riesgoColor = resumen?.colorRiesgo || 'primary.main'
+  const decisionEstado = String(
+    resumen?.decision || resultadoModelo?.decision?.estado || resultadoModelo?.decision?.status || ''
+  ).toUpperCase()
+  const riesgoColor =
+    resumen?.colorRiesgo ||
+    (decisionEstado === 'APROBADO' || decisionEstado === 'APPROVED'
+      ? 'success.main'
+      : decisionEstado === 'REVISIÓN' || decisionEstado === 'REVISION' || decisionEstado === 'REVIEW'
+        ? 'warning.main'
+        : decisionEstado === 'RECHAZADO' || decisionEstado === 'REJECTED'
+          ? 'error.main'
+          : 'primary.main')
 
   const orderedSections = resultadoModelo
     ? Object.entries(resultadoModelo).filter(
@@ -1193,6 +1260,15 @@ export default function SolicitudesModule() {
                   onChange={event => handleModeloForm('objetivoPrestamo', event.target.value)}
                 />
                 <TextField
+                  select
+                  label='Tipo amortización'
+                  value={ratingForm.tipoAmortizacion}
+                  onChange={event => handleModeloForm('tipoAmortizacion', event.target.value)}
+                >
+                  <MenuItem value='SIMPLE'>SIMPLE</MenuItem>
+                  <MenuItem value='FRANCES'>FRANCES</MenuItem>
+                </TextField>
+                <TextField
                   label='Monto solicitado'
                   type='number'
                   value={ratingForm.montoSolicitado}
@@ -1369,7 +1445,17 @@ export default function SolicitudesModule() {
         <DialogContent>
           <Stack spacing={2} mt={1}>
             {resumen?.decision ? (
-              <Alert severity={resumen?.aprobado ? 'success' : 'warning'}>{resumen.decision}</Alert>
+              <Alert
+                severity={
+                  decisionEstado === 'APROBADO' || decisionEstado === 'APPROVED'
+                    ? 'success'
+                    : decisionEstado === 'RECHAZADO' || decisionEstado === 'REJECTED'
+                      ? 'error'
+                      : 'warning'
+                }
+              >
+                {resumen.decision}
+              </Alert>
             ) : null}
 
             <Grid container spacing={1.5}>

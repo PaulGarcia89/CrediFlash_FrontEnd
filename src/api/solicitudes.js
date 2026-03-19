@@ -55,6 +55,12 @@ export const ejecutarRatingNuevoCliente = payload =>
     body: payload
   })
 
+export const ejecutarScoringSemanalNuevoCliente = payload =>
+  apiRequest('/v1/scoring/evaluate-weekly', {
+    method: 'POST',
+    body: payload
+  })
+
 export const ejecutarRatingClienteAntiguo = nombreCompleto =>
   apiRequest(`/ratings/client/${encodeURIComponent(nombreCompleto)}`, {
     method: 'GET'
