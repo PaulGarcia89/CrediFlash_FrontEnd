@@ -44,8 +44,7 @@ const REPORT_OPTIONS = [
   { value: 'moras-historial-pagos', label: 'Pagos en mora en historial' },
   { value: 'ano-contra-ano', label: 'Reporte año contra año' },
   { value: 'metas', label: 'Reporte de metas' },
-  { value: 'top-moras-diarias', label: 'Top moras diarias' },
-  { value: 'cuotas-pendientes-correo-admin', label: 'Cuotas pendientes enviadas a admin' }
+  { value: 'top-moras-diarias', label: 'Top moras diarias' }
 ]
 
 const extractRows = payload => {
