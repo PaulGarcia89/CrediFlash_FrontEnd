@@ -100,7 +100,8 @@ const EXCLUDED_RESULT_FIELDS = new Set([
   'decisionpolicy',
   'auditoria',
   'inputsfaltantes',
-  'warnings'
+  'warnings',
+  'capacidadpagomensual'
 ])
 
 const EXCLUDED_RESULT_VALUES = new Set(['#10b981'])
@@ -384,7 +385,6 @@ const extractResultadoModelo = payload => {
       pd: source?.riesgo?.pd,
       score: source?.riesgo?.score,
       rating: source?.riesgo?.rating,
-      capacidadPagoMensual: source?.resumen?.capacidadPagoMensual,
       capacidadPagoSemanal: source?.capacidadPago?.capacidadPagoSemanal,
       cuotaSemanal: source?.capacidadPago?.cuotaSemanal,
       paymentCapacityRatio: source?.capacidadPago?.paymentCapacityRatio,
