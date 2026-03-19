@@ -31,7 +31,7 @@ import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
-import { cargarPagosBancariosArchivo, listarPagosBancarios, obtenerDetalleLotePagos } from '@/api/reportes'
+import { cargarPagosBancariosArchivo, generarReporte, listarPagosBancarios, obtenerDetalleLotePagos } from '@/api/reportes'
 import usePermissions from '@/hooks/usePermissions'
 import { formatUSD } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
@@ -81,6 +81,19 @@ const getEstadoColor = estado => {
   return 'default'
 }
 
+const toMMDDYYYY = inputValue => {
+  if (!inputValue) return ''
+  const date = new Date(inputValue)
+
+  if (Number.isNaN(date.getTime())) return inputValue
+
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const yyyy = String(date.getFullYear())
+
+  return `${mm}/${dd}/${yyyy}`
+}
+
 export default function ReportesModule() {
   const { analista, can } = usePermissions()
   const [subMenu, setSubMenu] = useState('resumen')
@@ -99,6 +112,7 @@ export default function ReportesModule() {
     title: '',
     columns: [],
     rows: [],
+    resumen: null,
     note: ''
   })
   const [selectedFile, setSelectedFile] = useState(null)
@@ -309,7 +323,7 @@ export default function ReportesModule() {
     return totals
   }, [rows])
 
-  const generateReport = () => {
+  const generateReport = async () => {
     setError('')
     setSuccess('')
 
@@ -326,6 +340,47 @@ export default function ReportesModule() {
     }
 
     const selectedLabel = REPORT_OPTIONS.find(item => item.value === reportFilters.tipo)?.label || 'Reporte'
+
+    if (reportFilters.tipo === 'top-moras-diarias') {
+      setLoading(true)
+
+      try {
+        const response = await generarReporte({
+          tipo: reportFilters.tipo,
+          fecha_inicio: toMMDDYYYY(reportFilters.fecha_inicio),
+          fecha_fin: toMMDDYYYY(reportFilters.fecha_fin),
+          top: 10
+        })
+        const source = response?.data || response || {}
+        const reportRows = Array.isArray(source?.rows) ? source.rows : []
+        const reportColumns = Array.isArray(source?.columns)
+          ? source.columns
+          : [
+              { id: 'fecha_reporte', label: 'Fecha reporte' },
+              { id: 'cliente_id', label: 'Cliente ID' },
+              { id: 'nombre_completo', label: 'Nombre completo' },
+              { id: 'cantidad_cuotas_en_mora', label: 'Cuotas en mora' },
+              { id: 'monto_mora_hoy', label: 'Monto mora hoy' },
+              { id: 'dias_mora_max', label: 'Días mora máx.' }
+            ]
+
+        setReportResult({
+          generated: true,
+          title: selectedLabel,
+          columns: reportColumns,
+          rows: reportRows,
+          resumen: source?.resumen || null,
+          note: ''
+        })
+        setSuccess('Reporte generado correctamente.')
+      } catch (err) {
+        setError(err.message || 'No se pudo generar el reporte Top moras diarias.')
+      } finally {
+        setLoading(false)
+      }
+
+      return
+    }
 
     if (reportFilters.tipo === 'saldo-pendiente-cliente') {
       const byClient = new Map()
@@ -351,6 +406,7 @@ export default function ReportesModule() {
           { id: 'saldo', label: 'Saldo pendiente' }
         ],
         rows: output,
+        resumen: null,
         note: 'Reporte generado desde datos cargados de pagos bancarios.'
       })
       setSuccess('Reporte generado correctamente.')
@@ -372,6 +428,7 @@ export default function ReportesModule() {
             { id: 'estado', label: 'Estado' }
           ],
           rows: moraRows,
+          resumen: null,
           note: 'Filtrado por filas en estado MORA.'
         })
       } else {
@@ -395,6 +452,7 @@ export default function ReportesModule() {
             { id: 'monto', label: 'Monto total mora' }
           ],
           rows: Array.from(dailyMap.values()).sort((a, b) => b.cantidad - a.cantidad),
+          resumen: null,
           note: 'Top de moras diarias calculado desde datos visibles.'
         })
       }
@@ -409,6 +467,7 @@ export default function ReportesModule() {
       title: selectedLabel,
       columns: [],
       rows: [],
+      resumen: null,
       note:
         'Este reporte requiere endpoint dedicado del backend para cálculo financiero completo con rango de fechas.'
     })
@@ -492,6 +551,25 @@ export default function ReportesModule() {
                               Rango: {formatDateMMDDYYYY(reportFilters.fecha_inicio)} - {formatDateMMDDYYYY(reportFilters.fecha_fin)}
                             </Typography>
                             {reportResult.note ? <Alert severity='info'>{reportResult.note}</Alert> : null}
+                            {reportFilters.tipo === 'top-moras-diarias' ? (
+                              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+                                <Chip
+                                  variant='tonal'
+                                  color='warning'
+                                  label={`Clientes en mora hoy: ${Number(reportResult?.resumen?.total_clientes_en_mora || 0)}`}
+                                />
+                                <Chip
+                                  variant='tonal'
+                                  color='warning'
+                                  label={`Cuotas en mora hoy: ${Number(reportResult?.resumen?.total_cuotas_en_mora || 0)}`}
+                                />
+                                <Chip
+                                  variant='tonal'
+                                  color='error'
+                                  label={`Monto total en mora hoy: ${formatUSD(Number(reportResult?.resumen?.monto_total_en_mora || 0))}`}
+                                />
+                              </Stack>
+                            ) : null}
 
                             {reportResult.columns.length ? (
                               <TableContainer>
@@ -509,7 +587,12 @@ export default function ReportesModule() {
                                         {reportResult.columns.map(column => {
                                           const value = row?.[column.id]
 
-                                          if (column.id.includes('monto') || column.id === 'saldo') {
+                                          if (
+                                            column.id.includes('monto') ||
+                                            column.id === 'saldo' ||
+                                            column.id === 'monto_mora_hoy' ||
+                                            column.id === 'monto_total_en_mora'
+                                          ) {
                                             return <TableCell key={column.id}>{formatUSD(Number(value || 0))}</TableCell>
                                           }
 
@@ -524,7 +607,9 @@ export default function ReportesModule() {
                                     {!reportResult.rows.length ? (
                                       <TableRow>
                                         <TableCell colSpan={reportResult.columns.length} align='center'>
-                                          Sin datos para este reporte en el rango seleccionado.
+                                          {reportFilters.tipo === 'top-moras-diarias'
+                                            ? 'No hay clientes en mora hoy.'
+                                            : 'Sin datos para este reporte en el rango seleccionado.'}
                                         </TableCell>
                                       </TableRow>
                                     ) : null}

@@ -38,3 +38,13 @@ export const obtenerDetalleLotePagos = loteId =>
     method: 'GET'
   })
 
+export const generarReporte = ({ tipo, fecha_inicio, fecha_fin, top = 10 } = {}) =>
+  apiRequest('/reportes/generar', {
+    method: 'GET',
+    query: {
+      tipo,
+      fecha_inicio,
+      fecha_fin,
+      top
+    }
+  })
