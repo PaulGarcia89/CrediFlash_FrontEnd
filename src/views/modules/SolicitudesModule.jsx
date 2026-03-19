@@ -64,12 +64,10 @@ const LABEL_MAP = {
   estadisticas: 'Estadísticas',
   montoSolicitado: 'Monto solicitado',
   ingresosMensuales: 'Ingresos mensuales',
-  montoGarantia: 'Monto garantía',
   tiempoSemanas: 'Tiempo (semanas)',
   objetivoPrestamo: 'Objetivo préstamo',
   esReferido: 'Es referido',
   tieneGarantia: 'Tiene garantía',
-  egresosMensuales: 'Egresos mensuales',
   otrasDeudasMensuales: 'Otras deudas mensuales',
   antiguedadLaboralMeses: 'Antigüedad laboral (meses)',
   documentosCompletos: 'Documentos completos',
@@ -80,7 +78,6 @@ const LABEL_MAP = {
   gastosMensualesEstimados: 'Estimado gastos mensuales',
   deudasActualesPagosMinimos: 'Deudas actuales pagos mínimos',
   valorGarantia: 'Valor de garantía',
-  tipoAmortizacion: 'Tipo amortización',
   pd: 'PD',
   score: 'Score',
   rating: 'Rating',
@@ -341,10 +338,8 @@ const parseDescuentoReferido = payload => {
 const MODEL_NUMERIC_FIELDS = [
   'edad',
   'tiempoSemanas',
-  'montoGarantia',
   'montoSolicitado',
   'ingresosMensuales',
-  'egresosMensuales',
   'otrasDeudasMensuales',
   'antiguedadLaboralMeses',
   'montoAuto',
@@ -405,10 +400,8 @@ const initialModeloForm = {
   objetivoPrestamo: 'inversion',
   esReferido: false,
   tieneGarantia: false,
-  montoGarantia: '',
   montoSolicitado: '0',
   ingresosMensuales: '',
-  egresosMensuales: '',
   otrasDeudasMensuales: '',
   antiguedadLaboralMeses: '',
   documentosCompletos: true,
@@ -418,8 +411,7 @@ const initialModeloForm = {
   pagoAuto: '',
   gastosMensualesEstimados: '',
   deudasActualesPagosMinimos: '',
-  valorGarantia: '',
-  tipoAmortizacion: 'SIMPLE'
+  valorGarantia: ''
 }
 
 export default function SolicitudesModule() {
@@ -666,10 +658,10 @@ export default function SolicitudesModule() {
           objetivoPrestamo: ratingForm.objetivoPrestamo,
           esReferido: Boolean(ratingForm.esReferido),
           tieneGarantia: Boolean(ratingForm.tieneGarantia),
-          montoGarantia: ratingForm.tieneGarantia ? numericValues.montoGarantia : 0,
+          montoGarantia: ratingForm.tieneGarantia ? numericValues.valorGarantia : 0,
           montoSolicitado: numericValues.montoSolicitado,
           ingresosMensuales: numericValues.ingresosMensuales,
-          egresosMensuales: numericValues.egresosMensuales,
+          egresosMensuales: 0,
           otrasDeudasMensuales: numericValues.otrasDeudasMensuales,
           antiguedadLaboralMeses: numericValues.antiguedadLaboralMeses,
           documentosCompletos: Boolean(ratingForm.documentosCompletos),
@@ -683,7 +675,6 @@ export default function SolicitudesModule() {
           deudasActualesPagosMinimos: numericValues.deudasActualesPagosMinimos,
           deudasActualesPagosMinimosMensuales: numericValues.deudasActualesPagosMinimos,
           valorGarantia: numericValues.valorGarantia,
-          tipoAmortizacion: ratingForm.tipoAmortizacion,
           status_legal: ratingForm.statusLegal,
           tiempo_trabajo: numericValues.antiguedadLaboralMeses,
           casa_propia_alquiler: ratingForm.casaPropiaAlquiler,
@@ -1260,15 +1251,6 @@ export default function SolicitudesModule() {
                   onChange={event => handleModeloForm('objetivoPrestamo', event.target.value)}
                 />
                 <TextField
-                  select
-                  label='Tipo amortización'
-                  value={ratingForm.tipoAmortizacion}
-                  onChange={event => handleModeloForm('tipoAmortizacion', event.target.value)}
-                >
-                  <MenuItem value='SIMPLE'>SIMPLE</MenuItem>
-                  <MenuItem value='FRANCES'>FRANCES</MenuItem>
-                </TextField>
-                <TextField
                   label='Monto solicitado'
                   type='number'
                   value={ratingForm.montoSolicitado}
@@ -1279,12 +1261,6 @@ export default function SolicitudesModule() {
                   type='number'
                   value={ratingForm.ingresosMensuales}
                   onChange={event => handleModeloForm('ingresosMensuales', event.target.value)}
-                />
-                <TextField
-                  label='Egresos mensuales'
-                  type='number'
-                  value={ratingForm.egresosMensuales}
-                  onChange={event => handleModeloForm('egresosMensuales', event.target.value)}
                 />
                 <TextField
                   label='Otras deudas mensuales'
@@ -1325,13 +1301,6 @@ export default function SolicitudesModule() {
                   <MenuItem value='SI'>Sí</MenuItem>
                   <MenuItem value='NO'>No</MenuItem>
                 </TextField>
-                <TextField
-                  label='Monto garantía'
-                  type='number'
-                  value={ratingForm.montoGarantia}
-                  onChange={event => handleModeloForm('montoGarantia', event.target.value)}
-                  disabled={!ratingForm.tieneGarantia}
-                />
                 <TextField
                   select
                   label='Status legal'
@@ -1382,6 +1351,7 @@ export default function SolicitudesModule() {
                   type='number'
                   value={ratingForm.valorGarantia}
                   onChange={event => handleModeloForm('valorGarantia', event.target.value)}
+                  disabled={!ratingForm.tieneGarantia}
                 />
               </Stack>
             ) : (
