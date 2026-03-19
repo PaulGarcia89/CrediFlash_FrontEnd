@@ -490,15 +490,6 @@ export default function ReportesModule() {
 
           {subMenu === 'resumen' ? (
             <Stack spacing={2} sx={{ pt: 2 }}>
-              <Typography color='text.secondary'>Resumen de cargas recientes de pagos bancarios.</Typography>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-                <Chip color='default' variant='tonal' label={`Filas visibles: ${summary.total}`} />
-                <Chip color='success' variant='tonal' label={`Válidas: ${summary.validas}`} />
-                <Chip color='error' variant='tonal' label={`Inválidas: ${summary.invalidas}`} />
-                <Chip color='warning' variant='tonal' label={`Duplicadas: ${summary.duplicadas}`} />
-                <Chip color='info' variant='tonal' label={`Procesadas: ${summary.procesadas}`} />
-              </Stack>
-
               <Accordion>
                 <AccordionSummary expandIcon={<i className='tabler-chevron-down' />}>
                   <Typography variant='h6'>Generador de reportes</Typography>
@@ -632,6 +623,14 @@ export default function ReportesModule() {
               <Typography color='text.secondary'>
                 Carga un archivo y consulta los registros guardados por lote.
               </Typography>
+              <Typography color='text.secondary'>Resumen de cargas recientes de pagos bancarios.</Typography>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+                <Chip color='default' variant='tonal' label={`Filas visibles: ${summary.total}`} />
+                <Chip color='success' variant='tonal' label={`Válidas: ${summary.validas}`} />
+                <Chip color='error' variant='tonal' label={`Inválidas: ${summary.invalidas}`} />
+                <Chip color='warning' variant='tonal' label={`Duplicadas: ${summary.duplicadas}`} />
+                <Chip color='info' variant='tonal' label={`Procesadas: ${summary.procesadas}`} />
+              </Stack>
 
               {error ? <Alert severity='error'>{error}</Alert> : null}
               {success ? <Alert severity='success'>{success}</Alert> : null}
