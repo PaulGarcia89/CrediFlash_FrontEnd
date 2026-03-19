@@ -1263,12 +1263,6 @@ export default function SolicitudesModule() {
                   onChange={event => handleModeloForm('ingresosMensuales', event.target.value)}
                 />
                 <TextField
-                  label='Otras deudas mensuales'
-                  type='number'
-                  value={ratingForm.otrasDeudasMensuales}
-                  onChange={event => handleModeloForm('otrasDeudasMensuales', event.target.value)}
-                />
-                <TextField
                   label='Antigüedad laboral (meses)'
                   type='number'
                   value={ratingForm.antiguedadLaboralMeses}
@@ -1301,6 +1295,13 @@ export default function SolicitudesModule() {
                   <MenuItem value='SI'>Sí</MenuItem>
                   <MenuItem value='NO'>No</MenuItem>
                 </TextField>
+                <TextField
+                  label='Valor de garantía'
+                  type='number'
+                  value={ratingForm.valorGarantia}
+                  onChange={event => handleModeloForm('valorGarantia', event.target.value)}
+                  disabled={!ratingForm.tieneGarantia}
+                />
                 <TextField
                   select
                   label='Status legal'
@@ -1347,11 +1348,10 @@ export default function SolicitudesModule() {
                   onChange={event => handleModeloForm('deudasActualesPagosMinimos', event.target.value)}
                 />
                 <TextField
-                  label='Valor de garantía'
+                  label='Otras deudas mensuales'
                   type='number'
-                  value={ratingForm.valorGarantia}
-                  onChange={event => handleModeloForm('valorGarantia', event.target.value)}
-                  disabled={!ratingForm.tieneGarantia}
+                  value={ratingForm.otrasDeudasMensuales}
+                  onChange={event => handleModeloForm('otrasDeudasMensuales', event.target.value)}
                 />
               </Stack>
             ) : (
