@@ -26,6 +26,8 @@ import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { useTheme } from '@mui/material/styles'
 
 import { actualizarCliente, inactivarCliente, listarClientes } from '@/api/clientes'
 
@@ -71,6 +73,8 @@ const parseBoolean = value => value === true || value === 1 || String(value || '
 
 export default function ClientesModule() {
   const router = useRouter()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -267,6 +271,39 @@ export default function ClientesModule() {
     URL.revokeObjectURL(url)
   }
 
+  const renderAcciones = row => (
+    <Stack direction='row' spacing={0.25} flexWrap='wrap'>
+      <Tooltip title='Ver detalle'>
+        <IconButton size='small' onClick={() => router.push(`/clientes/${row.id}/detalle`)}>
+          <i className='tabler-eye text-3xl' />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title='Editar'>
+        <IconButton size='small' onClick={() => router.push(`/clientes/${row.id}/editar`)}>
+          <i className='tabler-edit text-3xl' />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={String(row.estado || '').toUpperCase() === 'INACTIVO' ? 'Activar' : 'Inactivar'}>
+        <span>
+          <IconButton
+            size='small'
+            color={String(row.estado || '').toUpperCase() === 'INACTIVO' ? 'success' : 'warning'}
+            disabled={updatingId === row.id}
+            onClick={() => handleToggleEstadoCliente(row)}
+          >
+            <i
+              className={
+                String(row.estado || '').toUpperCase() === 'INACTIVO'
+                  ? 'tabler-user-check text-3xl'
+                  : 'tabler-user-off text-3xl'
+              }
+            />
+          </IconButton>
+        </span>
+      </Tooltip>
+    </Stack>
+  )
+
   return (
     <Stack spacing={2}>
       <Card>
@@ -402,7 +439,7 @@ export default function ClientesModule() {
               justifyContent='space-between'
               alignItems={{ md: 'center' }}
             >
-              <Stack direction='row' spacing={1.5}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                 <TextField
                   select
                   size='small'
@@ -439,7 +476,7 @@ export default function ClientesModule() {
                   label='Estado'
                   value={estado}
                   onChange={event => setEstado(event.target.value)}
-                  sx={{ minWidth: 170 }}
+                  sx={{ minWidth: { xs: '100%', sm: 170 } }}
                 >
                   <MenuItem value=''>Todos</MenuItem>
                   <MenuItem value='ACTIVO'>ACTIVO</MenuItem>
@@ -453,113 +490,128 @@ export default function ClientesModule() {
             {error ? <Alert severity='error'>{error}</Alert> : null}
             {success ? <Alert severity='success'>{success}</Alert> : null}
 
-            <Table size='small'>
-              <TableHead>
-                <TableRow>
-                  <TableCell padding='checkbox'>
-                    <Checkbox size='small' />
-                  </TableCell>
-                  <TableCell>Estado</TableCell>
-                  <TableCell>Cliente</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Teléfono</TableCell>
-                  <TableCell>Referido</TableCell>
-                  <TableCell>Monto referido (USD)</TableCell>
-                  <TableCell>Acciones</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
+            {!isMobile ? (
+              <Table size='small'>
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={8} align='center'>
-                      Cargando...
+                    <TableCell padding='checkbox'>
+                      <Checkbox size='small' />
                     </TableCell>
+                    <TableCell>Estado</TableCell>
+                    <TableCell>Cliente</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Teléfono</TableCell>
+                    <TableCell>Referido</TableCell>
+                    <TableCell>Monto referido (USD)</TableCell>
+                    <TableCell>Acciones</TableCell>
                   </TableRow>
-                ) : null}
+                </TableHead>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} align='center'>
+                        Cargando...
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
 
+                  {!loading
+                    ? tableRows.map(row => (
+                        <TableRow
+                          key={row.id}
+                          hover
+                          onDoubleClick={() => router.push(`/clientes/${row.id}/detalle`)}
+                          sx={{ cursor: 'pointer' }}
+                        >
+                          <TableCell padding='checkbox'>
+                            <Checkbox size='small' />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={row.estado || '-'}
+                              size='small'
+                              color={getEstadoColor(row.estado)}
+                              variant='tonal'
+                            />
+                          </TableCell>
+                          <TableCell>{[row.nombre, row.apellido].filter(Boolean).join(' ') || '-'}</TableCell>
+                          <TableCell>{row.email || '-'}</TableCell>
+                          <TableCell>{row.telefono || '-'}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={parseBoolean(row.es_referido) ? `Sí${row.referido_por ? ` • ${row.referido_por}` : ''}` : 'No'}
+                              size='small'
+                              color={parseBoolean(row.es_referido) ? 'info' : 'default'}
+                              variant='tonal'
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {parseBoolean(row.es_referido)
+                              ? Number(row.monto_referido || 0).toLocaleString('en-US', {
+                                  style: 'currency',
+                                  currency: 'USD'
+                                })
+                              : '$0.00'}
+                          </TableCell>
+                          <TableCell>{renderAcciones(row)}</TableCell>
+                        </TableRow>
+                      ))
+                    : null}
+
+                  {!loading && tableRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} align='center'>
+                        Sin resultados
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
+            ) : (
+              <Stack spacing={1.25}>
+                {loading ? <Alert severity='info'>Cargando...</Alert> : null}
+                {!loading && tableRows.length === 0 ? <Alert severity='info'>Sin resultados</Alert> : null}
                 {!loading
                   ? tableRows.map(row => (
-                      <TableRow
+                      <Card
                         key={row.id}
-                        hover
+                        variant='outlined'
                         onDoubleClick={() => router.push(`/clientes/${row.id}/detalle`)}
-                        sx={{ cursor: 'pointer' }}
+                        sx={{ borderRadius: 2 }}
                       >
-                        <TableCell padding='checkbox'>
-                          <Checkbox size='small' />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={row.estado || '-'}
-                            size='small'
-                            color={getEstadoColor(row.estado)}
-                            variant='tonal'
-                          />
-                        </TableCell>
-                        <TableCell>{[row.nombre, row.apellido].filter(Boolean).join(' ') || '-'}</TableCell>
-                        <TableCell>{row.email || '-'}</TableCell>
-                        <TableCell>{row.telefono || '-'}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={parseBoolean(row.es_referido) ? `Sí${row.referido_por ? ` • ${row.referido_por}` : ''}` : 'No'}
-                            size='small'
-                            color={parseBoolean(row.es_referido) ? 'info' : 'default'}
-                            variant='tonal'
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {parseBoolean(row.es_referido)
-                            ? Number(row.monto_referido || 0).toLocaleString('en-US', {
-                                style: 'currency',
-                                currency: 'USD'
-                              })
-                            : '$0.00'}
-                        </TableCell>
-                        <TableCell>
-                          <Stack direction='row' spacing={0.25} flexWrap='wrap'>
-                            <Tooltip title='Ver detalle'>
-                              <IconButton size='small' onClick={() => router.push(`/clientes/${row.id}/detalle`)}>
-                                <i className='tabler-eye text-3xl' />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title='Editar'>
-                              <IconButton size='small' onClick={() => router.push(`/clientes/${row.id}/editar`)}>
-                                <i className='tabler-edit text-3xl' />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title={String(row.estado || '').toUpperCase() === 'INACTIVO' ? 'Activar' : 'Inactivar'}>
-                              <span>
-                                <IconButton
-                                  size='small'
-                                  color={String(row.estado || '').toUpperCase() === 'INACTIVO' ? 'success' : 'warning'}
-                                  disabled={updatingId === row.id}
-                                  onClick={() => handleToggleEstadoCliente(row)}
-                                >
-                                  <i
-                                    className={
-                                      String(row.estado || '').toUpperCase() === 'INACTIVO'
-                                        ? 'tabler-user-check text-3xl'
-                                        : 'tabler-user-off text-3xl'
-                                    }
-                                  />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
+                        <CardContent sx={{ p: 2 }}>
+                          <Stack spacing={1}>
+                            <Stack direction='row' justifyContent='space-between' alignItems='center'>
+                              <Typography fontWeight={700}>{[row.nombre, row.apellido].filter(Boolean).join(' ') || '-'}</Typography>
+                              <Chip label={row.estado || '-'} size='small' color={getEstadoColor(row.estado)} variant='tonal' />
+                            </Stack>
+                            <Typography variant='body2' color='text.secondary'>
+                              Email: {row.email || '-'}
+                            </Typography>
+                            <Typography variant='body2' color='text.secondary'>
+                              Teléfono: {row.telefono || '-'}
+                            </Typography>
+                            <Typography variant='body2' color='text.secondary'>
+                              Referido: {parseBoolean(row.es_referido) ? `Sí${row.referido_por ? ` • ${row.referido_por}` : ''}` : 'No'}
+                            </Typography>
+                            <Typography variant='body2' color='text.secondary'>
+                              Monto referido:{' '}
+                              {parseBoolean(row.es_referido)
+                                ? Number(row.monto_referido || 0).toLocaleString('en-US', {
+                                    style: 'currency',
+                                    currency: 'USD'
+                                  })
+                                : '$0.00'}
+                            </Typography>
+                            <Divider sx={{ my: 0.5 }} />
+                            {renderAcciones(row)}
                           </Stack>
-                        </TableCell>
-                      </TableRow>
+                        </CardContent>
+                      </Card>
                     ))
                   : null}
-
-                {!loading && tableRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align='center'>
-                      Sin resultados
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
+              </Stack>
+            )}
 
             <Stack direction='row' justifyContent='space-between' alignItems='center'>
               <Typography color='text.secondary'>Total: {pagination.total}</Typography>

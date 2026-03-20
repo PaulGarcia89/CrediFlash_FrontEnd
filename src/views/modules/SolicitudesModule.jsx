@@ -31,6 +31,8 @@ import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { useTheme } from '@mui/material/styles'
 
 import {
   ejecutarModeloAntiguo,
@@ -415,6 +417,8 @@ const initialModeloForm = {
 }
 
 export default function SolicitudesModule() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { can, canAny } = usePermissions()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -848,6 +852,61 @@ export default function SolicitudesModule() {
     URL.revokeObjectURL(url)
   }
 
+  const renderAcciones = row => {
+    const isBusy = processingId === row.id
+    const isPendiente = row.estado === 'PENDIENTE'
+
+    return (
+      <Stack direction='row' spacing={0.25} flexWrap='wrap'>
+        {canEditSolicitud ? (
+          <Tooltip title='Editar'>
+            <span>
+              <IconButton
+                size='small'
+                disabled={!isPendiente || isBusy}
+                onClick={() => router.push(`/solicitudes/${row.id}/editar`)}
+              >
+                <i className='tabler-edit text-3xl' />
+              </IconButton>
+            </span>
+          </Tooltip>
+        ) : null}
+        {canRunRatings ? (
+          <Tooltip title='Ejecutar modelo'>
+            <span>
+              <IconButton size='small' color='warning' disabled={!isPendiente || isBusy} onClick={() => openModeloDialog(row)}>
+                <i className='tabler-player-play text-3xl' />
+              </IconButton>
+            </span>
+          </Tooltip>
+        ) : null}
+        {canApproveSolicitud ? (
+          <Tooltip title='Aprobar'>
+            <span>
+              <IconButton size='small' color='success' disabled={!isPendiente || isBusy} onClick={() => openAprobacionDialog(row)}>
+                <i className='tabler-check text-3xl' />
+              </IconButton>
+            </span>
+          </Tooltip>
+        ) : null}
+        {canRejectSolicitud ? (
+          <Tooltip title='Rechazar'>
+            <span>
+              <IconButton size='small' color='error' disabled={!isPendiente || isBusy} onClick={() => runRechazo(row)}>
+                <i className='tabler-x text-3xl' />
+              </IconButton>
+            </span>
+          </Tooltip>
+        ) : null}
+        {!canEditSolicitud && !canRunRatings && !canApproveSolicitud && !canRejectSolicitud ? (
+          <Typography variant='body2' color='text.secondary'>
+            Sin acciones
+          </Typography>
+        ) : null}
+      </Stack>
+    )
+  }
+
   if (!canViewSolicitudes) {
     return <Alert severity='warning'>No tienes permisos para ver el listado de solicitudes.</Alert>
   }
@@ -992,7 +1051,7 @@ export default function SolicitudesModule() {
               justifyContent='space-between'
               alignItems={{ md: 'center' }}
             >
-              <Stack direction='row' spacing={1.5}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                 <TextField
                   select
                   size='small'
@@ -1029,7 +1088,7 @@ export default function SolicitudesModule() {
                   value={estado}
                   onChange={event => setEstado(event.target.value)}
                   size='small'
-                  sx={{ minWidth: 170 }}
+                  sx={{ minWidth: { xs: '100%', sm: 170 } }}
                 >
                   <MenuItem value=''>Todas</MenuItem>
                   <MenuItem value='PENDIENTE'>PENDIENTE</MenuItem>
@@ -1061,7 +1120,7 @@ export default function SolicitudesModule() {
               <Stack alignItems='center' py={8}>
                 <CircularProgress size={28} />
               </Stack>
-            ) : (
+            ) : !isMobile ? (
               <Table size='small'>
                 <TableHead>
                   <TableRow>
@@ -1079,8 +1138,6 @@ export default function SolicitudesModule() {
                 </TableHead>
                 <TableBody>
                   {tableRows.map(row => {
-                    const isBusy = processingId === row.id
-                    const isPendiente = row.estado === 'PENDIENTE'
                     const cliente = getClienteNombre(row)
 
                     return (
@@ -1112,70 +1169,7 @@ export default function SolicitudesModule() {
                             variant='tonal'
                           />
                         </TableCell>
-                        <TableCell>
-                          <Stack direction='row' spacing={0.25} flexWrap='wrap'>
-                            {canEditSolicitud ? (
-                              <Tooltip title='Editar'>
-                                <span>
-                                  <IconButton
-                                    size='small'
-                                    disabled={!isPendiente || isBusy}
-                                    onClick={() => router.push(`/solicitudes/${row.id}/editar`)}
-                                  >
-                                    <i className='tabler-edit text-3xl' />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            ) : null}
-                            {canRunRatings ? (
-                              <Tooltip title='Ejecutar modelo'>
-                                <span>
-                                  <IconButton
-                                    size='small'
-                                    color='warning'
-                                    disabled={!isPendiente || isBusy}
-                                    onClick={() => openModeloDialog(row)}
-                                  >
-                                    <i className='tabler-player-play text-3xl' />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            ) : null}
-                            {canApproveSolicitud ? (
-                              <Tooltip title='Aprobar'>
-                                <span>
-                                  <IconButton
-                                    size='small'
-                                    color='success'
-                                    disabled={!isPendiente || isBusy}
-                                    onClick={() => openAprobacionDialog(row)}
-                                  >
-                                    <i className='tabler-check text-3xl' />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            ) : null}
-                            {canRejectSolicitud ? (
-                              <Tooltip title='Rechazar'>
-                                <span>
-                                  <IconButton
-                                    size='small'
-                                    color='error'
-                                    disabled={!isPendiente || isBusy}
-                                    onClick={() => runRechazo(row)}
-                                  >
-                                    <i className='tabler-x text-3xl' />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            ) : null}
-                            {!canEditSolicitud && !canRunRatings && !canApproveSolicitud && !canRejectSolicitud ? (
-                              <Typography variant='body2' color='text.secondary'>
-                                Sin acciones
-                              </Typography>
-                            ) : null}
-                          </Stack>
-                        </TableCell>
+                        <TableCell>{renderAcciones(row)}</TableCell>
                       </TableRow>
                     )
                   })}
@@ -1188,6 +1182,49 @@ export default function SolicitudesModule() {
                   ) : null}
                 </TableBody>
               </Table>
+            ) : (
+              <Stack spacing={1.25}>
+                {tableRows.length === 0 ? <Alert severity='info'>Sin resultados</Alert> : null}
+                {tableRows.map(row => {
+                  const cliente = getClienteNombre(row)
+                  const clienteId = row?.cliente_id || row?.cliente?.id || ''
+
+                  return (
+                    <Card
+                      key={row.id}
+                      variant='outlined'
+                      onDoubleClick={() => {
+                        if (!clienteId) return
+                        router.push(`/clientes/${clienteId}/detalle`)
+                      }}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <CardContent sx={{ p: 2 }}>
+                        <Stack spacing={1}>
+                          <Stack direction='row' justifyContent='space-between' alignItems='center'>
+                            <Typography fontWeight={700}>{cliente || '-'}</Typography>
+                            <Chip label={row.estado || '-'} color={getEstadoColor(row.estado)} size='small' variant='tonal' />
+                          </Stack>
+                          <Typography variant='body2' color='text.secondary'>
+                            Monto: {formatUSD(row.monto_solicitado)}
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            Modalidad: {row.modalidad || '-'}
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            Plazo (semanas): {row.plazo_semanas ?? '-'}
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            Tasa variable (%): {row.tasa_variable ?? '-'}
+                          </Typography>
+                          <Divider sx={{ my: 0.5 }} />
+                          {renderAcciones(row)}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </Stack>
             )}
 
             <Stack direction='row' justifyContent='space-between' alignItems='center'>

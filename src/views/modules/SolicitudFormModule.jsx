@@ -592,45 +592,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                       />
                     </Stack>
 
-                    <Stack
-                      direction={{ xs: 'column', md: 'row' }}
-                      justifyContent='space-between'
-                      alignItems={{ xs: 'flex-start', md: 'center' }}
-                      spacing={1.5}
-                    >
-                      <Typography variant='h6'>
-                        Paso {activeStep + 1} de {flowSteps.length}
-                      </Typography>
-                      <Stack direction='row' spacing={1} flexWrap='wrap'>
-                        {flowSteps.map((label, index) => {
-                          const completed = isStepCompleted(index)
-                          const isActive = index === activeStep
-
-                          return (
-                            <Box
-                              key={`resume-step-${label}`}
-                              sx={{
-                                px: 1.25,
-                                py: 0.5,
-                                borderRadius: 1,
-                                border: theme => `1px solid ${theme.palette.divider}`,
-                                bgcolor: isActive ? 'primary.lighter' : 'background.paper',
-                                color: completed ? 'success.main' : 'text.secondary',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 0.75
-                              }}
-                            >
-                              <i className={completed ? 'tabler-circle-check text-base' : 'tabler-circle text-base'} />
-                              <Typography variant='caption' sx={{ fontWeight: 600 }}>
-                                {label}
-                              </Typography>
-                            </Box>
-                          )
-                        })}
-                      </Stack>
-                    </Stack>
-
                     <Stepper activeStep={activeStep} alternativeLabel>
                       {flowSteps.map(label => (
                         <Step key={label}>

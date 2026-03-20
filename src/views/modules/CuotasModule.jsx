@@ -28,6 +28,8 @@ import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { useTheme } from '@mui/material/styles'
 
 import { verHistorialPrestamosCliente } from '@/api/clientes'
 import { enviarNotificacionCuotaEmail, generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
@@ -227,6 +229,8 @@ const getContractDocumentId = row =>
   ).trim()
 
 export default function CuotasModule() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { can, canAny } = usePermissions()
   const [prestamos, setPrestamos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -323,6 +327,62 @@ export default function CuotasModule() {
     setMontoPenalizacion('0')
     setPagoDialogOpen(true)
   }
+
+  const renderAccionesPrestamo = row => (
+    <Stack direction='row' spacing={0.5} flexWrap='wrap'>
+      {canRegistrarPago ? (
+        <Tooltip title='Registrar pago'>
+          <IconButton size='small' color='error' onClick={() => openPagoDialog(row)}>
+            <i className='tabler-cash text-3xl' />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+      {canViewPrestamos ? (
+        <Tooltip title='Historial'>
+          <IconButton size='small' color='secondary' onClick={() => openHistorial(row)}>
+            <i className='tabler-history text-3xl' />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+      {canViewPrestamos ? (
+        <Tooltip title='Ver detalle'>
+          <IconButton size='small' onClick={() => openDetalleDialog(row)}>
+            <i className='tabler-eye text-3xl' />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+      {canManageCuotas ? (
+        <Tooltip title='Enviar notificación por correo'>
+          <span>
+            <IconButton
+              size='small'
+              color='info'
+              onClick={() => enviarNotificacionEmail(row)}
+              disabled={notifyingPrestamoId === String(row.id)}
+            >
+              {notifyingPrestamoId === String(row.id) ? (
+                <CircularProgress size={18} color='inherit' />
+              ) : (
+                <i className='tabler-mail text-3xl' />
+              )}
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
+      {canViewPrestamos ? (
+        <Tooltip title='WhatsApp (próximamente)'>
+          <IconButton size='small' color='success' onClick={() => {}}>
+            <i className='tabler-brand-whatsapp-filled text-3xl' />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+      {!canRegistrarPago && !canViewPrestamos && !canManageCuotas ? (
+        <Typography variant='body2' color='text.secondary'>
+          Sin acciones
+        </Typography>
+      ) : null}
+    </Stack>
+  )
 
   const openDetalleDialog = row => {
     setSelectedPrestamo(row)
@@ -732,7 +792,7 @@ export default function CuotasModule() {
               justifyContent='space-between'
               alignItems={{ md: 'center' }}
             >
-              <Stack direction='row' spacing={1.5}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                 <TextField
                   select
                   size='small'
@@ -749,7 +809,7 @@ export default function CuotasModule() {
                   Exportar
                 </Button>
               </Stack>
-              <Stack direction='row' spacing={1.5}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                 <TextField
                   size='small'
                   label='Buscar cliente'
@@ -764,7 +824,7 @@ export default function CuotasModule() {
                   label='Estado'
                   value={status}
                   onChange={event => setStatus(event.target.value)}
-                  sx={{ minWidth: 170 }}
+                  sx={{ minWidth: { xs: '100%', sm: 170 } }}
                 >
                   <MenuItem value='TODOS'>TODOS</MenuItem>
                   <MenuItem value='ACTIVO'>ACTIVO</MenuItem>
@@ -782,7 +842,7 @@ export default function CuotasModule() {
               <Stack alignItems='center' py={8}>
                 <CircularProgress size={28} />
               </Stack>
-            ) : (
+            ) : !isMobile ? (
               <Table size='small'>
                 <TableHead>
                   <TableRow>
@@ -831,61 +891,7 @@ export default function CuotasModule() {
                           ) : null}
                         </Stack>
                       </TableCell>
-                      <TableCell>
-                        <Stack direction='row' spacing={0.5} flexWrap='wrap'>
-                          {canRegistrarPago ? (
-                            <Tooltip title='Registrar pago'>
-                              <IconButton size='small' color='error' onClick={() => openPagoDialog(row)}>
-                                <i className='tabler-cash text-3xl' />
-                              </IconButton>
-                            </Tooltip>
-                          ) : null}
-                          {canViewPrestamos ? (
-                            <Tooltip title='Historial'>
-                              <IconButton size='small' color='secondary' onClick={() => openHistorial(row)}>
-                                <i className='tabler-history text-3xl' />
-                              </IconButton>
-                            </Tooltip>
-                          ) : null}
-                          {canViewPrestamos ? (
-                            <Tooltip title='Ver detalle'>
-                              <IconButton size='small' onClick={() => openDetalleDialog(row)}>
-                                <i className='tabler-eye text-3xl' />
-                              </IconButton>
-                            </Tooltip>
-                          ) : null}
-                          {canManageCuotas ? (
-                            <Tooltip title='Enviar notificación por correo'>
-                              <span>
-                                <IconButton
-                                  size='small'
-                                  color='info'
-                                  onClick={() => enviarNotificacionEmail(row)}
-                                  disabled={notifyingPrestamoId === String(row.id)}
-                                >
-                                  {notifyingPrestamoId === String(row.id) ? (
-                                    <CircularProgress size={18} color='inherit' />
-                                  ) : (
-                                    <i className='tabler-mail text-3xl' />
-                                  )}
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                          ) : null}
-                          {canViewPrestamos ? (
-                            <Tooltip title='WhatsApp (próximamente)'>
-                              <IconButton size='small' color='success' onClick={() => {}}>
-                                <i className='tabler-brand-whatsapp-filled text-3xl' />
-                              </IconButton>
-                            </Tooltip>
-                          ) : null}
-                          {!canRegistrarPago && !canViewPrestamos && !canManageCuotas ? (
-                            <Typography variant='body2' color='text.secondary'>
-                              Sin acciones
-                            </Typography>
-                          ) : null}
-                        </Stack>
-                      </TableCell>
+                      <TableCell>{renderAccionesPrestamo(row)}</TableCell>
                     </TableRow>
                   ))}
                   {tableRows.length === 0 ? (
@@ -897,6 +903,49 @@ export default function CuotasModule() {
                   ) : null}
                 </TableBody>
               </Table>
+            ) : (
+              <Stack spacing={1.25}>
+                {tableRows.length === 0 ? <Alert severity='info'>Sin resultados</Alert> : null}
+                {tableRows.map(row => (
+                  <Card
+                    key={row.id}
+                    variant='outlined'
+                    onDoubleClick={() => {
+                      if (!canViewPrestamos) return
+                      openDetalleDialog(row)
+                    }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    <CardContent sx={{ p: 2 }}>
+                      <Stack spacing={1}>
+                        <Stack direction='row' justifyContent='space-between' alignItems='center'>
+                          <Typography fontWeight={700}>{row.nombre_completo || '-'}</Typography>
+                          <Chip
+                            size='small'
+                            variant='tonal'
+                            label={getOperationalStatus(row)}
+                            color={getStatusColor(getOperationalStatus(row))}
+                          />
+                        </Stack>
+                        <Typography variant='body2' color='text.secondary'>
+                          Monto total: {formatCurrency(row.total_pagar)}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Pago semanal: {formatCurrency(row.pagos_semanales)}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Semanas: {row.num_semanas ?? '-'} • Cuotas restantes: {getCuotasRestantes(row)}
+                        </Typography>
+                        {hasDescuentoReferidoObservacion(row) ? (
+                          <Chip size='small' variant='tonal' color='success' label='Descuento referido' sx={{ width: 'fit-content' }} />
+                        ) : null}
+                        <Divider sx={{ my: 0.5 }} />
+                        {renderAccionesPrestamo(row)}
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
             )}
 
             <Stack direction='row' justifyContent='space-between' alignItems='center'>
