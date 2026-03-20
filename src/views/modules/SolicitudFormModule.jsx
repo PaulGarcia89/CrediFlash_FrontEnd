@@ -496,9 +496,9 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     <>
       <Box
         sx={{
-          backgroundColor: '#d9e6d7',
+          backgroundColor: 'transparent',
           borderRadius: 2,
-          p: { xs: 1.5, md: 3 }
+          p: { xs: 0, md: 0 }
         }}
       >
         <Stack spacing={3}>
