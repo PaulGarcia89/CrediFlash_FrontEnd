@@ -6,7 +6,7 @@ import { can as hasPermission, canAny as hasAnyPermission, extractPermissionCode
 import { getAnalista } from '@/lib/auth/session'
 
 export default function usePermissions() {
-  const [analista, setAnalista] = useState(() => getAnalista())
+  const [analista, setAnalista] = useState(null)
 
   useEffect(() => {
     const syncSession = () => {
