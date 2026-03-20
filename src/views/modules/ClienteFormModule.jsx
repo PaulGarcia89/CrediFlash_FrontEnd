@@ -358,24 +358,6 @@ export default function ClienteFormModule({ clienteId = null }) {
               : 'Registra un cliente para habilitar solicitudes de crédito y seguimiento.'}
           </Typography>
         </Box>
-
-        <Stack direction='row' spacing={1.5} flexWrap='wrap'>
-          <Button variant='tonal' color='secondary' onClick={() => router.push('/clientes')} disabled={saving}>
-            Descartar
-          </Button>
-          <Button
-            variant='tonal'
-            color='primary'
-            type='button'
-            disabled={saving || loading}
-            onClick={() => window.localStorage.setItem('cliente_draft', JSON.stringify(form))}
-          >
-            Guardar borrador
-          </Button>
-          <Button variant='contained' type='submit' disabled={saving || loading}>
-            {saving ? 'Guardando...' : clienteId ? 'Actualizar cliente' : 'Publicar cliente'}
-          </Button>
-        </Stack>
       </Stack>
 
       {error ? <Alert severity='error'>{error}</Alert> : null}
