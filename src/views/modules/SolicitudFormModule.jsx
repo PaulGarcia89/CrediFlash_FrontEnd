@@ -543,30 +543,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                 : 'Registra una solicitud para el flujo de evaluación y aprobación.'}
             </Typography>
           </Box>
-
-          <Stack direction='row' spacing={1.5} flexWrap='wrap'>
-            <Button variant='tonal' color='secondary' onClick={() => router.push('/solicitudes')} disabled={saving}>
-              Descartar
-            </Button>
-            <Button
-              variant='tonal'
-              color='primary'
-              type='button'
-              disabled={saving || loading}
-              onClick={() => window.localStorage.setItem('solicitud_draft', JSON.stringify(form))}
-            >
-              Guardar borrador
-            </Button>
-            {activeStep === flowSteps.length - 1 ? (
-              <Button variant='contained' type='button' onClick={handleSubmit} disabled={saving || loading}>
-                {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
-              </Button>
-            ) : (
-              <Button variant='contained' type='button' disabled={saving || loading} onClick={handleNextStep}>
-                Siguiente
-              </Button>
-            )}
-          </Stack>
         </Stack>
 
         {error ? <Alert severity='error'>{error}</Alert> : null}
