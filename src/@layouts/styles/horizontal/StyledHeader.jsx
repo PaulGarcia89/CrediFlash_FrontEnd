@@ -39,7 +39,7 @@ const StyledHeader = styled.header`
     position: relative;
     min-block-size: var(--header-height);
     padding-block: 8px;
-    padding-inline: ${themeConfig.layoutPadding}px;
+    padding-inline: var(--layout-inline-padding, 24px);
   }
 
   ${({ overrideStyles }) => overrideStyles}

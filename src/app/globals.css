@@ -93,6 +93,7 @@
   --drawer-z-index: var(--mui-zIndex-drawer);
   --backdrop-color: rgb(var(--mui-mainColorChannels-light) / 0.5);
   --mui-mainColorChannels-shadow: var(--mui-mainColorChannels-lightShadow);
+  --layout-inline-padding: 24px;
 }
 
 [data-dark] {
@@ -233,7 +234,17 @@ code {
   border: 0;
 }
 
+@media (max-width: 1200px) {
+  :root {
+    --layout-inline-padding: 16px;
+  }
+}
+
 @media (max-width: 900px) {
+  :root {
+    --layout-inline-padding: 12px;
+  }
+
   .MuiContainer-root {
     padding-inline: 12px !important;
   }
@@ -254,7 +265,7 @@ code {
   }
 
   .MuiTable-root {
-    min-inline-size: 760px;
+    min-inline-size: 640px;
   }
 
   .MuiTabs-root {
@@ -263,5 +274,27 @@ code {
 
   .MuiButton-root {
     white-space: normal;
+  }
+
+  .MuiCard-root {
+    border-radius: 12px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --layout-inline-padding: 10px;
+  }
+
+  .MuiTable-root {
+    min-inline-size: 560px;
+  }
+
+  .MuiCardContent-root {
+    padding: 12px !important;
+  }
+
+  .MuiInputBase-root {
+    font-size: 0.95rem;
   }
 }

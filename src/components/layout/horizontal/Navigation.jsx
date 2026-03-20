@@ -19,7 +19,7 @@ const StyledDiv = styled.div`
   ${({ isContentCompact, isBreakpointReached }) =>
     !isBreakpointReached &&
     `
-    padding: ${themeConfig.layoutPadding}px;
+    padding: var(--layout-inline-padding, 24px);
 
     ${
       isContentCompact &&

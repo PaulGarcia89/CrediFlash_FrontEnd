@@ -29,7 +29,7 @@ const StyledHeader = styled.header`
       .${verticalLayoutClasses.navbar},
       &.${verticalLayoutClasses.headerFixed}.${verticalLayoutClasses.headerDetached}
       .${verticalLayoutClasses.navbar} {
-      max-inline-size: calc(${themeConfig.compactContentWidth}px - ${2 * themeConfig.layoutPadding}px);
+      max-inline-size: calc(${themeConfig.compactContentWidth}px - (2 * var(--layout-inline-padding, 24px)));
     }
 
     .${verticalLayoutClasses.navbar} {
@@ -149,7 +149,7 @@ const StyledHeader = styled.header`
     .${verticalLayoutClasses.navbar},
     &.${verticalLayoutClasses.headerFixed}.${verticalLayoutClasses.headerDetached}
     .${verticalLayoutClasses.navbar} {
-    inline-size: calc(100% - ${2 * themeConfig.layoutPadding}px);
+    inline-size: calc(100% - (2 * var(--layout-inline-padding, 24px)));
   }
 
   &:not(.${verticalLayoutClasses.headerFloating}).${verticalLayoutClasses.headerStatic}
