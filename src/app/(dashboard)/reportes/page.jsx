@@ -5,5 +5,5 @@ export const metadata = {
 }
 
 export default function ReportesPage() {
-  return <ReportesModule />
+  return <ReportesModule initialSubMenu='resumen' hideTabs pageTitle='Reportes' />
 }

@@ -108,9 +108,14 @@ const HorizontalMenu = () => {
 
         {showReportes ? (
           <SubMenu label='Reportes' icon={<i className='tabler-report-analytics' />}>
-            <MenuItem href='/reportes?tab=resumen'>Resumen de reportes</MenuItem>
-            <MenuItem href='/reportes?tab=carga-pagos'>Carga de pagos bancarios</MenuItem>
+            <MenuItem href='/reportes'>Resumen de reportes</MenuItem>
           </SubMenu>
+        ) : null}
+
+        {showReportes ? (
+          <MenuItem href='/carga-datos-bancarios' icon={<i className='tabler-upload' />}>
+            Carga de datos bancarios
+          </MenuItem>
         ) : null}
 
         {showAdministracion ? (

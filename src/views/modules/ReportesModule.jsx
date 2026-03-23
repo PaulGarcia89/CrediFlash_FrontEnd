@@ -94,10 +94,10 @@ const toMMDDYYYY = inputValue => {
   return `${mm}/${dd}/${yyyy}`
 }
 
-export default function ReportesModule() {
+export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = false, pageTitle = 'Reportes' }) {
   const searchParams = useSearchParams()
   const { analista, can } = usePermissions()
-  const [subMenu, setSubMenu] = useState('resumen')
+  const [subMenu, setSubMenu] = useState(initialSubMenu)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -140,6 +140,8 @@ export default function ReportesModule() {
   const canManageReportes = can('reportes.manage') || isAdminProfile
 
   useEffect(() => {
+    if (hideTabs) return
+
     const tab = String(searchParams.get('tab') || '')
 
     if (tab === 'carga-pagos') {
@@ -151,7 +153,7 @@ export default function ReportesModule() {
     if (tab === 'resumen') {
       setSubMenu('resumen')
     }
-  }, [searchParams])
+  }, [searchParams, hideTabs])
 
   const loadPagosBancarios = useCallback(async () => {
     if (!canViewReportes) return
@@ -495,14 +497,18 @@ export default function ReportesModule() {
 
   return (
     <Stack spacing={2}>
-      <Typography variant='h4'>Reportes</Typography>
+      <Typography variant='h4'>{pageTitle}</Typography>
       <Card>
         <CardContent>
-          <Tabs value={subMenu} onChange={(_, value) => setSubMenu(value)} variant='scrollable' scrollButtons='auto'>
-            <Tab value='resumen' label='Resumen' />
-            <Tab value='carga-pagos-bancarios' label='Carga de pagos bancarios' />
-          </Tabs>
-          <Divider sx={{ mt: 1.5 }} />
+          {!hideTabs ? (
+            <>
+              <Tabs value={subMenu} onChange={(_, value) => setSubMenu(value)} variant='scrollable' scrollButtons='auto'>
+                <Tab value='resumen' label='Resumen' />
+                <Tab value='carga-pagos-bancarios' label='Carga de pagos bancarios' />
+              </Tabs>
+              <Divider sx={{ mt: 1.5 }} />
+            </>
+          ) : null}
 
           {subMenu === 'resumen' ? (
             <Stack spacing={2} sx={{ pt: 2 }}>
