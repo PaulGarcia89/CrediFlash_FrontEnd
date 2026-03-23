@@ -100,7 +100,7 @@ const HorizontalMenu = () => {
 
         {showOperacion ? (
           <SubMenu label='Operación' icon={<i className='tabler-briefcase' />}>
-            {showNuevoCaso ? <MenuItem href='/solicitudes/nueva'>Nuevo caso</MenuItem> : null}
+            {showNuevoCaso ? <MenuItem href='/operacion/nuevo-caso'>Nuevo caso</MenuItem> : null}
             {showSolicitudes ? <MenuItem href='/solicitudes'>Solicitudes</MenuItem> : null}
             {showCuotas ? <MenuItem href='/cuotas'>Registro de cuotas</MenuItem> : null}
           </SubMenu>
