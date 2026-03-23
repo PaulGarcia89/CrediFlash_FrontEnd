@@ -40,6 +40,7 @@ import {
   ejecutarRatingClienteAntiguo,
   ejecutarRatingNuevoCliente,
   ejecutarScoringSemanalNuevoCliente,
+  obtenerSolicitud,
   listarSolicitudes,
   rechazarSolicitud
 } from '@/api/solicitudes'
@@ -424,6 +425,7 @@ export default function SolicitudesModule() {
   const searchParams = useSearchParams()
   const focusSolicitudId = searchParams.get('focusSolicitudId') || ''
   const focusClienteId = searchParams.get('focusClienteId') || ''
+  const createdFromNuevoCaso = searchParams.get('created') === '1'
   const focusActive = Boolean(focusSolicitudId || focusClienteId)
 
   const [solicitudes, setSolicitudes] = useState([])
@@ -463,6 +465,17 @@ export default function SolicitudesModule() {
     setError('')
 
     try {
+      if (focusSolicitudId) {
+        const response = await obtenerSolicitud(focusSolicitudId)
+        const source = response?.data || response || null
+        const focusedRow = source && typeof source === 'object' ? source : null
+
+        setSolicitudes(focusedRow ? [focusedRow] : [])
+        setPagination({ page: 1, pages: 1, total: focusedRow ? 1 : 0 })
+
+        return
+      }
+
       const response = await listarSolicitudes({ page, limit, estado, search })
       const rows = extractRows(response)
 
@@ -480,7 +493,7 @@ export default function SolicitudesModule() {
     } finally {
       setLoading(false)
     }
-  }, [estado, limit, page, search])
+  }, [estado, focusSolicitudId, limit, page, search])
 
   useEffect(() => {
     loadSolicitudes()
@@ -489,6 +502,12 @@ export default function SolicitudesModule() {
   useEffect(() => {
     setPage(1)
   }, [estado, limit, search])
+
+  useEffect(() => {
+    if (!createdFromNuevoCaso) return
+
+    setSuccess('Solicitud creada correctamente. Mostrando la solicitud recién ingresada.')
+  }, [createdFromNuevoCaso])
 
   const runAprobacion = async (row, contratoFile = null) => {
     setProcessingId(row.id)
@@ -1103,7 +1122,7 @@ export default function SolicitudesModule() {
             {success ? <Alert severity='success'>{success}</Alert> : null}
             {focusActive ? (
               <Alert severity='info'>
-                Mostrando solo la solicitud del cliente recién ingresado.
+                Mostrando solo la solicitud recién creada.
                 <Button
                   size='small'
                   variant='text'

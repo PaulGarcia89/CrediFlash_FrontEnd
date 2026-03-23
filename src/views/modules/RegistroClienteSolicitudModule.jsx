@@ -403,6 +403,7 @@ export default function RegistroClienteSolicitudModule() {
 
       if (solicitudId) params.set('focusSolicitudId', String(solicitudId))
       params.set('focusClienteId', String(clienteId))
+      params.set('created', '1')
 
       router.replace(`/solicitudes?${params.toString()}`)
     } catch (err) {

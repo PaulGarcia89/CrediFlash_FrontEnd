@@ -453,6 +453,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
         if (createdSolicitudId) params.set('focusSolicitudId', String(createdSolicitudId))
         if (form.cliente_id) params.set('focusClienteId', String(form.cliente_id))
+        params.set('created', '1')
 
         router.replace(`/solicitudes?${params.toString()}`)
 
