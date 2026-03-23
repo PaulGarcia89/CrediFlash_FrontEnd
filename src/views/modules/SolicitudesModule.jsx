@@ -46,6 +46,7 @@ import {
 } from '@/api/solicitudes'
 import { aprobarSolicitudComoPrestamo } from '@/api/prestamos'
 import usePermissions from '@/hooks/usePermissions'
+import { appendAuditLog } from '@/lib/audit/logs'
 import { formatUSD } from '@/utils/currency'
 
 const LABEL_MAP = {
@@ -337,6 +338,32 @@ const parseDescuentoReferido = payload => {
   const parsed = Number(raw)
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
+const extractGeneratedFields = value => {
+  const fields = []
+
+  const walk = (node, prefix = '') => {
+    if (Array.isArray(node)) {
+      if (!node.length) return
+      walk(node[0], prefix ? `${prefix}[0]` : '[0]')
+
+      return
+    }
+
+    if (!node || typeof node !== 'object') return
+
+    Object.entries(node).forEach(([key, nested]) => {
+      const path = prefix ? `${prefix}.${key}` : key
+
+      fields.push(path)
+      walk(nested, path)
+    })
+  }
+
+  walk(value)
+
+  return Array.from(new Set(fields))
 }
 
 const MODEL_NUMERIC_FIELDS = [
@@ -663,6 +690,8 @@ export default function SolicitudesModule() {
     setModeloDialogInfo('')
 
     const start = Date.now()
+    let payloadAuditoria = {}
+    let resultadoAuditoria = null
 
     try {
       if (modeloTipo === 'CLIENTE_NUEVO') {
@@ -708,6 +737,8 @@ export default function SolicitudesModule() {
           valor_garantia: numericValues.valorGarantia
         }
 
+        payloadAuditoria = payload
+
         let response
 
         try {
@@ -721,7 +752,10 @@ export default function SolicitudesModule() {
           }
         }
 
-        setResultadoModelo(extractResultadoModelo(response))
+        const resultadoNormalizado = extractResultadoModelo(response)
+
+        resultadoAuditoria = resultadoNormalizado
+        setResultadoModelo(resultadoNormalizado)
       } else {
         await ejecutarModeloAntiguo(selectedSolicitud.id)
 
@@ -732,8 +766,15 @@ export default function SolicitudesModule() {
         }
 
         const response = await ejecutarRatingClienteAntiguo(clienteNombre)
+        const resultadoNormalizado = extractResultadoModelo(response)
 
-        setResultadoModelo(extractResultadoModelo(response))
+        payloadAuditoria = {
+          clienteNombre,
+          solicitudId: selectedSolicitud.id,
+          modelo: 'CLIENTE_ANTIGUO'
+        }
+        resultadoAuditoria = resultadoNormalizado
+        setResultadoModelo(resultadoNormalizado)
       }
 
       const elapsed = Date.now() - start
@@ -746,11 +787,53 @@ export default function SolicitudesModule() {
 
       setModeloDialogInfo('Modelo ejecutado con éxito.')
       await loadSolicitudes()
+
+      appendAuditLog({
+        action: 'Ejecutó modelo de aprobación',
+        module: 'Solicitudes',
+        source: 'UI',
+        path: `/solicitudes/${selectedSolicitud.id}/ejecutar-modelo`,
+        status: 'SUCCESS',
+        detail: JSON.stringify({
+          solicitud_id: selectedSolicitud.id,
+          cliente_id: selectedSolicitud?.cliente_id || selectedSolicitud?.cliente?.id || '',
+          cliente: getClienteNombre(selectedSolicitud) || '',
+          modelo: modeloTipo,
+          duracion_ms: Date.now() - start,
+          fecha_hora_ejecucion: new Date().toISOString(),
+          variables_entrada: payloadAuditoria,
+          campos_generados: extractGeneratedFields(resultadoAuditoria),
+          resumen: resultadoAuditoria?.resumen || null,
+          decision: resultadoAuditoria?.decision || null,
+          riesgo: resultadoAuditoria?.riesgo || null,
+          capacidadPago: resultadoAuditoria?.capacidadPago || null,
+          perdidaEsperada: resultadoAuditoria?.perdidaEsperada || null,
+          oferta: resultadoAuditoria?.oferta || null
+        })
+      })
+
       setTimeout(() => {
         setModeloDialogOpen(false)
         setModeloDialogInfo('')
       }, 1200)
     } catch (err) {
+      appendAuditLog({
+        action: 'Ejecutó modelo de aprobación (fallido)',
+        module: 'Solicitudes',
+        source: 'UI',
+        path: `/solicitudes/${selectedSolicitud?.id || ''}/ejecutar-modelo`,
+        status: 'ERROR',
+        detail: JSON.stringify({
+          solicitud_id: selectedSolicitud?.id || '',
+          cliente_id: selectedSolicitud?.cliente_id || selectedSolicitud?.cliente?.id || '',
+          cliente: getClienteNombre(selectedSolicitud) || '',
+          modelo: modeloTipo,
+          fecha_hora_ejecucion: new Date().toISOString(),
+          variables_entrada: payloadAuditoria,
+          error: getRequestErrorMessage(err)
+        })
+      })
+
       setModeloDialogError(getRequestErrorMessage(err))
     } finally {
       setRatingLoading(false)
