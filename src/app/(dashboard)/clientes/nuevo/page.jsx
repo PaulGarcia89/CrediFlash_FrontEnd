@@ -1,9 +1,9 @@
-import ClienteFormModule from '@views/modules/ClienteFormModule'
+import RegistroClienteSolicitudModule from '@views/modules/RegistroClienteSolicitudModule'
 
 export const metadata = {
   title: 'Nuevo cliente'
 }
 
 export default function NuevoClientePage() {
-  return <ClienteFormModule />
+  return <RegistroClienteSolicitudModule />
 }
