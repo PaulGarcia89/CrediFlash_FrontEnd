@@ -251,6 +251,7 @@ const BASE_PERMISSION_CODES = [
   'analytics.view',
   'reportes.view',
   'reportes.manage',
+  'notifications.send',
   'analistas.view',
   'analistas.manage',
   'roles.view',

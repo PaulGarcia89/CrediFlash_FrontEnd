@@ -231,7 +231,7 @@ const getContractDocumentId = row =>
 export default function CuotasModule() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const { can, canAny } = usePermissions()
+  const { can, canAny, analista } = usePermissions()
   const [prestamos, setPrestamos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -266,6 +266,8 @@ export default function CuotasModule() {
   const canManageCuotas = can('cuotas.manage')
   const canViewPrestamos = can('prestamos.view')
   const canViewDocumentos = can('documentos.view')
+  const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
+  const canSendNotifications = isAdminProfile || can('notifications.send')
 
   const montoEsperadoPago = useMemo(() => {
     const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
@@ -351,7 +353,7 @@ export default function CuotasModule() {
           </IconButton>
         </Tooltip>
       ) : null}
-      {canManageCuotas ? (
+      {canSendNotifications ? (
         <Tooltip title='Enviar notificación por correo'>
           <span>
             <IconButton
@@ -369,14 +371,14 @@ export default function CuotasModule() {
           </span>
         </Tooltip>
       ) : null}
-      {canViewPrestamos ? (
+      {canSendNotifications ? (
         <Tooltip title='WhatsApp (próximamente)'>
           <IconButton size='small' color='success' onClick={() => {}}>
             <i className='tabler-brand-whatsapp-filled text-3xl' />
           </IconButton>
         </Tooltip>
       ) : null}
-      {!canRegistrarPago && !canViewPrestamos && !canManageCuotas ? (
+      {!canRegistrarPago && !canViewPrestamos && !canSendNotifications ? (
         <Typography variant='body2' color='text.secondary'>
           Sin acciones
         </Typography>
@@ -542,6 +544,12 @@ export default function CuotasModule() {
   }
 
   const enviarNotificacionEmail = async row => {
+    if (!canSendNotifications) {
+      setError('No tienes permisos para enviar notificaciones.')
+
+      return
+    }
+
     setError('')
     setSuccess('')
     setNotifyingPrestamoId(String(row.id))
