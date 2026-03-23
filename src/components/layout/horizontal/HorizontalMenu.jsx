@@ -2,7 +2,7 @@
 import { useTheme } from '@mui/material/styles'
 
 // Component Imports
-import HorizontalNav, { Menu, MenuItem } from '@menu/horizontal-menu'
+import HorizontalNav, { Menu, MenuItem, SubMenu } from '@menu/horizontal-menu'
 import VerticalNavContent from './VerticalNavContent'
 
 // Hook Imports
@@ -18,6 +18,7 @@ import menuRootStyles from '@core/styles/horizontal/menuRootStyles'
 import verticalNavigationCustomStyles from '@core/styles/vertical/navigationCustomStyles'
 import verticalMenuItemStyles from '@core/styles/vertical/menuItemStyles'
 import verticalMenuSectionStyles from '@core/styles/vertical/menuSectionStyles'
+import usePermissions from '@/hooks/usePermissions'
 
 const RenderExpandIcon = ({ level }) => (
   <StyledHorizontalNavExpandIcon level={level}>
@@ -35,9 +36,22 @@ const HorizontalMenu = () => {
   // Hooks
   const verticalNavOptions = useVerticalNav()
   const theme = useTheme()
+  const { can, canAny, analista } = usePermissions()
 
   // Vars
   const { transitionDuration } = verticalNavOptions
+  const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
+  const showHome = can('dashboard.view')
+  const showAnalytics = can('analytics.view')
+  const showClientes = can('clientes.view')
+  const showSolicitudes = can('solicitudes.view')
+  const showNuevoCaso = can('solicitudes.create') || can('clientes.create')
+  const showCuotas = canAny(['prestamos.view', 'cuotas.view'])
+  const showReportes = can('reportes.view') || isAdminProfile
+  const showLogs = can('logs.view') || isAdminProfile
+  const showSettings = canAny(['roles.view', 'roles.manage', 'analistas.view', 'analistas.manage']) || isAdminProfile
+  const showOperacion = showNuevoCaso || showSolicitudes || showCuotas
+  const showAdministracion = showLogs || showSettings
 
   return (
     <HorizontalNav
@@ -66,12 +80,45 @@ const HorizontalMenu = () => {
           menuSectionStyles: verticalMenuSectionStyles(verticalNavOptions, theme)
         }}
       >
-        <MenuItem href='/' icon={<i className='tabler-smart-home' />}>
-          Home
-        </MenuItem>
-        <MenuItem href='/about' icon={<i className='tabler-info-circle' />}>
-          About
-        </MenuItem>
+        {showHome ? (
+          <MenuItem href='/home' icon={<i className='tabler-smart-home' />}>
+            Inicio
+          </MenuItem>
+        ) : null}
+
+        {showAnalytics ? (
+          <MenuItem href='/analytics' icon={<i className='tabler-chart-bar' />}>
+            Analytics
+          </MenuItem>
+        ) : null}
+
+        {showClientes ? (
+          <SubMenu label='Clientes' icon={<i className='tabler-users' />}>
+            <MenuItem href='/clientes'>Listado de clientes</MenuItem>
+          </SubMenu>
+        ) : null}
+
+        {showOperacion ? (
+          <SubMenu label='Operación' icon={<i className='tabler-briefcase' />}>
+            {showNuevoCaso ? <MenuItem href='/solicitudes/nueva'>Nuevo caso</MenuItem> : null}
+            {showSolicitudes ? <MenuItem href='/solicitudes'>Solicitudes</MenuItem> : null}
+            {showCuotas ? <MenuItem href='/cuotas'>Registro de cuotas</MenuItem> : null}
+          </SubMenu>
+        ) : null}
+
+        {showReportes ? (
+          <SubMenu label='Reportes' icon={<i className='tabler-report-analytics' />}>
+            <MenuItem href='/reportes?tab=resumen'>Resumen de reportes</MenuItem>
+            <MenuItem href='/reportes?tab=carga-pagos'>Carga de pagos bancarios</MenuItem>
+          </SubMenu>
+        ) : null}
+
+        {showAdministracion ? (
+          <SubMenu label='Administración' icon={<i className='tabler-settings' />}>
+            {showSettings ? <MenuItem href='/settings'>Configuración de acceso</MenuItem> : null}
+            {showLogs ? <MenuItem href='/logs'>Logs</MenuItem> : null}
+          </SubMenu>
+        ) : null}
       </Menu>
       {/* <Menu
           rootStyles={menuRootStyles(theme)}

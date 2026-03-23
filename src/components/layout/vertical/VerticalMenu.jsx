@@ -36,13 +36,15 @@ const VerticalMenu = ({ scrollMenu }) => {
   const showHome = can('dashboard.view')
   const showAnalytics = can('analytics.view')
   const showClientes = can('clientes.view')
-  const showClientesCreate = can('clientes.create')
   const showSolicitudes = can('solicitudes.view')
-  const showSolicitudesCreate = can('solicitudes.create')
+  const showNuevoCaso = can('solicitudes.create') || can('clientes.create')
   const showCuotas = canAny(['prestamos.view', 'cuotas.view'])
   const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
   const showReportes = can('reportes.view') || isAdminProfile
   const showLogs = can('logs.view') || isAdminProfile
+  const showSettings = canAny(['roles.view', 'roles.manage', 'analistas.view', 'analistas.manage']) || isAdminProfile
+  const showOperacion = showNuevoCaso || showSolicitudes || showCuotas
+  const showAdministracion = showLogs || showSettings
 
   return (
     <ScrollWrapper
@@ -65,7 +67,7 @@ const VerticalMenu = ({ scrollMenu }) => {
       >
         {showHome ? (
           <MenuItem href='/home' icon={<i className='tabler-smart-home' />}>
-            Home
+            Inicio
           </MenuItem>
         ) : null}
         {showAnalytics ? (
@@ -76,36 +78,31 @@ const VerticalMenu = ({ scrollMenu }) => {
 
         {showClientes ? (
           <SubMenu label='Clientes' icon={<i className='tabler-users' />}>
-            {showClientesCreate ? <MenuItem href='/clientes/nuevo'>Registrar cliente</MenuItem> : null}
             <MenuItem href='/clientes'>Listado de clientes</MenuItem>
           </SubMenu>
         ) : null}
 
-        {showSolicitudes ? (
-          <SubMenu label='Solicitudes' icon={<i className='tabler-file-description' />}>
-            {showSolicitudesCreate ? <MenuItem href='/solicitudes/nueva'>Ingresar solicitud</MenuItem> : null}
-            <MenuItem href='/solicitudes'>Listado de solicitudes</MenuItem>
-          </SubMenu>
-        ) : null}
-
-        {showCuotas ? (
-          <SubMenu label='Cuotas' icon={<i className='tabler-cash-banknote' />}>
-            <MenuItem href='/cuotas'>Registro de cuotas</MenuItem>
+        {showOperacion ? (
+          <SubMenu label='Operación' icon={<i className='tabler-briefcase' />}>
+            {showNuevoCaso ? <MenuItem href='/solicitudes/nueva'>Nuevo caso</MenuItem> : null}
+            {showSolicitudes ? <MenuItem href='/solicitudes'>Solicitudes</MenuItem> : null}
+            {showCuotas ? <MenuItem href='/cuotas'>Registro de cuotas</MenuItem> : null}
           </SubMenu>
         ) : null}
 
         {showReportes ? (
-          <MenuItem href='/reportes' icon={<i className='tabler-report-analytics' />}>
-            Reportes
-          </MenuItem>
+          <SubMenu label='Reportes' icon={<i className='tabler-report-analytics' />}>
+            <MenuItem href='/reportes?tab=resumen'>Resumen de reportes</MenuItem>
+            <MenuItem href='/reportes?tab=carga-pagos'>Carga de pagos bancarios</MenuItem>
+          </SubMenu>
         ) : null}
 
-        {showLogs ? (
-          <MenuItem href='/logs' icon={<i className='tabler-file-text' />}>
-            Logs
-          </MenuItem>
+        {showAdministracion ? (
+          <SubMenu label='Administración' icon={<i className='tabler-settings' />}>
+            {showSettings ? <MenuItem href='/settings'>Configuración de acceso</MenuItem> : null}
+            {showLogs ? <MenuItem href='/logs'>Logs</MenuItem> : null}
+          </SubMenu>
         ) : null}
-
       </Menu>
     </ScrollWrapper>
   )

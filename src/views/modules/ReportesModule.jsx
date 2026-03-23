@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 import Alert from '@mui/material/Alert'
 import Accordion from '@mui/material/Accordion'
@@ -94,6 +95,7 @@ const toMMDDYYYY = inputValue => {
 }
 
 export default function ReportesModule() {
+  const searchParams = useSearchParams()
   const { analista, can } = usePermissions()
   const [subMenu, setSubMenu] = useState('resumen')
   const [loading, setLoading] = useState(false)
@@ -136,6 +138,20 @@ export default function ReportesModule() {
   const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
   const canViewReportes = can('reportes.view') || isAdminProfile
   const canManageReportes = can('reportes.manage') || isAdminProfile
+
+  useEffect(() => {
+    const tab = String(searchParams.get('tab') || '')
+
+    if (tab === 'carga-pagos') {
+      setSubMenu('carga-pagos')
+
+      return
+    }
+
+    if (tab === 'resumen') {
+      setSubMenu('resumen')
+    }
+  }, [searchParams])
 
   const loadPagosBancarios = useCallback(async () => {
     if (!canViewReportes) return
