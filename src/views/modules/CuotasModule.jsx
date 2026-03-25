@@ -320,6 +320,8 @@ export default function CuotasModule() {
   const [pagoDialogInfo, setPagoDialogInfo] = useState('')
   const [processing, setProcessing] = useState(false)
   const [notifyingPrestamoId, setNotifyingPrestamoId] = useState('')
+  const [emailConfirmOpen, setEmailConfirmOpen] = useState(false)
+  const [selectedEmailPrestamo, setSelectedEmailPrestamo] = useState(null)
   const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false)
   const [selectedWhatsappPrestamo, setSelectedWhatsappPrestamo] = useState(null)
   const [whatsappModo, setWhatsappModo] = useState('AUTO')
@@ -531,7 +533,7 @@ export default function CuotasModule() {
             <IconButton
               size='small'
               color='info'
-              onClick={() => enviarNotificacionEmail(row)}
+              onClick={() => openEmailConfirmDialog(row)}
               disabled={notifyingPrestamoId === String(row.id)}
             >
               {notifyingPrestamoId === String(row.id) ? (
@@ -712,6 +714,26 @@ export default function CuotasModule() {
     } finally {
       setNotifyingPrestamoId('')
     }
+  }
+
+  const openEmailConfirmDialog = row => {
+    setSelectedEmailPrestamo(row || null)
+    setEmailConfirmOpen(true)
+  }
+
+  const closeEmailConfirmDialog = () => {
+    if (notifyingPrestamoId) return
+
+    setEmailConfirmOpen(false)
+    setSelectedEmailPrestamo(null)
+  }
+
+  const confirmEmailNotification = async () => {
+    if (!selectedEmailPrestamo) return
+
+    await enviarNotificacionEmail(selectedEmailPrestamo)
+    setEmailConfirmOpen(false)
+    setSelectedEmailPrestamo(null)
   }
 
   const rows = useMemo(() => prestamos || [], [prestamos])
@@ -1243,6 +1265,29 @@ export default function CuotasModule() {
             disabled={whatsappDialogLoading || whatsappManualSending}
           >
             {whatsappDialogLoading ? 'Guardando...' : 'Guardar modo'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={emailConfirmOpen} onClose={closeEmailConfirmDialog} fullWidth maxWidth='xs'>
+        <DialogTitle>Confirmar envío de correo</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.5} mt={1}>
+            <Typography>
+              ¿Deseas enviar la notificación por correo a{' '}
+              <strong>{selectedEmailPrestamo?.nombre_completo || 'este cliente'}</strong>?
+            </Typography>
+            <Typography variant='body2' color='text.secondary'>
+              Esta acción enviará el recordatorio de cuota del préstamo seleccionado.
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button variant='text' onClick={closeEmailConfirmDialog} disabled={Boolean(notifyingPrestamoId)}>
+            Cancelar
+          </Button>
+          <Button variant='contained' color='info' onClick={confirmEmailNotification} disabled={Boolean(notifyingPrestamoId)}>
+            {notifyingPrestamoId ? 'Enviando...' : 'Confirmar envío'}
           </Button>
         </DialogActions>
       </Dialog>
