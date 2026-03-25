@@ -50,3 +50,8 @@ export const verificarCodigoEmailCliente = (email, codigo) =>
     method: 'POST',
     body: { email, codigo }
   })
+
+export const obtenerScoreComportamientoCliente = clienteId =>
+  apiRequest(`/clientes/${clienteId}/score-comportamiento`, {
+    method: 'GET'
+  })

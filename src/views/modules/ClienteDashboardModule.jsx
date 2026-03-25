@@ -22,7 +22,12 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 
-import { obtenerCliente, obtenerDocumentosCliente, verHistorialPrestamosCliente } from '@/api/clientes'
+import {
+  obtenerCliente,
+  obtenerDocumentosCliente,
+  obtenerScoreComportamientoCliente,
+  verHistorialPrestamosCliente
+} from '@/api/clientes'
 import { eliminarDocumento } from '@/api/solicitudes'
 import usePermissions from '@/hooks/usePermissions'
 import { getToken } from '@/lib/auth/session'
@@ -170,6 +175,7 @@ export default function ClienteDashboardModule({ clienteId }) {
   const [cliente, setCliente] = useState(null)
   const [prestamos, setPrestamos] = useState([])
   const [documentos, setDocumentos] = useState([])
+  const [scoreComportamiento, setScoreComportamiento] = useState(null)
   const [documentActionLoading, setDocumentActionLoading] = useState('')
   const [documentActionError, setDocumentActionError] = useState('')
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -205,6 +211,15 @@ export default function ClienteDashboardModule({ clienteId }) {
         setDocumentos(deduplicarDocumentos(extractRows(documentosResponse.value)))
       } else {
         setDocumentos([])
+      }
+
+      try {
+        const scoreResponse = await obtenerScoreComportamientoCliente(clienteId)
+        const payload = scoreResponse?.data || scoreResponse || null
+
+        setScoreComportamiento(payload)
+      } catch {
+        setScoreComportamiento(null)
       }
     } catch (err) {
       setError(err.message || 'No se pudo cargar el dashboard del cliente.')
@@ -317,6 +332,67 @@ export default function ClienteDashboardModule({ clienteId }) {
 
     return proximosPagos.some(item => item?.morosa)
   }, [prestamoPrincipal, proximosPagos])
+
+  const scoreComportamientoValor = useMemo(() => {
+    const raw =
+      scoreComportamiento?.behavior_score ??
+      scoreComportamiento?.score_comportamiento ??
+      scoreComportamiento?.score ??
+      scoreComportamiento?.puntaje ??
+      null
+    const parsed = Number(raw)
+
+    return Number.isFinite(parsed) ? parsed : null
+  }, [scoreComportamiento])
+
+  const scoreComportamientoRating = useMemo(() => {
+    const rating =
+      scoreComportamiento?.behavior_rating ||
+      scoreComportamiento?.rating_comportamiento ||
+      scoreComportamiento?.rating ||
+      scoreComportamiento?.categoria ||
+      ''
+
+    return String(rating || '').trim().toUpperCase()
+  }, [scoreComportamiento])
+
+  const pagosTotalesComportamiento = useMemo(() => {
+    const raw =
+      scoreComportamiento?.total_pagos ??
+      scoreComportamiento?.pagos_totales ??
+      scoreComportamiento?.resumen?.total_pagos ??
+      scoreComportamiento?.resumen?.pagos_totales ??
+      0
+    const parsed = Number(raw)
+
+    return Number.isFinite(parsed) ? parsed : 0
+  }, [scoreComportamiento])
+
+  const pagosPuntualesComportamiento = useMemo(() => {
+    const raw =
+      scoreComportamiento?.pagos_puntuales ??
+      scoreComportamiento?.puntuales ??
+      scoreComportamiento?.resumen?.pagos_puntuales ??
+      scoreComportamiento?.resumen?.puntuales ??
+      0
+    const parsed = Number(raw)
+
+    return Number.isFinite(parsed) ? parsed : 0
+  }, [scoreComportamiento])
+
+  const pagosTardeComportamiento = useMemo(() => {
+    const raw =
+      scoreComportamiento?.pagos_tarde ??
+      scoreComportamiento?.pagos_atrasados ??
+      scoreComportamiento?.atrasados ??
+      scoreComportamiento?.resumen?.pagos_tarde ??
+      scoreComportamiento?.resumen?.pagos_atrasados ??
+      scoreComportamiento?.resumen?.atrasados ??
+      0
+    const parsed = Number(raw)
+
+    return Number.isFinite(parsed) ? parsed : 0
+  }, [scoreComportamiento])
 
   const getDocumentOpenUrl = item => {
     const raw = item?.url_ver || item?.url_descarga || item?.download_url || item?.url || ''
@@ -566,6 +642,30 @@ export default function ClienteDashboardModule({ clienteId }) {
                 </CardContent>
               </Card>
             </Grid>
+            {scoreComportamientoValor !== null ? (
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Card>
+                  <CardContent>
+                    <Stack direction='row' justifyContent='space-between' alignItems='center' sx={{ mb: 1 }}>
+                      <Typography color='text.secondary'>Score de comportamiento</Typography>
+                      {scoreComportamientoRating ? (
+                        <Chip
+                          size='small'
+                          variant='tonal'
+                          color={scoreComportamientoRating === 'A' || scoreComportamientoRating === 'B' ? 'success' : 'warning'}
+                          label={scoreComportamientoRating}
+                        />
+                      ) : null}
+                    </Stack>
+                    <Typography variant='h3'>{scoreComportamientoValor.toFixed(0)}</Typography>
+                    <Typography color='text.secondary'>
+                      Puntuales: {formatNaturalNumber(pagosPuntualesComportamiento)} • Tarde:{' '}
+                      {formatNaturalNumber(pagosTardeComportamiento)} • Total: {formatNaturalNumber(pagosTotalesComportamiento)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ) : null}
           </Grid>
 
           <Card>

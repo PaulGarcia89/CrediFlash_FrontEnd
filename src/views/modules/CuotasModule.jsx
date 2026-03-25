@@ -32,7 +32,14 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 
 import { verHistorialPrestamosCliente } from '@/api/clientes'
-import { enviarNotificacionCuotaEmail, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
+import {
+  actualizarModoRecordatorioWhatsapp,
+  enviarNotificacionCuotaEmail,
+  enviarNotificacionCuotaWhatsapp,
+  listarPrestamos,
+  obtenerModoRecordatorioWhatsapp,
+  registrarPagoSemanal
+} from '@/api/cuotas'
 import usePermissions from '@/hooks/usePermissions'
 import { obtenerDocumentoUrl } from '@/api/solicitudes'
 import { getToken } from '@/lib/auth/session'
@@ -282,10 +289,19 @@ export default function CuotasModule() {
   const [selectedPrestamo, setSelectedPrestamo] = useState(null)
   const [montoPago, setMontoPago] = useState('')
   const [montoPenalizacion, setMontoPenalizacion] = useState('0')
+  const [montoFee, setMontoFee] = useState('0')
+  const [motivoFee, setMotivoFee] = useState('')
   const [pagoDialogError, setPagoDialogError] = useState('')
   const [pagoDialogInfo, setPagoDialogInfo] = useState('')
   const [processing, setProcessing] = useState(false)
   const [notifyingPrestamoId, setNotifyingPrestamoId] = useState('')
+  const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false)
+  const [selectedWhatsappPrestamo, setSelectedWhatsappPrestamo] = useState(null)
+  const [whatsappModo, setWhatsappModo] = useState('AUTO')
+  const [whatsappDialogError, setWhatsappDialogError] = useState('')
+  const [whatsappDialogInfo, setWhatsappDialogInfo] = useState('')
+  const [whatsappDialogLoading, setWhatsappDialogLoading] = useState(false)
+  const [whatsappManualSending, setWhatsappManualSending] = useState(false)
   const [detalleDialogError, setDetalleDialogError] = useState('')
   const [detalleOpen, setDetalleOpen] = useState(false)
   const [historialOpen, setHistorialOpen] = useState(false)
@@ -302,13 +318,19 @@ export default function CuotasModule() {
   const canViewDocumentos = can('documentos.view')
   const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
   const canSendNotifications = isAdminProfile || can('notifications.send')
+  const canManageWhatsappNotifications = isAdminProfile || can('notifications.whatsapp.manage') || can('notifications.send')
 
   const montoEsperadoPago = useMemo(() => {
     const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
     const penalizacion = parseDecimalInput(montoPenalizacion || 0)
+    const fee = parseDecimalInput(montoFee || 0)
 
-    return (Number.isFinite(cuotaSemanal) ? cuotaSemanal : 0) + (Number.isFinite(penalizacion) ? penalizacion : 0)
-  }, [selectedPrestamo, montoPenalizacion])
+    return (
+      (Number.isFinite(cuotaSemanal) ? cuotaSemanal : 0) +
+      (Number.isFinite(penalizacion) ? penalizacion : 0) +
+      (Number.isFinite(fee) ? fee : 0)
+    )
+  }, [selectedPrestamo, montoFee, montoPenalizacion])
   const escenarioPago = useMemo(() => {
     const parsedMonto = parseDecimalInput(montoPago || 0)
 
@@ -363,7 +385,89 @@ export default function CuotasModule() {
     setSelectedPrestamo(row)
     setMontoPago(String(row.pagos_semanales || ''))
     setMontoPenalizacion('0')
+    setMontoFee('0')
+    setMotivoFee('')
     setPagoDialogOpen(true)
+  }
+
+  const parseWhatsappModo = payload => {
+    const raw = String(payload?.data?.modo || payload?.modo || '').toUpperCase()
+
+    return ['AUTO', 'MANUAL', 'PAUSADO'].includes(raw) ? raw : 'AUTO'
+  }
+
+  const closeWhatsappDialog = () => {
+    setWhatsappDialogOpen(false)
+    setSelectedWhatsappPrestamo(null)
+    setWhatsappModo('AUTO')
+    setWhatsappDialogError('')
+    setWhatsappDialogInfo('')
+    setWhatsappDialogLoading(false)
+    setWhatsappManualSending(false)
+  }
+
+  const openWhatsappDialog = async row => {
+    if (!canManageWhatsappNotifications) {
+      setError('No tienes permisos para gestionar recordatorios por WhatsApp.')
+
+      return
+    }
+
+    setWhatsappDialogOpen(true)
+    setSelectedWhatsappPrestamo(row)
+    setWhatsappModo('AUTO')
+    setWhatsappDialogError('')
+    setWhatsappDialogInfo('')
+    setWhatsappDialogLoading(true)
+
+    try {
+      const response = await obtenerModoRecordatorioWhatsapp(row.id)
+
+      setWhatsappModo(parseWhatsappModo(response))
+    } catch (err) {
+      const statusCode = Number(err?.status || 0)
+
+      if (statusCode === 404 || statusCode === 405 || statusCode === 501) {
+        setWhatsappDialogInfo('El backend no devolvió configuración previa. Se usará modo AUTO por defecto.')
+        setWhatsappModo('AUTO')
+      } else {
+        setWhatsappDialogError(err.message || 'No se pudo cargar la configuración de WhatsApp.')
+      }
+    } finally {
+      setWhatsappDialogLoading(false)
+    }
+  }
+
+  const guardarModoWhatsapp = async () => {
+    if (!selectedWhatsappPrestamo) return
+    setWhatsappDialogError('')
+    setWhatsappDialogInfo('')
+    setWhatsappDialogLoading(true)
+
+    try {
+      await actualizarModoRecordatorioWhatsapp(selectedWhatsappPrestamo.id, whatsappModo)
+      setWhatsappDialogInfo('Modo de recordatorio por WhatsApp actualizado correctamente.')
+    } catch (err) {
+      setWhatsappDialogError(err.message || 'No se pudo actualizar el modo de recordatorio por WhatsApp.')
+    } finally {
+      setWhatsappDialogLoading(false)
+    }
+  }
+
+  const enviarWhatsappManual = async () => {
+    if (!selectedWhatsappPrestamo) return
+    setWhatsappDialogError('')
+    setWhatsappDialogInfo('')
+    setWhatsappManualSending(true)
+
+    try {
+      await enviarNotificacionCuotaWhatsapp(selectedWhatsappPrestamo.id)
+      setWhatsappDialogInfo(`Notificación de WhatsApp enviada a ${selectedWhatsappPrestamo.nombre_completo || 'cliente'}.`)
+    } catch (err) {
+      setWhatsappDialogError(err.message || 'No se pudo enviar la notificación por WhatsApp.')
+    } finally {
+      setWhatsappManualSending(false)
+    }
   }
 
   const renderAccionesPrestamo = row => (
@@ -414,14 +518,14 @@ export default function CuotasModule() {
           </span>
         </Tooltip>
       ) : null}
-      {canSendNotifications ? (
-        <Tooltip title='WhatsApp (próximamente)'>
-          <IconButton size='small' color='success' onClick={() => {}}>
+      {canManageWhatsappNotifications ? (
+        <Tooltip title='Configurar recordatorio por WhatsApp'>
+          <IconButton size='small' color='success' onClick={() => openWhatsappDialog(row)}>
             <i className='tabler-brand-whatsapp-filled text-3xl' />
           </IconButton>
         </Tooltip>
       ) : null}
-      {!canRegistrarPago && !canViewPrestamos && !canSendNotifications ? (
+      {!canRegistrarPago && !canViewPrestamos && !canSendNotifications && !canManageWhatsappNotifications ? (
         <Typography variant='body2' color='text.secondary'>
           Sin acciones
         </Typography>
@@ -440,6 +544,8 @@ export default function CuotasModule() {
     setSelectedPrestamo(null)
     setMontoPago('')
     setMontoPenalizacion('0')
+    setMontoFee('0')
+    setMotivoFee('')
     setPagoDialogError('')
     setPagoDialogInfo('')
   }
@@ -449,6 +555,7 @@ export default function CuotasModule() {
 
     const parsedMonto = parseDecimalInput(montoPago || '')
     const parsedPenalizacion = parseDecimalInput(montoPenalizacion || '0')
+    const parsedFee = parseDecimalInput(montoFee || '0')
 
     if (!Number.isFinite(parsedMonto) || parsedMonto <= 0) {
       setPagoDialogError('El monto de pago debe ser mayor que 0.')
@@ -461,13 +568,18 @@ export default function CuotasModule() {
 
       return
     }
+    if (!Number.isFinite(parsedFee) || parsedFee < 0) {
+      setPagoDialogError('El monto de cargo extra debe ser mayor o igual a 0.')
+
+      return
+    }
 
     setProcessing(true)
     setPagoDialogError('')
     setPagoDialogInfo('')
 
     try {
-      await registrarPagoSemanal(selectedPrestamo.id, parsedMonto, parsedPenalizacion)
+      await registrarPagoSemanal(selectedPrestamo.id, parsedMonto, parsedPenalizacion, parsedFee, motivoFee.trim())
 
       const escenario = getEscenarioPago(parsedMonto, montoEsperadoPago)
       const ajusteSiguienteCuota =
@@ -1008,7 +1120,7 @@ export default function CuotasModule() {
               onChange={event => setMontoPago(event.target.value)}
               inputProps={{ min: 0, step: '0.01' }}
               size='small'
-              helperText={`Cuota base: ${formatCurrency(montoEsperadoPago)}. Puedes pagar un monto mayor, menor o igual.`}
+              helperText={`Monto esperado: ${formatCurrency(montoEsperadoPago)} (cuota + penalización + cargo extra). Puedes pagar un monto mayor, menor o igual.`}
               required
             />
             {escenarioPago ? (
@@ -1029,6 +1141,22 @@ export default function CuotasModule() {
               size='small'
               helperText='Usa 0 si no aplica castigo por mora.'
             />
+            <TextField
+              label='Monto de cargo extra (fee)'
+              type='number'
+              value={montoFee}
+              onChange={event => setMontoFee(event.target.value)}
+              inputProps={{ min: 0, step: '0.01' }}
+              size='small'
+              helperText='Usa 0 si no aplica cargo adicional.'
+            />
+            <TextField
+              label='Motivo del cargo extra (opcional)'
+              value={motivoFee}
+              onChange={event => setMotivoFee(event.target.value)}
+              size='small'
+              placeholder='Ejemplo: gasto administrativo'
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -1037,6 +1165,53 @@ export default function CuotasModule() {
           </Button>
           <Button variant='contained' color='success' onClick={confirmarPago} disabled={processing}>
             {processing ? 'Procesando...' : 'Confirmar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={whatsappDialogOpen} onClose={closeWhatsappDialog} fullWidth maxWidth='xs'>
+        <DialogTitle>Recordatorios por WhatsApp</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            {whatsappDialogError ? <Alert severity='error'>{whatsappDialogError}</Alert> : null}
+            {whatsappDialogInfo ? <Alert severity='info'>{whatsappDialogInfo}</Alert> : null}
+            <Typography>
+              Cliente: <strong>{selectedWhatsappPrestamo?.nombre_completo || '-'}</strong>
+            </Typography>
+            <TextField
+              select
+              size='small'
+              label='Modo de recordatorio'
+              value={whatsappModo}
+              onChange={event => setWhatsappModo(event.target.value)}
+              disabled={whatsappDialogLoading}
+            >
+              <MenuItem value='AUTO'>Automático</MenuItem>
+              <MenuItem value='MANUAL'>Manual</MenuItem>
+              <MenuItem value='PAUSADO'>Pausado</MenuItem>
+            </TextField>
+            {whatsappModo === 'MANUAL' ? (
+              <Button
+                variant='tonal'
+                color='success'
+                onClick={enviarWhatsappManual}
+                disabled={whatsappManualSending || whatsappDialogLoading}
+              >
+                {whatsappManualSending ? 'Enviando...' : 'Enviar ahora por WhatsApp'}
+              </Button>
+            ) : null}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button variant='text' onClick={closeWhatsappDialog} disabled={whatsappDialogLoading || whatsappManualSending}>
+            Cerrar
+          </Button>
+          <Button
+            variant='contained'
+            onClick={guardarModoWhatsapp}
+            disabled={whatsappDialogLoading || whatsappManualSending}
+          >
+            {whatsappDialogLoading ? 'Guardando...' : 'Guardar modo'}
           </Button>
         </DialogActions>
       </Dialog>
