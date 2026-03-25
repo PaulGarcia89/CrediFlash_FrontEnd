@@ -103,16 +103,18 @@ const extractPagination = payload => {
 }
 
 const getCuotasRestantes = row => {
+  if (!row) return 0
+
   if (
-    Number.isFinite(Number(row.pagos_pendientes)) &&
-    Number.isFinite(Number(row.pagos_semanales)) &&
-    Number(row.pagos_semanales) > 0
+    Number.isFinite(Number(row?.pagos_pendientes)) &&
+    Number.isFinite(Number(row?.pagos_semanales)) &&
+    Number(row?.pagos_semanales) > 0
   ) {
-    return Math.ceil(Number(row.pagos_pendientes) / Number(row.pagos_semanales))
+    return Math.ceil(Number(row?.pagos_pendientes) / Number(row?.pagos_semanales))
   }
 
-  if (Number.isFinite(Number(row.num_semanas)) && Number.isFinite(Number(row.pagos_hechos))) {
-    return Math.max(Number(row.num_semanas) - Number(row.pagos_hechos), 0)
+  if (Number.isFinite(Number(row?.num_semanas)) && Number.isFinite(Number(row?.pagos_hechos))) {
+    return Math.max(Number(row?.num_semanas) - Number(row?.pagos_hechos), 0)
   }
 
   return 0
