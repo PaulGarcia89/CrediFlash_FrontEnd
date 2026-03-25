@@ -118,6 +118,29 @@ const getCuotasRestantes = row => {
   return 0
 }
 
+const getSaldoPendiente = row => {
+  const pendienteDirecto = Number(row?.pendiente ?? row?.saldo_pendiente ?? row?.monto_pendiente)
+
+  if (Number.isFinite(pendienteDirecto) && pendienteDirecto >= 0) {
+    return pendienteDirecto
+  }
+
+  const pagosPendientes = Number(row?.pagos_pendientes)
+
+  if (Number.isFinite(pagosPendientes) && pagosPendientes >= 0) {
+    return pagosPendientes
+  }
+
+  const cuotasRestantes = getCuotasRestantes(row)
+  const pagoSemanal = Number(row?.pagos_semanales || 0)
+
+  if (Number.isFinite(cuotasRestantes) && Number.isFinite(pagoSemanal)) {
+    return Math.max(cuotasRestantes * pagoSemanal, 0)
+  }
+
+  return 0
+}
+
 const countByStatus = (rows, status) => rows.filter(item => String(item?.status || '').toUpperCase() === status).length
 
 const getOperationalStatus = row => {
@@ -755,14 +778,15 @@ export default function CuotasModule() {
   }
 
   const handleExportCsv = () => {
-    const headers = ['Cliente', 'MontoTotal', 'PagoSemanal', 'Semanas', 'Pendiente', 'Estado']
+    const headers = ['Cliente', 'MontoTotal', 'PagoSemanal', 'Semanas', 'SaldoPendiente', 'CuotasRestantes', 'Estado']
 
     const csvRows = tableRows.map(item => [
       item?.nombre_completo || '',
       item?.total_pagar || '',
       item?.pagos_semanales || '',
       item?.num_semanas || '',
-      item?.pendiente || '',
+      getSaldoPendiente(item),
+      getCuotasRestantes(item),
       item?.status || ''
     ])
 
@@ -986,6 +1010,7 @@ export default function CuotasModule() {
                     <TableCell>Monto total</TableCell>
                     <TableCell>Pago semanal</TableCell>
                     <TableCell>Semanas</TableCell>
+                    <TableCell>Saldo pendiente</TableCell>
                     <TableCell>Cuotas restantes</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell>Acciones</TableCell>
@@ -1010,6 +1035,7 @@ export default function CuotasModule() {
                       <TableCell>{formatCurrency(row.total_pagar)}</TableCell>
                       <TableCell>{formatCurrency(row.pagos_semanales)}</TableCell>
                       <TableCell>{row.num_semanas ?? '-'}</TableCell>
+                      <TableCell>{formatCurrency(getSaldoPendiente(row))}</TableCell>
                       <TableCell>{getCuotasRestantes(row)}</TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.75} flexWrap='wrap' alignItems='center'>
@@ -1029,7 +1055,7 @@ export default function CuotasModule() {
                   ))}
                   {tableRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align='center'>
+                      <TableCell colSpan={9} align='center'>
                         Sin resultados
                       </TableCell>
                     </TableRow>
@@ -1065,6 +1091,9 @@ export default function CuotasModule() {
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Pago semanal: {formatCurrency(row.pagos_semanales)}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Saldo pendiente: {formatCurrency(getSaldoPendiente(row))}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Semanas: {row.num_semanas ?? '-'} • Cuotas restantes: {getCuotasRestantes(row)}
@@ -1246,6 +1275,9 @@ export default function CuotasModule() {
             </Typography>
             <Typography>
               Semanas: <strong>{selectedPrestamo?.num_semanas ?? '-'}</strong>
+            </Typography>
+            <Typography>
+              Saldo pendiente: <strong>{formatCurrency(getSaldoPendiente(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
               Pagos hechos: <strong>{formatNaturalNumber(selectedPrestamo?.pagos_hechos)}</strong>
