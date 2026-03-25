@@ -32,7 +32,7 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 
 import { verHistorialPrestamosCliente } from '@/api/clientes'
-import { enviarNotificacionCuotaEmail, generarCuotasSemanales, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
+import { enviarNotificacionCuotaEmail, listarPrestamos, registrarPagoSemanal } from '@/api/cuotas'
 import usePermissions from '@/hooks/usePermissions'
 import { obtenerDocumentoUrl } from '@/api/solicitudes'
 import { getToken } from '@/lib/auth/session'
@@ -96,16 +96,16 @@ const extractPagination = payload => {
 }
 
 const getCuotasRestantes = row => {
-  if (Number.isFinite(Number(row.num_semanas)) && Number.isFinite(Number(row.pagos_hechos))) {
-    return Math.max(Number(row.num_semanas) - Number(row.pagos_hechos), 0)
-  }
-
   if (
     Number.isFinite(Number(row.pagos_pendientes)) &&
     Number.isFinite(Number(row.pagos_semanales)) &&
     Number(row.pagos_semanales) > 0
   ) {
     return Math.ceil(Number(row.pagos_pendientes) / Number(row.pagos_semanales))
+  }
+
+  if (Number.isFinite(Number(row.num_semanas)) && Number.isFinite(Number(row.pagos_hechos))) {
+    return Math.max(Number(row.num_semanas) - Number(row.pagos_hechos), 0)
   }
 
   return 0
@@ -138,6 +138,33 @@ const getStatusColor = status => {
   if (normalized.includes('LE QUEDAN')) return 'primary'
 
   return 'warning'
+}
+
+const getFriendlyPagoError = error => {
+  const raw = String(error?.message || '').trim()
+  const normalized = raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
+  if (!raw) return 'No se pudo registrar el pago semanal.'
+  if (normalized.includes('force=true') || normalized.includes('regener')) {
+    return 'Este préstamo ya tiene cronograma activo y no se puede regenerar desde este formulario.'
+  }
+
+  if (normalized.includes('ya esta pagado') || normalized.includes('no hay cuotas pendientes')) {
+    return 'Este préstamo no tiene cuotas pendientes.'
+  }
+
+  if (normalized.includes('monto') && normalized.includes('penal')) {
+    return 'El monto ingresado no coincide con las reglas de pago configuradas.'
+  }
+
+  if (normalized.includes('cuotas generadas')) {
+    return 'Este préstamo ya tiene cuotas generadas. Usa el historial para revisar su estado actual.'
+  }
+
+  return raw
 }
 
 const parseDecimalInput = value => Number(String(value ?? '').replace(',', '.'))
@@ -322,6 +349,12 @@ export default function CuotasModule() {
   }, [limit, searchCliente, status])
 
   const openPagoDialog = row => {
+    if (getCuotasRestantes(row) <= 0 || String(row?.status || '').toUpperCase() === 'PAGADO') {
+      setError('Este préstamo no tiene cuotas pendientes para registrar pago.')
+
+      return
+    }
+
     setPagoDialogError('')
     setPagoDialogInfo('')
     setSelectedPrestamo(row)
@@ -425,10 +458,6 @@ export default function CuotasModule() {
 
     try {
       await registrarPagoSemanal(selectedPrestamo.id, parsedMonto, parsedPenalizacion)
-      const nextStatus = getOperationalStatus({
-        ...selectedPrestamo,
-        pagos_hechos: Number(selectedPrestamo?.pagos_hechos || 0) + 1
-      })
 
       const escenario = getEscenarioPago(parsedMonto, montoEsperadoPago)
       const ajusteSiguienteCuota =
@@ -439,47 +468,14 @@ export default function CuotasModule() {
             : 'Pago completo de cuota.'
 
       setPagoDialogInfo(
-        `Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}. ${ajusteSiguienteCuota} Estado: ${nextStatus}.`
+        `Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}. ${ajusteSiguienteCuota}`
       )
       await loadPrestamos()
       setTimeout(() => {
         closePagoDialog()
       }, 1200)
     } catch (err) {
-      const message = err.message || 'No se pudo registrar la cuota.'
-
-      const shouldGenerateCuotas =
-        message.toLowerCase().includes('no existe cuota pendiente') ||
-        message.toLowerCase().includes('cuota') ||
-        message.toLowerCase().includes('generar')
-
-      if (shouldGenerateCuotas) {
-        try {
-          await generarCuotasSemanales(selectedPrestamo.id, {
-            fecha_inicio: String(selectedPrestamo?.fecha_inicio || '').slice(0, 10) || undefined,
-            num_semanas: Number(selectedPrestamo?.num_semanas || 0),
-            monto_solicitado: Number(selectedPrestamo?.monto_solicitado || 0),
-            interes: Number(selectedPrestamo?.interes || 0)
-          })
-
-          await registrarPagoSemanal(selectedPrestamo.id, parsedMonto, parsedPenalizacion)
-          setPagoDialogInfo(
-            `Cuotas generadas y pago registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}.`
-          )
-          await loadPrestamos()
-          setTimeout(() => {
-            closePagoDialog()
-          }, 1200)
-
-          return
-        } catch (retryError) {
-          setPagoDialogError(retryError.message || 'No se pudo generar cuotas ni registrar pago.')
-
-          return
-        }
-      }
-
-      setPagoDialogError(message)
+      setPagoDialogError(getFriendlyPagoError(err))
     } finally {
       setProcessing(false)
     }
