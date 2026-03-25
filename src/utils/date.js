@@ -1,6 +1,17 @@
 export const formatDateMMDDYYYY = value => {
   if (!value) return '-'
 
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
+
+    if (match) {
+      const [, yyyy, mm, dd] = match
+
+      return `${mm}/${dd}/${yyyy}`
+    }
+  }
+
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return String(value)
 

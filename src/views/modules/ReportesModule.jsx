@@ -83,7 +83,17 @@ const getEstadoColor = estado => {
 
 const toMMDDYYYY = inputValue => {
   if (!inputValue) return ''
-  const date = new Date(inputValue)
+
+  const raw = String(inputValue).trim()
+  const ymdMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+
+  if (ymdMatch) {
+    const [, yyyy, mm, dd] = ymdMatch
+
+    return `${mm}/${dd}/${yyyy}`
+  }
+
+  const date = new Date(raw)
 
   if (Number.isNaN(date.getTime())) return inputValue
 

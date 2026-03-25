@@ -56,6 +56,7 @@ const initialForm = {
   direccion: '',
   es_referido: false,
   referido_por: '',
+  referido_externo: '',
   monto_referido: '0',
   nombre_contacto: '',
   apellido_contacto: '',
@@ -173,6 +174,7 @@ export default function RegistroClienteSolicitudModule() {
         ...previous,
         es_referido: isReferido,
         referido_por: isReferido ? previous.referido_por : '',
+        referido_externo: isReferido ? previous.referido_externo : '',
         monto_referido: isReferido ? previous.monto_referido : '0'
       }))
 
@@ -188,7 +190,11 @@ export default function RegistroClienteSolicitudModule() {
     if (field === 'nombre') return !String(form.nombre || '').trim()
     if (field === 'apellido') return !String(form.apellido || '').trim()
     if (field === 'email') return !String(form.email || '').trim()
-    if (field === 'referido_por') return Boolean(form.es_referido) && !String(form.referido_por || '').trim()
+    if (field === 'referido_por') {
+      if (!Boolean(form.es_referido)) return false
+
+      return !String(form.referido_por || '').trim() && !String(form.referido_externo || '').trim()
+    }
     if (field === 'monto_solicitado') return !(Number(form.monto_solicitado || 0) > 0)
     if (field === 'modalidad') return !String(form.modalidad || '').trim()
     if (field === 'plazo_semanas') return !(Number(form.plazo_semanas || 0) > 0)
@@ -345,9 +351,10 @@ export default function RegistroClienteSolicitudModule() {
       if (documentosEstadoCuenta.length < 1) throw new Error('Debes cargar al menos 1 estado de cuenta (PDF).')
 
       const referidoPorNombre = referidoSelected ? getClienteLabel(referidoSelected) : ''
+      const referidoExterno = String(form.referido_externo || '').trim()
 
-      if (form.es_referido && !referidoPorNombre) {
-        throw new Error('Debes seleccionar un cliente activo en el campo "Referido por".')
+      if (form.es_referido && !referidoPorNombre && !referidoExterno) {
+        throw new Error('Debes seleccionar un cliente activo o indicar un referido externo.')
       }
 
       const clientePayload = {
@@ -357,7 +364,7 @@ export default function RegistroClienteSolicitudModule() {
         email,
         direccion: form.direccion,
         es_referido: Boolean(form.es_referido),
-        referido_por: form.es_referido ? referidoPorNombre : '',
+        referido_por: form.es_referido ? referidoPorNombre || referidoExterno : '',
         monto_referido: form.es_referido ? Number(montoReferido.toFixed(2)) : 0,
         nombre_contacto: form.nombre_contacto,
         apellido_contacto: form.apellido_contacto,
@@ -536,7 +543,8 @@ export default function RegistroClienteSolicitudModule() {
                       onChange={(_, value) =>
                         setForm(previous => ({
                           ...previous,
-                          referido_por: value ? getClienteId(value) || getClienteLabel(value) : ''
+                          referido_por: value ? getClienteId(value) || getClienteLabel(value) : '',
+                          referido_externo: value ? '' : previous.referido_externo
                         }))
                       }
                       getOptionLabel={option => getClienteLabel(option) || 'Cliente'}
@@ -553,15 +561,25 @@ export default function RegistroClienteSolicitudModule() {
                             isRequiredMissing('referido_por')
                               ? 'Campo obligatorio'
                               : form.es_referido
-                                ? loadingReferidos
-                                  ? 'Cargando clientes activos...'
-                                  : clientesActivos.length
-                                    ? 'Selecciona un cliente activo'
-                                    : 'No hay clientes activos disponibles'
+                                  ? loadingReferidos
+                                    ? 'Cargando clientes activos...'
+                                    : clientesActivos.length
+                                      ? 'Selecciona un cliente activo (o usa referido externo)'
+                                      : 'No hay clientes activos disponibles'
                                 : ''
                           }
                         />
                       )}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      label='Referido externo (si no está en base)'
+                      name='referido_externo'
+                      value={form.referido_externo}
+                      onChange={handleChange}
+                      fullWidth
+                      disabled={!form.es_referido}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 4 }}>

@@ -77,7 +77,7 @@ const LABEL_MAP = {
   documentosCompletos: 'Documentos completos',
   statusLegal: 'Status legal',
   casaPropiaAlquiler: 'Casa propia o alquiler',
-  montoAuto: 'Monto del auto',
+  montoCasaMensual: 'Monto mensual de casa',
   pagoAuto: 'Pago auto mensual',
   gastosMensualesEstimados: 'Estimado gastos mensuales',
   deudasActualesPagosMinimos: 'Deudas actuales pagos mínimos',
@@ -373,7 +373,7 @@ const MODEL_NUMERIC_FIELDS = [
   'ingresosMensuales',
   'otrasDeudasMensuales',
   'antiguedadLaboralMeses',
-  'montoAuto',
+  'montoCasaMensual',
   'pagoAuto',
   'gastosMensualesEstimados',
   'deudasActualesPagosMinimos',
@@ -437,7 +437,7 @@ const initialModeloForm = {
   documentosCompletos: true,
   statusLegal: 'FORMAL',
   casaPropiaAlquiler: 'ALQUILER',
-  montoAuto: '',
+  montoCasaMensual: '',
   pagoAuto: '',
   gastosMensualesEstimados: '',
   deudasActualesPagosMinimos: '',
@@ -720,7 +720,8 @@ export default function SolicitudesModule() {
           statusLegal: ratingForm.statusLegal,
           tiempoTrabajo: numericValues.antiguedadLaboralMeses,
           casaPropiaAlquiler: ratingForm.casaPropiaAlquiler,
-          montoAuto: numericValues.montoAuto,
+          montoAuto: 0,
+          montoCasaMensual: numericValues.montoCasaMensual,
           pagoAuto: numericValues.pagoAuto,
           pagoAutoMensual: numericValues.pagoAuto,
           gastosMensualesEstimados: numericValues.gastosMensualesEstimados,
@@ -730,7 +731,8 @@ export default function SolicitudesModule() {
           status_legal: ratingForm.statusLegal,
           tiempo_trabajo: numericValues.antiguedadLaboralMeses,
           casa_propia_alquiler: ratingForm.casaPropiaAlquiler,
-          monto_auto: numericValues.montoAuto,
+          monto_auto: 0,
+          monto_casa_mensual: numericValues.montoCasaMensual,
           pago_auto: numericValues.pagoAuto,
           estimados_gastos_mensuales: numericValues.gastosMensualesEstimados,
           deudas_actuales_pagos_minimos: numericValues.deudasActualesPagosMinimos,
@@ -1448,8 +1450,8 @@ export default function SolicitudesModule() {
                   onChange={event => handleModeloForm('statusLegal', event.target.value)}
                 >
                   <MenuItem value='FORMAL'>FORMAL</MenuItem>
-                  <MenuItem value='EN_REGLA'>EN_REGLA</MenuItem>
-                  <MenuItem value='RESIDENTE'>RESIDENTE</MenuItem>
+                  <MenuItem value='EN_REGLA'>CIUDADANO AMERICANO</MenuItem>
+                  <MenuItem value='RESIDENTE'>RESIDENTE AMERICANO</MenuItem>
                   <MenuItem value='TEMPORAL'>TEMPORAL</MenuItem>
                   <MenuItem value='IRREGULAR'>IRREGULAR</MenuItem>
                 </TextField>
@@ -1463,10 +1465,10 @@ export default function SolicitudesModule() {
                   <MenuItem value='ALQUILER'>ALQUILER</MenuItem>
                 </TextField>
                 <TextField
-                  label='Monto del auto'
+                  label='Monto mensual de casa'
                   type='number'
-                  value={ratingForm.montoAuto}
-                  onChange={event => handleModeloForm('montoAuto', event.target.value)}
+                  value={ratingForm.montoCasaMensual}
+                  onChange={event => handleModeloForm('montoCasaMensual', event.target.value)}
                 />
                 <TextField
                   label='Pago auto mensual'
