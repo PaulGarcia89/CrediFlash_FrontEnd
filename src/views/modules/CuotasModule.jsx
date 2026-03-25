@@ -139,6 +139,13 @@ const getStatusColor = status => {
 
   return 'warning'
 }
+const canRegisterPaymentForRow = row => {
+  const normalizedStatus = String(row?.status || '').toUpperCase()
+
+  if (normalizedStatus === 'PAGADO' || normalizedStatus === 'CANCELADO') return false
+
+  return getCuotasRestantes(row) > 0
+}
 
 const getFriendlyPagoError = error => {
   const raw = String(error?.message || '').trim()
@@ -349,11 +356,7 @@ export default function CuotasModule() {
   }, [limit, searchCliente, status])
 
   const openPagoDialog = row => {
-    if (getCuotasRestantes(row) <= 0 || String(row?.status || '').toUpperCase() === 'PAGADO') {
-      setError('Este préstamo no tiene cuotas pendientes para registrar pago.')
-
-      return
-    }
+    if (!canRegisterPaymentForRow(row)) return
 
     setPagoDialogError('')
     setPagoDialogInfo('')
@@ -366,10 +369,17 @@ export default function CuotasModule() {
   const renderAccionesPrestamo = row => (
     <Stack direction='row' spacing={0.5} flexWrap='wrap'>
       {canRegistrarPago ? (
-        <Tooltip title='Registrar pago'>
-          <IconButton size='small' color='error' onClick={() => openPagoDialog(row)}>
-            <i className='tabler-cash text-3xl' />
-          </IconButton>
+        <Tooltip title={canRegisterPaymentForRow(row) ? 'Registrar pago' : 'Sin cuotas pendientes'}>
+          <span>
+            <IconButton
+              size='small'
+              color='error'
+              onClick={() => openPagoDialog(row)}
+              disabled={!canRegisterPaymentForRow(row)}
+            >
+              <i className='tabler-cash text-3xl' />
+            </IconButton>
+          </span>
         </Tooltip>
       ) : null}
       {canViewPrestamos ? (
@@ -471,6 +481,13 @@ export default function CuotasModule() {
         `Pago semanal registrado para ${selectedPrestamo.nombre_completo || 'el cliente seleccionado'}. ${ajusteSiguienteCuota}`
       )
       await loadPrestamos()
+      if (historialOpen && historialCliente?.id) {
+        const selectedClienteId = selectedPrestamo?.cliente_id || selectedPrestamo?.cliente?.id || ''
+
+        if (selectedClienteId && selectedClienteId === historialCliente.id) {
+          await loadHistorial(historialCliente.id, historialPage)
+        }
+      }
       setTimeout(() => {
         closePagoDialog()
       }, 1200)
