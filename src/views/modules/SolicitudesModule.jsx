@@ -78,7 +78,6 @@ const LABEL_MAP = {
   statusLegal: 'Status legal',
   casaPropiaAlquiler: 'Casa propia o alquiler',
   montoCasaMensual: 'Monto mensual de casa',
-  pagoAuto: 'Pago auto mensual',
   gastosMensualesEstimados: 'Estimado gastos mensuales',
   deudasActualesPagosMinimos: 'Deudas actuales pagos mínimos',
   valorGarantia: 'Valor de garantía',
@@ -374,7 +373,6 @@ const MODEL_NUMERIC_FIELDS = [
   'otrasDeudasMensuales',
   'antiguedadLaboralMeses',
   'montoCasaMensual',
-  'pagoAuto',
   'gastosMensualesEstimados',
   'deudasActualesPagosMinimos',
   'valorGarantia'
@@ -438,7 +436,6 @@ const initialModeloForm = {
   statusLegal: 'FORMAL',
   casaPropiaAlquiler: 'ALQUILER',
   montoCasaMensual: '',
-  pagoAuto: '',
   gastosMensualesEstimados: '',
   deudasActualesPagosMinimos: '',
   valorGarantia: ''
@@ -722,8 +719,8 @@ export default function SolicitudesModule() {
           casaPropiaAlquiler: ratingForm.casaPropiaAlquiler,
           montoAuto: 0,
           montoCasaMensual: numericValues.montoCasaMensual,
-          pagoAuto: numericValues.pagoAuto,
-          pagoAutoMensual: numericValues.pagoAuto,
+          pagoAuto: 0,
+          pagoAutoMensual: 0,
           gastosMensualesEstimados: numericValues.gastosMensualesEstimados,
           deudasActualesPagosMinimos: numericValues.deudasActualesPagosMinimos,
           deudasActualesPagosMinimosMensuales: numericValues.deudasActualesPagosMinimos,
@@ -733,7 +730,7 @@ export default function SolicitudesModule() {
           casa_propia_alquiler: ratingForm.casaPropiaAlquiler,
           monto_auto: 0,
           monto_casa_mensual: numericValues.montoCasaMensual,
-          pago_auto: numericValues.pagoAuto,
+          pago_auto: 0,
           estimados_gastos_mensuales: numericValues.gastosMensualesEstimados,
           deudas_actuales_pagos_minimos: numericValues.deudasActualesPagosMinimos,
           valor_garantia: numericValues.valorGarantia
@@ -1469,12 +1466,6 @@ export default function SolicitudesModule() {
                   type='number'
                   value={ratingForm.montoCasaMensual}
                   onChange={event => handleModeloForm('montoCasaMensual', event.target.value)}
-                />
-                <TextField
-                  label='Pago auto mensual'
-                  type='number'
-                  value={ratingForm.pagoAuto}
-                  onChange={event => handleModeloForm('pagoAuto', event.target.value)}
                 />
                 <TextField
                   label='Estimado de gastos mensuales'
