@@ -1446,11 +1446,11 @@ export default function SolicitudesModule() {
                   value={ratingForm.statusLegal}
                   onChange={event => handleModeloForm('statusLegal', event.target.value)}
                 >
-                  <MenuItem value='FORMAL'>FORMAL</MenuItem>
-                  <MenuItem value='EN_REGLA'>CIUDADANO AMERICANO</MenuItem>
-                  <MenuItem value='RESIDENTE'>RESIDENTE AMERICANO</MenuItem>
-                  <MenuItem value='TEMPORAL'>TEMPORAL</MenuItem>
-                  <MenuItem value='IRREGULAR'>IRREGULAR</MenuItem>
+                  <MenuItem value='FORMAL'>Ciudadano estadounidense</MenuItem>
+                  <MenuItem value='RESIDENTE'>Residente permanente</MenuItem>
+                  <MenuItem value='EN_REGLA'>Estatus legal vigente (visa/permiso)</MenuItem>
+                  <MenuItem value='TEMPORAL'>Protección temporal / asilo</MenuItem>
+                  <MenuItem value='IRREGULAR'>Sin estatus regular</MenuItem>
                 </TextField>
                 <TextField
                   select
