@@ -32,7 +32,7 @@ import {
   enviarCodigoVerificacionEmailClientePublico,
   listarClientes,
   listarClientesReferiblesPublico,
-  verificarCodigoEmailCliente
+  verificarCodigoEmailCliente,
   verificarCodigoEmailClientePublico
 } from '@/api/clientes'
 import { crearSolicitud, crearSolicitudPublica } from '@/api/solicitudes'
