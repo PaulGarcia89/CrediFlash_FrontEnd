@@ -27,11 +27,15 @@ import Typography from '@mui/material/Typography'
 
 import {
   crearCliente,
+  crearClientePublico,
   enviarCodigoVerificacionEmailCliente,
+  enviarCodigoVerificacionEmailClientePublico,
   listarClientes,
+  listarClientesReferiblesPublico,
   verificarCodigoEmailCliente
+  verificarCodigoEmailClientePublico
 } from '@/api/clientes'
-import { crearSolicitud } from '@/api/solicitudes'
+import { crearSolicitud, crearSolicitudPublica } from '@/api/solicitudes'
 
 const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
 const MODELO_APROBACION_OPTIONS = ['AUTOMATICO', 'MANUAL']
@@ -115,7 +119,7 @@ const extractClienteIdFromPayload = payload =>
 const extractSolicitudIdFromPayload = payload =>
   payload?.data?.id || payload?.id || payload?.data?.solicitud_id || payload?.solicitud_id || ''
 
-export default function RegistroClienteSolicitudModule() {
+export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const router = useRouter()
 
   const [form, setForm] = useState(initialForm)
@@ -142,7 +146,9 @@ export default function RegistroClienteSolicitudModule() {
       setLoadingReferidos(true)
 
       try {
-        const response = await listarClientes({ page: 1, limit: 500, search: '', estado: 'ACTIVO' })
+        const response = publicMode
+          ? await listarClientesReferiblesPublico({ page: 1, limit: 500, search: '' })
+          : await listarClientes({ page: 1, limit: 500, search: '', estado: 'ACTIVO' })
 
         setClientesActivos(extractRows(response))
       } catch {
@@ -153,7 +159,7 @@ export default function RegistroClienteSolicitudModule() {
     }
 
     loadClientesActivos()
-  }, [])
+  }, [publicMode])
 
   const referidoSelected = useMemo(() => {
     const selected = String(form.referido_por || '')
@@ -276,7 +282,11 @@ export default function RegistroClienteSolicitudModule() {
     setEmailVerificationLoading(true)
 
     try {
-      await enviarCodigoVerificacionEmailCliente(email)
+      if (publicMode) {
+        await enviarCodigoVerificacionEmailClientePublico(email)
+      } else {
+        await enviarCodigoVerificacionEmailCliente(email)
+      }
       setEmailVerificationSent(true)
       setEmailVerificationMessage('Código de verificación enviado al correo.')
     } catch (err) {
@@ -308,7 +318,11 @@ export default function RegistroClienteSolicitudModule() {
     setEmailCodeValidationLoading(true)
 
     try {
-      await verificarCodigoEmailCliente(email, codigo)
+      if (publicMode) {
+        await verificarCodigoEmailClientePublico(email, codigo)
+      } else {
+        await verificarCodigoEmailCliente(email, codigo)
+      }
       setEmailVerified(true)
       setVerifiedEmail(email)
       setEmailVerificationMessage('Correo verificado correctamente.')
@@ -374,7 +388,7 @@ export default function RegistroClienteSolicitudModule() {
         observaciones: form.observaciones
       }
 
-      const clienteCreated = await crearCliente(clientePayload)
+      const clienteCreated = publicMode ? await crearClientePublico(clientePayload) : await crearCliente(clientePayload)
       const clienteId = extractClienteIdFromPayload(clienteCreated)
 
       if (!clienteId) {
@@ -404,8 +418,23 @@ export default function RegistroClienteSolicitudModule() {
         if (file) solicitudPayload.append('documentos', file)
       })
 
-      const solicitudCreated = await crearSolicitud(solicitudPayload)
+      const solicitudCreated = publicMode ? await crearSolicitudPublica(solicitudPayload) : await crearSolicitud(solicitudPayload)
       const solicitudId = extractSolicitudIdFromPayload(solicitudCreated)
+      if (publicMode) {
+        setForm(initialForm)
+        setDocumentoIdentidad(null)
+        setDocumentosEstadoCuenta([])
+        setSubmitAttempted(false)
+        setEmailVerificationCode('')
+        setEmailVerificationSent(false)
+        setEmailVerified(false)
+        setVerifiedEmail('')
+        setEmailVerificationMessage('')
+        setSnackbar({ open: true, message: 'Solicitud enviada correctamente. Nuestro equipo la revisará.' })
+
+        return
+      }
+
       const params = new URLSearchParams()
 
       if (solicitudId) params.set('focusSolicitudId', String(solicitudId))
@@ -432,7 +461,9 @@ export default function RegistroClienteSolicitudModule() {
               PRECALIFICACION DE CLIENTES
             </Typography>
             <Typography color='text.secondary'>
-              Formulario unificado para registrar cliente y crear solicitud de crédito en un solo flujo.
+              {publicMode
+                ? 'Formulario público para registrar cliente y crear solicitud de crédito en un solo flujo.'
+                : 'Formulario unificado para registrar cliente y crear solicitud de crédito en un solo flujo.'}
             </Typography>
             <Typography color='error.main' sx={{ fontWeight: 700 }}>
               * Indica que la pregunta es obligatoria
@@ -824,11 +855,13 @@ export default function RegistroClienteSolicitudModule() {
             <CardContent>
               <Stack spacing={1.5}>
                 <Button variant='contained' type='submit' disabled={saving} fullWidth>
-                  {saving ? 'Guardando...' : 'Publicar cliente y solicitud'}
+                  {saving ? 'Guardando...' : publicMode ? 'Enviar solicitud' : 'Publicar cliente y solicitud'}
                 </Button>
-                <Button variant='outlined' onClick={() => router.push('/clientes')} disabled={saving} fullWidth>
-                  Cancelar
-                </Button>
+                {publicMode ? null : (
+                  <Button variant='outlined' onClick={() => router.push('/clientes')} disabled={saving} fullWidth>
+                    Cancelar
+                  </Button>
+                )}
               </Stack>
             </CardContent>
           </Card>

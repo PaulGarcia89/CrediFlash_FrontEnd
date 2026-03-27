@@ -6,10 +6,24 @@ export const listarClientes = ({ page = 1, limit = 20, search = '', estado = 'AC
     query: { page, limit, search, estado }
   })
 
+export const listarClientesReferiblesPublico = ({ page = 1, limit = 200, search = '' } = {}) =>
+  apiRequest('/public/clientes/referibles', {
+    method: 'GET',
+    query: { page, limit, search },
+    auth: false
+  })
+
 export const crearCliente = payload =>
   apiRequest('/clientes', {
     method: 'POST',
     body: payload
+  })
+
+export const crearClientePublico = payload =>
+  apiRequest('/public/clientes', {
+    method: 'POST',
+    body: payload,
+    auth: false
   })
 
 export const obtenerCliente = clienteId =>
@@ -45,10 +59,24 @@ export const enviarCodigoVerificacionEmailCliente = email =>
     body: { email }
   })
 
+export const enviarCodigoVerificacionEmailClientePublico = email =>
+  apiRequest('/public/clientes/verificacion-email/enviar', {
+    method: 'POST',
+    body: { email },
+    auth: false
+  })
+
 export const verificarCodigoEmailCliente = (email, codigo) =>
   apiRequest('/clientes/verificacion-email/verificar', {
     method: 'POST',
     body: { email, codigo }
+  })
+
+export const verificarCodigoEmailClientePublico = (email, codigo) =>
+  apiRequest('/public/clientes/verificacion-email/verificar', {
+    method: 'POST',
+    body: { email, codigo },
+    auth: false
   })
 
 export const obtenerScoreComportamientoCliente = clienteId =>

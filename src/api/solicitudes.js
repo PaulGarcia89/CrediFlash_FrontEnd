@@ -12,6 +12,13 @@ export const crearSolicitud = formData =>
     body: formData
   })
 
+export const crearSolicitudPublica = formData =>
+  apiRequest('/public/solicitudes', {
+    method: 'POST',
+    body: formData,
+    auth: false
+  })
+
 export const obtenerSolicitud = solicitudId =>
   apiRequest(`/solicitudes/${solicitudId}`, {
     method: 'GET'
