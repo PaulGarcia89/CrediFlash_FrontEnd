@@ -40,13 +40,20 @@ import { formatDateMMDDYYYY } from '@/utils/date'
 const ALLOWED_FILE_EXTENSIONS = ['.xlsx', '.xls', '.csv']
 const ESTADOS_OPTIONS = ['', 'VALIDO', 'INVALIDO', 'DUPLICADO', 'PROCESADO']
 const REPORT_OPTIONS = [
+  { value: 'pipeline-comercial', label: 'Pipeline comercial' },
+  { value: 'cartera-activa', label: 'Cartera activa' },
   { value: 'ganancias-esperadas-cobradas', label: 'Ganancias esperadas vs cobradas' },
   { value: 'saldo-pendiente-cliente', label: 'Saldo pendiente por cliente' },
   { value: 'moras-historial-pagos', label: 'Pagos en mora en historial' },
   { value: 'ano-contra-ano', label: 'Reporte año contra año' },
   { value: 'metas', label: 'Reporte de metas' },
-  { value: 'top-moras-diarias', label: 'Top moras diarias' }
+  { value: 'top-moras-diarias', label: 'Top moras diarias' },
+  { value: 'productividad-analistas', label: 'Productividad de analistas' },
+  { value: 'notificaciones-envios', label: 'Notificaciones enviadas' },
+  { value: 'referidos-impacto', label: 'Impacto de referidos' }
 ]
+const REPORT_ESTADO_OPTIONS = ['', 'EN_PROCESO', 'EN_MARCHA', 'PAGADO', 'MOROSO', 'RECHAZADO', 'APROBADO']
+const REPORT_MODALIDAD_OPTIONS = ['', 'SEMANAL', 'QUINCENAL', 'MENSUAL']
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -116,7 +123,11 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
   const [reportFilters, setReportFilters] = useState({
     tipo: REPORT_OPTIONS[0].value,
     fecha_inicio: '',
-    fecha_fin: ''
+    fecha_fin: '',
+    top: '10',
+    search: '',
+    estado: '',
+    modalidad: ''
   })
   const [reportResult, setReportResult] = useState({
     generated: false,
@@ -124,7 +135,8 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
     columns: [],
     rows: [],
     resumen: null,
-    note: ''
+    note: '',
+    pagination: null
   })
   const [selectedFile, setSelectedFile] = useState(null)
   const [filters, setFilters] = useState({
@@ -154,8 +166,8 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
 
     const tab = String(searchParams.get('tab') || '')
 
-    if (tab === 'carga-pagos') {
-      setSubMenu('carga-pagos')
+    if (tab === 'carga-pagos' || tab === 'carga-pagos-bancarios') {
+      setSubMenu('carga-pagos-bancarios')
 
       return
     }
@@ -368,137 +380,45 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
 
     const selectedLabel = REPORT_OPTIONS.find(item => item.value === reportFilters.tipo)?.label || 'Reporte'
 
-    if (reportFilters.tipo === 'top-moras-diarias') {
-      setLoading(true)
+    setLoading(true)
 
-      try {
-        const response = await generarReporte({
-          tipo: reportFilters.tipo,
-          fecha_inicio: toMMDDYYYY(reportFilters.fecha_inicio),
-          fecha_fin: toMMDDYYYY(reportFilters.fecha_fin),
-          top: 10
-        })
-        const source = response?.data || response || {}
-        const reportRows = Array.isArray(source?.rows) ? source.rows : []
-        const reportColumns = Array.isArray(source?.columns)
-          ? source.columns
-          : [
-              { id: 'fecha_reporte', label: 'Fecha reporte' },
-              { id: 'cliente_id', label: 'Cliente ID' },
-              { id: 'nombre_completo', label: 'Nombre completo' },
-              { id: 'cantidad_cuotas_en_mora', label: 'Cuotas en mora' },
-              { id: 'monto_mora_hoy', label: 'Monto mora hoy' },
-              { id: 'dias_mora_max', label: 'Días mora máx.' }
-            ]
-
-        setReportResult({
-          generated: true,
-          title: selectedLabel,
-          columns: reportColumns,
-          rows: reportRows,
-          resumen: source?.resumen || null,
-          note: ''
-        })
-        setSuccess('Reporte generado correctamente.')
-      } catch (err) {
-        setError(err.message || 'No se pudo generar el reporte Top moras diarias.')
-      } finally {
-        setLoading(false)
-      }
-
-      return
-    }
-
-    if (reportFilters.tipo === 'saldo-pendiente-cliente') {
-      const byClient = new Map()
-
-      rows.forEach(item => {
-        const name = String(item?.nombre_completo || 'Sin nombre').trim()
-        const amount = Number(item?.monto || 0)
-        const previous = byClient.get(name) || 0
-
-        byClient.set(name, previous + amount)
+    try {
+      const response = await generarReporte({
+        tipo: reportFilters.tipo,
+        fecha_inicio: toMMDDYYYY(reportFilters.fecha_inicio),
+        fecha_fin: toMMDDYYYY(reportFilters.fecha_fin),
+        top: Number(reportFilters.top || 10),
+        search: reportFilters.search,
+        estado: reportFilters.estado,
+        modalidad: reportFilters.modalidad
       })
 
-      const output = Array.from(byClient.entries()).map(([nombre, saldo]) => ({
-        nombre,
-        saldo
-      }))
+      const source = response?.data || response || {}
+      const reportRows = Array.isArray(source?.rows) ? source.rows : []
+      const fallbackColumns = reportRows.length
+        ? Object.keys(reportRows[0]).map(key => ({
+            id: key,
+            label: String(key)
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, char => char.toUpperCase())
+          }))
+        : []
 
       setReportResult({
         generated: true,
         title: selectedLabel,
-        columns: [
-          { id: 'nombre', label: 'Nombre completo' },
-          { id: 'saldo', label: 'Saldo pendiente' }
-        ],
-        rows: output,
-        resumen: null,
-        note: 'Reporte generado desde datos cargados de pagos bancarios.'
+        columns: Array.isArray(source?.columns) ? source.columns : fallbackColumns,
+        rows: reportRows,
+        resumen: source?.resumen || null,
+        pagination: source?.pagination || null,
+        note: String(source?.note || source?.mensaje || '')
       })
-      setSuccess('Reporte generado correctamente.')
-
-      return
+      setSuccess(response?.message || 'Reporte generado correctamente.')
+    } catch (err) {
+      setError(err.message || 'No se pudo generar el reporte.')
+    } finally {
+      setLoading(false)
     }
-
-    if (reportFilters.tipo === 'moras-historial-pagos' || reportFilters.tipo === 'top-moras-diarias') {
-      const moraRows = rows.filter(item => String(item?.estado || '').toUpperCase().includes('MORA'))
-
-      if (reportFilters.tipo === 'moras-historial-pagos') {
-        setReportResult({
-          generated: true,
-          title: selectedLabel,
-          columns: [
-            { id: 'nombre_completo', label: 'Nombre completo' },
-            { id: 'monto', label: 'Monto' },
-            { id: 'fecha_pago', label: 'Fecha pago' },
-            { id: 'estado', label: 'Estado' }
-          ],
-          rows: moraRows,
-          resumen: null,
-          note: 'Filtrado por filas en estado MORA.'
-        })
-      } else {
-        const dailyMap = new Map()
-
-        moraRows.forEach(item => {
-          const day = formatDateMMDDYYYY(item?.fecha_pago)
-          const previous = dailyMap.get(day) || { fecha: day, cantidad: 0, monto: 0 }
-
-          previous.cantidad += 1
-          previous.monto += Number(item?.monto || 0)
-          dailyMap.set(day, previous)
-        })
-
-        setReportResult({
-          generated: true,
-          title: selectedLabel,
-          columns: [
-            { id: 'fecha', label: 'Fecha' },
-            { id: 'cantidad', label: 'Cantidad de moras' },
-            { id: 'monto', label: 'Monto total mora' }
-          ],
-          rows: Array.from(dailyMap.values()).sort((a, b) => b.cantidad - a.cantidad),
-          resumen: null,
-          note: 'Top de moras diarias calculado desde datos visibles.'
-        })
-      }
-
-      setSuccess('Reporte generado correctamente.')
-
-      return
-    }
-
-    setReportResult({
-      generated: true,
-      title: selectedLabel,
-      columns: [],
-      rows: [],
-      resumen: null,
-      note:
-        'Este reporte requiere endpoint dedicado del backend para cálculo financiero completo con rango de fechas.'
-    })
-    setSuccess('Plantilla de reporte generada. Falta integración backend para métricas finales.')
   }
 
   if (!canViewReportes) {
@@ -559,6 +479,55 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                         onChange={event => setReportFilters(previous => ({ ...previous, fecha_fin: event.target.value }))}
                         InputLabelProps={{ shrink: true }}
                       />
+                      <TextField
+                        size='small'
+                        type='number'
+                        label='Top'
+                        value={reportFilters.top}
+                        onChange={event => setReportFilters(previous => ({ ...previous, top: event.target.value }))}
+                        inputProps={{ min: 1, max: 100 }}
+                        sx={{ maxWidth: { xs: '100%', md: 110 } }}
+                      />
+                    </Stack>
+
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+                      <TextField
+                        size='small'
+                        label='Buscar'
+                        value={reportFilters.search}
+                        onChange={event => setReportFilters(previous => ({ ...previous, search: event.target.value }))}
+                        sx={{ minWidth: { xs: '100%', md: 260 } }}
+                      />
+                      <TextField
+                        select
+                        size='small'
+                        label='Estado'
+                        value={reportFilters.estado}
+                        onChange={event => setReportFilters(previous => ({ ...previous, estado: event.target.value }))}
+                        sx={{ minWidth: { xs: '100%', md: 220 } }}
+                      >
+                        <MenuItem value=''>Todos</MenuItem>
+                        {REPORT_ESTADO_OPTIONS.filter(Boolean).map(option => (
+                          <MenuItem key={option} value={option}>
+                            {option}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <TextField
+                        select
+                        size='small'
+                        label='Modalidad'
+                        value={reportFilters.modalidad}
+                        onChange={event => setReportFilters(previous => ({ ...previous, modalidad: event.target.value }))}
+                        sx={{ minWidth: { xs: '100%', md: 220 } }}
+                      >
+                        <MenuItem value=''>Todas</MenuItem>
+                        {REPORT_MODALIDAD_OPTIONS.filter(Boolean).map(option => (
+                          <MenuItem key={option} value={option}>
+                            {option}
+                          </MenuItem>
+                        ))}
+                      </TextField>
                       <Button variant='contained' onClick={generateReport}>
                         Generar reporte
                       </Button>
@@ -573,6 +542,27 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                               Rango: {formatDateMMDDYYYY(reportFilters.fecha_inicio)} - {formatDateMMDDYYYY(reportFilters.fecha_fin)}
                             </Typography>
                             {reportResult.note ? <Alert severity='info'>{reportResult.note}</Alert> : null}
+                            {reportResult.resumen && typeof reportResult.resumen === 'object' ? (
+                              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} useFlexGap flexWrap='wrap'>
+                                {Object.entries(reportResult.resumen).map(([key, rawValue]) => {
+                                  const keyLabel = String(key)
+                                    .replace(/_/g, ' ')
+                                    .replace(/\b\w/g, char => char.toUpperCase())
+                                  const valueNumber = Number(rawValue)
+                                  const isMoney =
+                                    key.includes('monto') ||
+                                    key.includes('saldo') ||
+                                    key.includes('ganancia') ||
+                                    key.includes('cobrad')
+                                  const displayValue =
+                                    isMoney && Number.isFinite(valueNumber)
+                                      ? formatUSD(valueNumber)
+                                      : String(rawValue ?? '-')
+
+                                  return <Chip key={key} variant='tonal' label={`${keyLabel}: ${displayValue}`} />
+                                })}
+                              </Stack>
+                            ) : null}
                             {reportFilters.tipo === 'top-moras-diarias' ? (
                               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
                                 <Chip
@@ -638,6 +628,12 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                                   </TableBody>
                                 </Table>
                               </TableContainer>
+                            ) : null}
+                            {reportResult.pagination ? (
+                              <Typography variant='body2' color='text.secondary'>
+                                Página: {reportResult.pagination?.page || 1} de {reportResult.pagination?.pages || 1} | Total:{' '}
+                                {reportResult.pagination?.total || reportResult.rows.length || 0}
+                              </Typography>
                             ) : null}
                           </Stack>
                         </CardContent>
