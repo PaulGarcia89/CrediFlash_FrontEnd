@@ -3,6 +3,7 @@ import { apiRequest } from './http'
 export const listarPrestamos = ({
   page = 1,
   limit = 20,
+  search = '',
   status = '',
   cliente_id = '',
   fecha_desde = '',
@@ -10,7 +11,7 @@ export const listarPrestamos = ({
 } = {}) =>
   apiRequest('/prestamos', {
     method: 'GET',
-    query: { page, limit, status, cliente_id, fecha_desde, fecha_hasta }
+    query: { page, limit, search, status, cliente_id, fecha_desde, fecha_hasta }
   })
 
 export const registrarPagoSemanal = (

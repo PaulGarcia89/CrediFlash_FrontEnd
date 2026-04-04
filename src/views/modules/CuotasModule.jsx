@@ -143,40 +143,38 @@ const getSaldoPendiente = row => {
   return 0
 }
 
-const countByStatus = (rows, status) => rows.filter(item => String(item?.status || '').toUpperCase() === status).length
-
 const getOperationalStatus = row => {
-  const rawStatus = String(row?.status || '').toUpperCase()
-  const totalSemanas = Number(row?.num_semanas || 0)
-  const pagosHechos = Number(row?.pagos_hechos || 0)
-  const cuotasRestantes = getCuotasRestantes(row)
+  const normalized = String(row?.status_normalizado || '').trim()
 
-  if (rawStatus === 'CANCELADO' || rawStatus === 'PAGADO' || cuotasRestantes <= 0) return 'PAGADO'
-  if (rawStatus === 'MOROSO') return 'MOROSO'
-  if (totalSemanas > 0 && pagosHechos > 0 && pagosHechos < totalSemanas) return 'EN_MARCHA'
-  if (rawStatus === 'ACTIVO' || totalSemanas > 0) return 'EN_PROCESO'
+  if (normalized) return normalized.toUpperCase()
 
-  return rawStatus || 'PENDIENTE'
+  const legacy = String(row?.status || row?.estado || '').trim()
+
+  return legacy ? legacy.toUpperCase() : 'PENDIENTE'
 }
 
 const getStatusColor = status => {
   const normalized = String(status || '').toUpperCase()
 
-  if (normalized === 'ACTIVO') return 'success'
-  if (normalized === 'EN_MARCHA') return 'success'
-  if (normalized === 'EN_PROCESO') return 'warning'
-  if (normalized === 'MOROSO') return 'error'
-  if (normalized === 'PAGADO' || normalized === 'CANCELADO') return 'info'
-  if (normalized.includes('LE QUEDAN')) return 'primary'
+  if (normalized === 'ACTIVO' || normalized === 'EN_MARCHA') return 'success'
+  if (normalized === 'MOROSO') return 'warning'
+  if (normalized === 'PAGADO' || normalized === 'NO_DEBE_NADA') return 'default'
 
-  return 'warning'
+  return 'info'
+}
+const isPrestamoActivoOperativo = row => {
+  if (row?.es_activo_operativo === true) return true
+
+  const pagosPendientes = Number(row?.pagos_pendientes)
+  const pendiente = Number(row?.pendiente ?? row?.saldo_pendiente ?? row?.monto_pendiente)
+
+  if (Number.isFinite(pagosPendientes) && pagosPendientes > 0) return true
+  if (Number.isFinite(pendiente) && pendiente > 0) return true
+
+  return false
 }
 const canRegisterPaymentForRow = row => {
-  const normalizedStatus = String(row?.status || '').toUpperCase()
-
-  if (normalizedStatus === 'PAGADO' || normalizedStatus === 'CANCELADO') return false
-
-  return getCuotasRestantes(row) > 0
+  return isPrestamoActivoOperativo(row)
 }
 
 const getFriendlyPagoError = error => {
@@ -303,6 +301,7 @@ export default function CuotasModule() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [searchCliente, setSearchCliente] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [status, setStatus] = useState('TODOS')
@@ -368,33 +367,29 @@ export default function CuotasModule() {
     return getEscenarioPago(parsedMonto, montoEsperadoPago)
   }, [montoEsperadoPago, montoPago])
 
+  const normalizeSearchInput = value => String(value ?? '').replace(/\s+/g, ' ').trim()
+
   const loadPrestamos = useCallback(async () => {
     setLoading(true)
     setError('')
 
     try {
-      const queryStatus = status === 'TODOS' ? undefined : status
-      const response = await listarPrestamos({ page, limit, status: queryStatus })
-      let rows = extractRows(response)
+      const normalizedSearch = normalizeSearchInput(debouncedSearch)
+      const response = await listarPrestamos({
+        page,
+        limit,
+        status,
+        search: normalizedSearch
+      })
 
-      if (searchCliente.trim()) {
-        const normalizedQuery = normalizeText(searchCliente)
-
-        rows = rows.filter(row => {
-          const label = normalizeText(row.nombre_completo)
-
-          return label.includes(normalizedQuery)
-        })
-      }
-
-      setPrestamos(rows)
+      setPrestamos(extractRows(response))
       setPagination(extractPagination(response))
     } catch (err) {
       setError(err.message || 'No se pudo cargar préstamos.')
     } finally {
       setLoading(false)
     }
-  }, [limit, page, searchCliente, status])
+  }, [debouncedSearch, limit, page, status])
 
   useEffect(() => {
     loadPrestamos()
@@ -402,7 +397,15 @@ export default function CuotasModule() {
 
   useEffect(() => {
     setPage(1)
-  }, [limit, searchCliente, status])
+  }, [limit, debouncedSearch, status])
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchCliente)
+    }, 300)
+
+    return () => clearTimeout(handler)
+  }, [searchCliente])
 
   const openPagoDialog = row => {
     if (!canRegisterPaymentForRow(row)) return
@@ -760,7 +763,7 @@ export default function CuotasModule() {
     return {
       total: pagination.total,
       activos: rows.filter(item => ['EN_PROCESO', 'EN_MARCHA'].includes(getOperationalStatus(item))).length,
-      morosos: countByStatus(rows, 'MOROSO'),
+      morosos: rows.filter(item => getOperationalStatus(item) === 'MOROSO').length,
       cuotasPendientes: rows.reduce((total, item) => total + getCuotasRestantes(item), 0)
     }
   }, [rows, pagination.total])
@@ -1339,7 +1342,7 @@ export default function CuotasModule() {
               Fecha vencimiento: <strong>{formatDateMMDDYYYY(selectedPrestamo?.fecha_vencimiento)}</strong>
             </Typography>
             <Typography>
-              Estado: <strong>{selectedPrestamo?.status || '-'}</strong>
+              Estado: <strong>{selectedPrestamo ? getOperationalStatus(selectedPrestamo) : '-'}</strong>
             </Typography>
             {parseDescuentoReferidoAplicado(selectedPrestamo) > 0 ? (
               <Chip
