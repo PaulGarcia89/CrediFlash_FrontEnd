@@ -121,7 +121,7 @@ const getCuotasRestantes = row => {
 }
 
 const getSaldoPendiente = row => {
-  const pendienteDirecto = Number(row?.pendiente ?? row?.saldo_pendiente ?? row?.monto_pendiente)
+  const pendienteDirecto = Number(row?.saldo_pendiente ?? row?.pendiente ?? row?.monto_pendiente)
 
   if (Number.isFinite(pendienteDirecto) && pendienteDirecto >= 0) {
     return pendienteDirecto
@@ -165,8 +165,8 @@ const getStatusColor = status => {
 const isPrestamoActivoOperativo = row => {
   if (row?.es_activo_operativo === true) return true
 
-  const pagosPendientes = Number(row?.pagos_pendientes)
-  const pendiente = Number(row?.pendiente ?? row?.saldo_pendiente ?? row?.monto_pendiente)
+  const pagosPendientes = Number(row?.pagos_pendientes ?? row?.cuotas_restantes)
+  const pendiente = Number(row?.saldo_pendiente ?? row?.pendiente ?? row?.monto_pendiente)
 
   if (Number.isFinite(pagosPendientes) && pagosPendientes > 0) return true
   if (Number.isFinite(pendiente) && pendiente > 0) return true
@@ -758,22 +758,48 @@ export default function CuotasModule() {
   const rows = useMemo(() => prestamos || [], [prestamos])
 
   const tableRows = useMemo(() => {
-    let output = [...rows]
-
-    if (modalidadFiltro) {
-      output = output.filter(item => String(item?.modalidad || '').toUpperCase() === modalidadFiltro)
-    }
+    const output = [...rows]
 
     if (orden === 'monto_desc') {
       output.sort((a, b) => Number(b?.total_pagar || 0) - Number(a?.total_pagar || 0))
+
+      return output
     }
 
     if (orden === 'monto_asc') {
       output.sort((a, b) => Number(a?.total_pagar || 0) - Number(b?.total_pagar || 0))
+
+      return output
     }
 
+    output.sort((a, b) => {
+      const aActivo = isPrestamoActivoOperativo(a)
+      const bActivo = isPrestamoActivoOperativo(b)
+
+      if (aActivo !== bActivo) return aActivo ? -1 : 1
+
+      const aStatus = getOperationalStatus(a)
+      const bStatus = getOperationalStatus(b)
+      const statusRank = value => {
+        if (value === 'ACTIVO' || value === 'EN_MARCHA' || value === 'EN_PROCESO') return 0
+        if (value === 'MOROSO') return 1
+        if (value === 'PAGADO' || value === 'NO_DEBE_NADA' || value === 'CANCELADO') return 2
+
+        return 3
+      }
+
+      const diff = statusRank(aStatus) - statusRank(bStatus)
+
+      if (diff !== 0) return diff
+
+      const aFecha = new Date(a?.fecha_inicio || 0).getTime()
+      const bFecha = new Date(b?.fecha_inicio || 0).getTime()
+
+      return bFecha - aFecha
+    })
+
     return output
-  }, [modalidadFiltro, orden, rows])
+  }, [orden, rows])
 
   const debugInfo = useMemo(() => {
     if (!debugCuotas) return null
@@ -839,22 +865,22 @@ export default function CuotasModule() {
 
   const handleExportCsv = () => {
     const headers = [
+      'id_prestamo',
       'cliente',
-      'monto_total',
+      'fecha_inicio',
       'pago_semanal',
-      'semanas',
-      'saldo_pendiente',
       'cuotas_restantes',
+      'saldo_pendiente',
       'estado'
     ]
 
     const csvRows = tableRows.map(item => [
+      item?.id || '',
       item?.nombre_completo || '',
-      item?.total_pagar || '',
+      formatDateMMDDYYYY(item?.fecha_inicio),
       item?.pagos_semanales || '',
-      item?.num_semanas || '',
-      getSaldoPendiente(item),
-      getCuotasRestantes(item),
+      item?.cuotas_restantes ?? item?.pagos_pendientes ?? '',
+      item?.saldo_pendiente ?? item?.pendiente ?? getSaldoPendiente(item),
       String(item?.status_normalizado || item?.status || '')
     ])
 
