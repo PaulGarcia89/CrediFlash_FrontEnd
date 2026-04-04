@@ -1136,11 +1136,11 @@ export default function CuotasModule() {
                         <Checkbox size='small' />
                       </TableCell>
                       <TableCell>{row.nombre_completo || '-'}</TableCell>
-                      <TableCell>{formatCurrency(row.total_pagar)}</TableCell>
+                      <TableCell>{formatCurrency(row.total_pagar ?? row.monto_solicitado)}</TableCell>
                       <TableCell>{formatCurrency(row.pagos_semanales)}</TableCell>
                       <TableCell>{row.num_semanas ?? '-'}</TableCell>
-                      <TableCell>{formatCurrency(getSaldoPendiente(row))}</TableCell>
-                      <TableCell>{getCuotasRestantes(row)}</TableCell>
+                      <TableCell>{formatCurrency(row.saldo_pendiente ?? row.pendiente ?? getSaldoPendiente(row))}</TableCell>
+                      <TableCell>{row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}</TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.75} flexWrap='wrap' alignItems='center'>
                           <Chip
@@ -1191,16 +1191,17 @@ export default function CuotasModule() {
                           />
                         </Stack>
                         <Typography variant='body2' color='text.secondary'>
-                          Monto total: {formatCurrency(row.total_pagar)}
+                          Monto total: {formatCurrency(row.total_pagar ?? row.monto_solicitado)}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Pago semanal: {formatCurrency(row.pagos_semanales)}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
-                          Saldo pendiente: {formatCurrency(getSaldoPendiente(row))}
+                          Saldo pendiente: {formatCurrency(row.saldo_pendiente ?? row.pendiente ?? getSaldoPendiente(row))}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
-                          Semanas: {row.num_semanas ?? '-'} • Cuotas restantes: {getCuotasRestantes(row)}
+                          Semanas: {row.num_semanas ?? '-'} • Cuotas restantes:{' '}
+                          {row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}
                         </Typography>
                         {hasDescuentoReferidoObservacion(row) ? (
                           <Chip size='small' variant='tonal' color='success' label='Descuento referido' sx={{ width: 'fit-content' }} />
