@@ -296,6 +296,7 @@ export default function CuotasModule() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { can, canAny, analista } = usePermissions()
+  const debugCuotas = String(process.env.NEXT_PUBLIC_DEBUG_CUOTAS || '').toLowerCase() === 'true'
   const [prestamos, setPrestamos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -375,14 +376,29 @@ export default function CuotasModule() {
 
     try {
       const normalizedSearch = normalizeSearchInput(debouncedSearch)
-      const response = await listarPrestamos({
+      const requestParams = {
         page,
         limit,
         status,
         search: normalizedSearch
-      })
+      }
 
-      setPrestamos(extractRows(response))
+      if (debugCuotas) {
+        console.log('[CUOTAS] request', requestParams)
+      }
+
+      const response = await listarPrestamos(requestParams)
+      const responseRows = extractRows(response)
+
+      if (debugCuotas) {
+        const responsePagination = extractPagination(response)
+        console.log('[CUOTAS] response', {
+          total: responsePagination.total,
+          dataLength: responseRows.length
+        })
+      }
+
+      setPrestamos(responseRows)
       setPagination(extractPagination(response))
     } catch (err) {
       setError(err.message || 'No se pudo cargar préstamos.')
@@ -759,6 +775,23 @@ export default function CuotasModule() {
     return output
   }, [modalidadFiltro, orden, rows])
 
+  const debugInfo = useMemo(() => {
+    if (!debugCuotas) return null
+
+    const normalizedSearch = normalizeSearchInput(debouncedSearch)
+
+    return {
+      request: {
+        page,
+        limit,
+        search: normalizedSearch,
+        status
+      },
+      total: pagination.total,
+      rendered: tableRows.length
+    }
+  }, [debouncedSearch, debugCuotas, limit, page, pagination.total, status, tableRows.length])
+
   const metrics = useMemo(() => {
     return {
       total: pagination.total,
@@ -993,10 +1026,10 @@ export default function CuotasModule() {
                   Exportar
                 </Button>
               </Stack>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                <TextField
-                  size='small'
-                  label='Buscar cliente'
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+              <TextField
+                size='small'
+                label='Buscar cliente'
                   placeholder='Buscar por nombre y apellido'
                   value={searchCliente}
                   onChange={event => setSearchCliente(event.target.value)}
@@ -1017,6 +1050,16 @@ export default function CuotasModule() {
                 </TextField>
               </Stack>
             </Stack>
+            {debugCuotas && debugInfo ? (
+              <Stack spacing={0.5}>
+                <Typography variant='body2' color='text.secondary'>
+                  Query enviada: {JSON.stringify(debugInfo.request)}
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  Total recibido: {debugInfo.total} | Filas renderizadas: {debugInfo.rendered}
+                </Typography>
+              </Stack>
+            ) : null}
             <Divider />
 
             {error ? <Alert severity='error'>{error}</Alert> : null}
