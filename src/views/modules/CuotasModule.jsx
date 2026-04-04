@@ -838,7 +838,15 @@ export default function CuotasModule() {
   }
 
   const handleExportCsv = () => {
-    const headers = ['Cliente', 'MontoTotal', 'PagoSemanal', 'Semanas', 'SaldoPendiente', 'CuotasRestantes', 'Estado']
+    const headers = [
+      'cliente',
+      'monto_total',
+      'pago_semanal',
+      'semanas',
+      'saldo_pendiente',
+      'cuotas_restantes',
+      'estado'
+    ]
 
     const csvRows = tableRows.map(item => [
       item?.nombre_completo || '',
@@ -847,7 +855,7 @@ export default function CuotasModule() {
       item?.num_semanas || '',
       getSaldoPendiente(item),
       getCuotasRestantes(item),
-      item?.status || ''
+      String(item?.status_normalizado || item?.status || '')
     ])
 
     const csv = [
