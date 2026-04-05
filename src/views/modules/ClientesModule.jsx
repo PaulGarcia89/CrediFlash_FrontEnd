@@ -86,8 +86,9 @@ export default function ClientesModule() {
   const router = useRouter()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const { can } = usePermissions()
-  const canManageStatus = can('clientes.manage_status')
+  const { can, analista } = usePermissions()
+  const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
+  const canManageStatus = isAdminProfile || can('clientes.manage_status')
 
   const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(true)
