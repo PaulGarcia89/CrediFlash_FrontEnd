@@ -341,29 +341,11 @@ export default function ClientesModule() {
           <i className='tabler-edit text-3xl' />
         </IconButton>
       </Tooltip>
-      <Tooltip title={String(row.estado || '').toUpperCase() === 'INACTIVO' ? 'Activar' : 'Inactivar'}>
-        <span>
-          <IconButton
-            size='small'
-            color={String(row.estado || '').toUpperCase() === 'INACTIVO' ? 'success' : 'warning'}
-            disabled={updatingId === row.id}
-            onClick={() => handleToggleEstadoCliente(row)}
-          >
-            <i
-              className={
-                String(row.estado || '').toUpperCase() === 'INACTIVO'
-                  ? 'tabler-user-check text-3xl'
-                  : 'tabler-user-off text-3xl'
-              }
-            />
-          </IconButton>
-        </span>
-      </Tooltip>
       {canManageStatus ? (
         <Tooltip title='Cambiar estado'>
           <span>
             <IconButton size='small' color='info' onClick={() => openEstadoDialog(row)}>
-              <i className='tabler-settings text-3xl' />
+              <i className='tabler-switch-horizontal text-3xl' />
             </IconButton>
           </span>
         </Tooltip>
