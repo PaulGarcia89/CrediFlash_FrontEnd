@@ -13,6 +13,10 @@ import CardContent from '@mui/material/CardContent'
 import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
@@ -29,7 +33,8 @@ import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 
-import { actualizarCliente, inactivarCliente, listarClientes } from '@/api/clientes'
+import { actualizarCliente, actualizarEstadoCliente, inactivarCliente, listarClientes } from '@/api/clientes'
+import usePermissions from '@/hooks/usePermissions'
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -63,11 +68,17 @@ const normalizeText = value =>
     .trim()
 
 const getEstadoColor = estado => {
-  if (estado === 'ACTIVO') return 'success'
-  if (estado === 'INACTIVO') return 'warning'
+  const normalized = String(estado || '').toUpperCase()
 
-  return 'error'
+  if (normalized === 'ACTIVO') return 'success'
+  if (normalized === 'SUSPENDIDO') return 'warning'
+  if (normalized === 'INACTIVO') return 'default'
+  if (normalized === 'BLOQUEADO') return 'error'
+
+  return 'default'
 }
+
+const ESTADO_OPTIONS = ['ACTIVO', 'SUSPENDIDO', 'INACTIVO', 'BLOQUEADO']
 
 const parseBoolean = value => value === true || value === 1 || String(value || '').toLowerCase() === 'true'
 
@@ -75,6 +86,8 @@ export default function ClientesModule() {
   const router = useRouter()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { can } = usePermissions()
+  const canManageStatus = can('clientes.manage_status')
 
   const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -89,6 +102,12 @@ export default function ClientesModule() {
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 })
   const [globalMetrics, setGlobalMetrics] = useState({ total: null, activos: null, inactivos: null, suspendidos: null })
   const [updatingId, setUpdatingId] = useState('')
+  const [estadoDialog, setEstadoDialog] = useState({
+    open: false,
+    cliente: null,
+    estado: '',
+    motivo: ''
+  })
 
   const loadGlobalMetrics = useCallback(async () => {
     try {
@@ -233,6 +252,45 @@ export default function ClientesModule() {
     }
   }
 
+  const openEstadoDialog = row => {
+    if (!row) return
+
+    setEstadoDialog({
+      open: true,
+      cliente: row,
+      estado: String(row.estado || '').toUpperCase() || 'ACTIVO',
+      motivo: ''
+    })
+  }
+
+  const closeEstadoDialog = () => {
+    if (updatingId) return
+    setEstadoDialog({ open: false, cliente: null, estado: '', motivo: '' })
+  }
+
+  const submitEstadoDialog = async () => {
+    const clienteId = estadoDialog.cliente?.id
+    const nuevoEstado = String(estadoDialog.estado || '').toUpperCase()
+
+    if (!clienteId || !nuevoEstado) return
+
+    setUpdatingId(clienteId)
+    setError('')
+    setSuccess('')
+
+    try {
+      await actualizarEstadoCliente(clienteId, nuevoEstado, estadoDialog.motivo)
+      setSuccess('Estado actualizado.')
+      await loadClientes()
+      await loadGlobalMetrics()
+      setEstadoDialog({ open: false, cliente: null, estado: '', motivo: '' })
+    } catch (err) {
+      setError(err.message || 'No se pudo actualizar el estado del cliente.')
+    } finally {
+      setUpdatingId('')
+    }
+  }
+
   const handleExportCsv = () => {
     const headers = [
       'Nombre',
@@ -301,6 +359,15 @@ export default function ClientesModule() {
           </IconButton>
         </span>
       </Tooltip>
+      {canManageStatus ? (
+        <Tooltip title='Cambiar estado'>
+          <span>
+            <IconButton size='small' color='info' onClick={() => openEstadoDialog(row)}>
+              <i className='tabler-settings text-3xl' />
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
     </Stack>
   )
 
@@ -482,6 +549,7 @@ export default function ClientesModule() {
                   <MenuItem value='ACTIVO'>ACTIVO</MenuItem>
                   <MenuItem value='INACTIVO'>INACTIVO</MenuItem>
                   <MenuItem value='SUSPENDIDO'>SUSPENDIDO</MenuItem>
+                  <MenuItem value='BLOQUEADO'>BLOQUEADO</MenuItem>
                 </TextField>
               </Stack>
             </Stack>
@@ -626,6 +694,44 @@ export default function ClientesModule() {
           </Stack>
         </CardContent>
       </Card>
+
+      <Dialog open={estadoDialog.open} onClose={closeEstadoDialog} fullWidth maxWidth='sm'>
+        <DialogTitle>Cambiar estado del cliente</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <Alert severity='info'>
+              Estado actual: <strong>{estadoDialog.cliente?.estado || '-'}</strong>
+            </Alert>
+            <TextField
+              select
+              label='Nuevo estado'
+              value={estadoDialog.estado}
+              onChange={event => setEstadoDialog(previous => ({ ...previous, estado: event.target.value }))}
+            >
+              {ESTADO_OPTIONS.map(option => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label='Motivo (opcional)'
+              multiline
+              minRows={3}
+              value={estadoDialog.motivo}
+              onChange={event => setEstadoDialog(previous => ({ ...previous, motivo: event.target.value }))}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeEstadoDialog} disabled={Boolean(updatingId)}>
+            Cancelar
+          </Button>
+          <Button variant='contained' onClick={submitEstadoDialog} disabled={Boolean(updatingId)}>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   )
 }

@@ -42,6 +42,12 @@ export const inactivarCliente = clienteId =>
     method: 'DELETE'
   })
 
+export const actualizarEstadoCliente = (clienteId, estado, motivo = '') =>
+  apiRequest(`/clientes/${clienteId}/estado`, {
+    method: 'PATCH',
+    body: { estado, motivo }
+  })
+
 export const verHistorialPrestamosCliente = (clienteId, { page = 1, limit = 20 } = {}) =>
   apiRequest(`/clientes/${clienteId}/prestamos`, {
     method: 'GET',
