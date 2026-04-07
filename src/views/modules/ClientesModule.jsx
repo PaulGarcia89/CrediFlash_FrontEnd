@@ -19,6 +19,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
+import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Pagination from '@mui/material/Pagination'
 import Stack from '@mui/material/Stack'
@@ -109,6 +110,7 @@ export default function ClientesModule() {
     estado: '',
     motivo: ''
   })
+  const [estadoMenu, setEstadoMenu] = useState({ anchorEl: null, cliente: null })
 
   const loadGlobalMetrics = useCallback(async () => {
     try {
@@ -253,13 +255,13 @@ export default function ClientesModule() {
     }
   }
 
-  const openEstadoDialog = row => {
+  const openEstadoDialog = (row, estadoSeleccionado) => {
     if (!row) return
 
     setEstadoDialog({
       open: true,
       cliente: row,
-      estado: String(row.estado || '').toUpperCase() || 'ACTIVO',
+      estado: estadoSeleccionado || String(row.estado || '').toUpperCase() || 'ACTIVO',
       motivo: ''
     })
   }
@@ -345,7 +347,11 @@ export default function ClientesModule() {
       {canManageStatus ? (
         <Tooltip title='Cambiar estado'>
           <span>
-            <IconButton size='small' color='info' onClick={() => openEstadoDialog(row)}>
+            <IconButton
+              size='small'
+              color='info'
+              onClick={event => setEstadoMenu({ anchorEl: event.currentTarget, cliente: row })}
+            >
               <i className='tabler-switch-horizontal text-3xl' />
             </IconButton>
           </span>
@@ -715,6 +721,26 @@ export default function ClientesModule() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Menu
+        anchorEl={estadoMenu.anchorEl}
+        open={Boolean(estadoMenu.anchorEl)}
+        onClose={() => setEstadoMenu({ anchorEl: null, cliente: null })}
+      >
+        {ESTADO_OPTIONS.map(option => (
+          <MenuItem
+            key={option}
+            onClick={() => {
+              const cliente = estadoMenu.cliente
+
+              setEstadoMenu({ anchorEl: null, cliente: null })
+              if (cliente) openEstadoDialog(cliente, option)
+            }}
+          >
+            Cambiar a {option}
+          </MenuItem>
+        ))}
+      </Menu>
     </Stack>
   )
 }
