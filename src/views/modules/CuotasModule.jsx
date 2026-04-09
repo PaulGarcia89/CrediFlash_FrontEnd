@@ -43,10 +43,10 @@ import {
 import usePermissions from '@/hooks/usePermissions'
 import { obtenerDocumentoUrl } from '@/api/solicitudes'
 import { getToken } from '@/lib/auth/session'
-import { formatUSD } from '@/utils/currency'
+import { formatMoney, round2, toMoneyNumber } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
 
-const formatCurrency = value => formatUSD(value)
+const formatCurrency = value => formatMoney(value)
 const formatNaturalNumber = value => new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
 
 const normalizeText = value =>
@@ -120,28 +120,24 @@ const getCuotasRestantes = row => {
   return 0
 }
 
-const getSaldoPendiente = row => {
-  const pendienteDirecto = Number(row?.saldo_pendiente ?? row?.pendiente ?? row?.monto_pendiente)
+const getSaldoPendienteInfo = row => {
+  const pendienteOficial = toMoneyNumber(row?.saldo_pendiente ?? row?.pendiente ?? row?.monto_pendiente)
 
-  if (Number.isFinite(pendienteDirecto) && pendienteDirecto >= 0) {
-    return pendienteDirecto
+  if (Number.isFinite(pendienteOficial) && pendienteOficial >= 0) {
+    return { value: pendienteOficial, estimated: false }
   }
 
-  const pagosPendientes = Number(row?.pagos_pendientes)
+  const pagosPendientes = toMoneyNumber(row?.pagos_pendientes ?? row?.cuotas_restantes)
+  const pagoSemanal = toMoneyNumber(row?.pagos_semanales)
 
-  if (Number.isFinite(pagosPendientes) && pagosPendientes >= 0) {
-    return pagosPendientes
+  if (Number.isFinite(pagosPendientes) && Number.isFinite(pagoSemanal) && pagoSemanal > 0) {
+    return { value: round2(pagosPendientes * pagoSemanal), estimated: true }
   }
 
-  const cuotasRestantes = getCuotasRestantes(row)
-  const pagoSemanal = Number(row?.pagos_semanales || 0)
-
-  if (Number.isFinite(cuotasRestantes) && Number.isFinite(pagoSemanal)) {
-    return Math.max(cuotasRestantes * pagoSemanal, 0)
-  }
-
-  return 0
+  return { value: 0, estimated: true }
 }
+
+const getSaldoPendiente = row => getSaldoPendienteInfo(row).value
 
 const getOperationalStatus = row => {
   const normalized = String(row?.status_normalizado || '').trim()
@@ -165,8 +161,8 @@ const getStatusColor = status => {
 const isPrestamoActivoOperativo = row => {
   if (row?.es_activo_operativo === true) return true
 
-  const pagosPendientes = Number(row?.pagos_pendientes ?? row?.cuotas_restantes)
-  const pendiente = Number(row?.saldo_pendiente ?? row?.pendiente ?? row?.monto_pendiente)
+  const pagosPendientes = toMoneyNumber(row?.pagos_pendientes ?? row?.cuotas_restantes)
+  const pendiente = toMoneyNumber(row?.saldo_pendiente ?? row?.pendiente ?? row?.monto_pendiente)
 
   if (Number.isFinite(pagosPendientes) && pagosPendientes > 0) return true
   if (Number.isFinite(pendiente) && pendiente > 0) return true
@@ -348,7 +344,7 @@ export default function CuotasModule() {
   const canManageWhatsappNotifications = isAdminProfile || can('notifications.whatsapp.manage') || can('notifications.send')
 
   const montoEsperadoPago = useMemo(() => {
-    const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
+  const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
     const penalizacion = parseDecimalInput(montoPenalizacion || 0)
     const fee = parseDecimalInput(montoFee || 0)
 
@@ -874,15 +870,20 @@ export default function CuotasModule() {
       'estado'
     ]
 
-    const csvRows = tableRows.map(item => [
-      item?.id || '',
-      item?.nombre_completo || '',
-      formatDateMMDDYYYY(item?.fecha_inicio),
-      item?.pagos_semanales || '',
-      item?.cuotas_restantes ?? item?.pagos_pendientes ?? '',
-      item?.saldo_pendiente ?? item?.pendiente ?? getSaldoPendiente(item),
-      String(item?.status_normalizado || item?.status || '')
-    ])
+    const csvRows = tableRows.map(item => {
+      const saldoOficial = item?.saldo_pendiente ?? item?.pendiente ?? item?.monto_pendiente
+      const saldoValue = Number.isFinite(toMoneyNumber(saldoOficial)) ? round2(saldoOficial) : ''
+
+      return [
+        item?.id || '',
+        item?.nombre_completo || '',
+        formatDateMMDDYYYY(item?.fecha_inicio),
+        Number.isFinite(toMoneyNumber(item?.pagos_semanales)) ? round2(item?.pagos_semanales) : '',
+        item?.cuotas_restantes ?? item?.pagos_pendientes ?? '',
+        saldoValue,
+        String(item?.status_normalizado || item?.status || '')
+      ]
+    })
 
     const csv = [
       headers.join(','),
@@ -1114,6 +1115,7 @@ export default function CuotasModule() {
                     <TableCell>Monto total</TableCell>
                     <TableCell>Pago semanal</TableCell>
                     <TableCell>Semanas</TableCell>
+                    <TableCell>Pagos hechos</TableCell>
                     <TableCell>Saldo pendiente</TableCell>
                     <TableCell>Cuotas restantes</TableCell>
                     <TableCell>Estado</TableCell>
@@ -1139,7 +1141,21 @@ export default function CuotasModule() {
                       <TableCell>{formatCurrency(row.total_pagar ?? row.monto_solicitado)}</TableCell>
                       <TableCell>{formatCurrency(row.pagos_semanales)}</TableCell>
                       <TableCell>{row.num_semanas ?? '-'}</TableCell>
-                      <TableCell>{formatCurrency(row.saldo_pendiente ?? row.pendiente ?? getSaldoPendiente(row))}</TableCell>
+                      <TableCell>{formatNaturalNumber(row.pagos_hechos)}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const saldoInfo = getSaldoPendienteInfo(row)
+
+                          return (
+                            <Stack direction='row' spacing={0.75} alignItems='center'>
+                              <span>{formatCurrency(saldoInfo.value)}</span>
+                              {saldoInfo.estimated ? (
+                                <Chip size='small' variant='outlined' color='warning' label='Estimado' />
+                              ) : null}
+                            </Stack>
+                          )
+                        })()}
+                      </TableCell>
                       <TableCell>{row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}</TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.75} flexWrap='wrap' alignItems='center'>
@@ -1159,7 +1175,7 @@ export default function CuotasModule() {
                   ))}
                   {tableRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} align='center'>
+                      <TableCell colSpan={10} align='center'>
                         Sin resultados
                       </TableCell>
                     </TableRow>
@@ -1197,10 +1213,19 @@ export default function CuotasModule() {
                           Pago semanal: {formatCurrency(row.pagos_semanales)}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
-                          Saldo pendiente: {formatCurrency(row.saldo_pendiente ?? row.pendiente ?? getSaldoPendiente(row))}
+                          {(() => {
+                            const saldoInfo = getSaldoPendienteInfo(row)
+
+                            return (
+                              <>
+                                Saldo pendiente: {formatCurrency(saldoInfo.value)}{' '}
+                                {saldoInfo.estimated ? <Chip size='small' variant='outlined' color='warning' label='Estimado' /> : null}
+                              </>
+                            )
+                          })()}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
-                          Semanas: {row.num_semanas ?? '-'} • Cuotas restantes:{' '}
+                          Semanas: {row.num_semanas ?? '-'} • Pagos hechos: {formatNaturalNumber(row.pagos_hechos)} • Cuotas restantes:{' '}
                           {row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}
                         </Typography>
                         {hasDescuentoReferidoObservacion(row) ? (
@@ -1405,7 +1430,16 @@ export default function CuotasModule() {
               Semanas: <strong>{selectedPrestamo?.num_semanas ?? '-'}</strong>
             </Typography>
             <Typography>
-              Saldo pendiente: <strong>{formatCurrency(getSaldoPendiente(selectedPrestamo))}</strong>
+              {(() => {
+                const saldoInfo = getSaldoPendienteInfo(selectedPrestamo)
+
+                return (
+                  <>
+                    Saldo pendiente: <strong>{formatCurrency(saldoInfo.value)}</strong>{' '}
+                    {saldoInfo.estimated ? <Chip size='small' variant='outlined' color='warning' label='Estimado' /> : null}
+                  </>
+                )
+              })()}
             </Typography>
             <Typography>
               Pagos hechos: <strong>{formatNaturalNumber(selectedPrestamo?.pagos_hechos)}</strong>
