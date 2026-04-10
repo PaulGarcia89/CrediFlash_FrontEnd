@@ -1,0 +1,234 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    },
+    {
+      "source": "/",
+      "destination": "/login",
+      "locale": false,
+      "statusCode": 308,
+      "regex": "^(?!/_next)/(?:/)?$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/clientes/[id]/detalle",
+      "regex": "^/clientes/([^/]+?)/detalle(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/clientes/(?<nxtPid>[^/]+?)/detalle(?:/)?$"
+    },
+    {
+      "page": "/clientes/[id]/editar",
+      "regex": "^/clientes/([^/]+?)/editar(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/clientes/(?<nxtPid>[^/]+?)/editar(?:/)?$"
+    },
+    {
+      "page": "/solicitudes/[id]/editar",
+      "regex": "^/solicitudes/([^/]+?)/editar(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/solicitudes/(?<nxtPid>[^/]+?)/editar(?:/)?$"
+    },
+    {
+      "page": "/[...not-found]",
+      "regex": "^/(.+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPnotfound": "nxtPnot-found"
+      },
+      "namedRegex": "^/(?<nxtPnotfound>.+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/about",
+      "regex": "^/about(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/about(?:/)?$"
+    },
+    {
+      "page": "/analytics",
+      "regex": "^/analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/analytics(?:/)?$"
+    },
+    {
+      "page": "/authentication/sign-in/basic",
+      "regex": "^/authentication/sign\\-in/basic(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/authentication/sign\\-in/basic(?:/)?$"
+    },
+    {
+      "page": "/authentication/sign-up/analista",
+      "regex": "^/authentication/sign\\-up/analista(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/authentication/sign\\-up/analista(?:/)?$"
+    },
+    {
+      "page": "/carga-datos-bancarios",
+      "regex": "^/carga\\-datos\\-bancarios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/carga\\-datos\\-bancarios(?:/)?$"
+    },
+    {
+      "page": "/clientes",
+      "regex": "^/clientes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/clientes(?:/)?$"
+    },
+    {
+      "page": "/clientes/nuevo",
+      "regex": "^/clientes/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/clientes/nuevo(?:/)?$"
+    },
+    {
+      "page": "/cuotas",
+      "regex": "^/cuotas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cuotas(?:/)?$"
+    },
+    {
+      "page": "/dashboards/analytics",
+      "regex": "^/dashboards/analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboards/analytics(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/home",
+      "regex": "^/home(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/home(?:/)?$"
+    },
+    {
+      "page": "/icon.svg",
+      "regex": "^/icon\\.svg(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/icon\\.svg(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/logs",
+      "regex": "^/logs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/logs(?:/)?$"
+    },
+    {
+      "page": "/nuevo-caso",
+      "regex": "^/nuevo\\-caso(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/nuevo\\-caso(?:/)?$"
+    },
+    {
+      "page": "/operacion/nuevo-caso",
+      "regex": "^/operacion/nuevo\\-caso(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/operacion/nuevo\\-caso(?:/)?$"
+    },
+    {
+      "page": "/profile",
+      "regex": "^/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/profile(?:/)?$"
+    },
+    {
+      "page": "/register-analista",
+      "regex": "^/register\\-analista(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/register\\-analista(?:/)?$"
+    },
+    {
+      "page": "/reportes",
+      "regex": "^/reportes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/reportes(?:/)?$"
+    },
+    {
+      "page": "/settings",
+      "regex": "^/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/settings(?:/)?$"
+    },
+    {
+      "page": "/solicitudes",
+      "regex": "^/solicitudes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/solicitudes(?:/)?$"
+    },
+    {
+      "page": "/solicitudes/nueva",
+      "regex": "^/solicitudes/nueva(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/solicitudes/nueva(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

@@ -1,0 +1,3 @@
+module.exports=[28687,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(81037);a.n(d("[project]/material-dashboard-pro-react/crediflash-vuexy-next/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},36109,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(81037);a.n(d("[project]/material-dashboard-pro-react/crediflash-vuexy-next/node_modules/next/dist/client/components/builtin/global-error.js"))},80317,a=>{"use strict";a.i(28687);var b=a.i(36109);a.n(b)}];
+
+//# sourceMappingURL=fcdaf_next_dist_client_components_builtin_global-error_9d675bcc.js.map

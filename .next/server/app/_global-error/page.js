@@ -1,0 +1,11 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/_global-error/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__5a950dd0._.js")
+R.c("server/chunks/ssr/material-dashboard-pro-react_crediflash-vuexy-next_c4ef9323._.js")
+R.c("server/chunks/ssr/fcdaf_next_dist_79152df7._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__b53afd4e._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__9f1c25e9._.js")
+R.c("server/chunks/ssr/fcdaf_next_dist_89f1b244._.js")
+R.c("server/chunks/ssr/material-dashboard-pro-react_crediflash-vuexy-next_src_app_eb29315a._.js")
+R.c("server/chunks/ssr/63674__next-internal_server_app__global-error_page_actions_caa8ca91.js")
+R.m(99804)
+module.exports=R.m(99804).exports

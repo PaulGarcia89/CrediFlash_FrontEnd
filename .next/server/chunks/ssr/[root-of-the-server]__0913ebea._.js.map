@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../../../material-dashboard-pro-react/crediflash-vuexy-next/src/app/%28dashboard%29/about/page.jsx"],"sourcesContent":["export default function Page() {\n  return <h1>About page!</h1>\n}\n"],"names":[],"mappings":"0YAAe,SAAS,IACtB,MAAO,CAAA,EAAA,EAAA,GAAA,EAAC,KAAA,UAAG,eACb"}
