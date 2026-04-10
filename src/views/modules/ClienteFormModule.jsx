@@ -92,6 +92,8 @@ export default function ClienteFormModule({ clienteId = null }) {
   const [emailVerificationLoading, setEmailVerificationLoading] = useState(false)
   const [emailCodeValidationLoading, setEmailCodeValidationLoading] = useState(false)
   const [emailVerificationMessage, setEmailVerificationMessage] = useState('')
+  const [documentoIdentidadFile, setDocumentoIdentidadFile] = useState(null)
+  const [documentoIdentidadError, setDocumentoIdentidadError] = useState('')
 
   useEffect(() => {
     const loadClientesActivos = async () => {
@@ -200,6 +202,27 @@ export default function ClienteFormModule({ clienteId = null }) {
     setForm(previous => ({ ...previous, [name]: value }))
   }
 
+  const handleDocumentoIdentidadChange = event => {
+    const file = event.target.files?.[0] || null
+
+    if (!file) {
+      setDocumentoIdentidadFile(null)
+      setDocumentoIdentidadError('')
+      return
+    }
+
+    const isPdf = file.type === 'application/pdf' || String(file.name || '').toLowerCase().endsWith('.pdf')
+
+    if (!isPdf) {
+      setDocumentoIdentidadFile(null)
+      setDocumentoIdentidadError('Solo se permite archivo PDF.')
+      return
+    }
+
+    setDocumentoIdentidadFile(file)
+    setDocumentoIdentidadError('')
+  }
+
   const handleSubmit = async event => {
     event.preventDefault()
     setSubmitAttempted(true)
@@ -241,6 +264,10 @@ export default function ClienteFormModule({ clienteId = null }) {
         throw new Error('Debes seleccionar un cliente activo o indicar un referido externo.')
       }
 
+      if (documentoIdentidadError) {
+        throw new Error(documentoIdentidadError)
+      }
+
       const payload = {
         ...form,
         email,
@@ -249,11 +276,28 @@ export default function ClienteFormModule({ clienteId = null }) {
         monto_referido: form.es_referido ? Number(montoReferido.toFixed(2)) : 0
       }
 
+      const buildFormData = data => {
+        const formData = new FormData()
+
+        Object.entries(data).forEach(([key, value]) => {
+          if (value === undefined || value === null) return
+          formData.append(key, typeof value === 'boolean' ? String(value) : String(value))
+        })
+
+        if (documentoIdentidadFile) {
+          formData.append('documento_identidad', documentoIdentidadFile)
+        }
+
+        return formData
+      }
+
       if (clienteId) {
-        await actualizarCliente(clienteId, payload)
+        const submitPayload = documentoIdentidadFile ? buildFormData(payload) : payload
+        await actualizarCliente(clienteId, submitPayload)
         router.replace('/clientes')
       } else {
-        await crearCliente(payload)
+        const submitPayload = documentoIdentidadFile ? buildFormData(payload) : payload
+        await crearCliente(submitPayload)
         router.replace('/solicitudes/nueva')
       }
     } catch (err) {
@@ -430,6 +474,43 @@ export default function ClienteFormModule({ clienteId = null }) {
                         isRequiredMissing('email') ? 'Campo obligatorio' : 'Ejemplo: cliente@correo.com'
                       }
                     />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Stack spacing={1}>
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                        <Button variant='outlined' component='label' color='info'>
+                          Cargar documento de identidad (PDF)
+                          <input
+                            hidden
+                            type='file'
+                            accept='application/pdf,.pdf'
+                            onChange={handleDocumentoIdentidadChange}
+                          />
+                        </Button>
+                        {documentoIdentidadFile ? (
+                          <Button
+                            variant='text'
+                            color='inherit'
+                            onClick={() => {
+                              setDocumentoIdentidadFile(null)
+                              setDocumentoIdentidadError('')
+                            }}
+                          >
+                            Quitar archivo
+                          </Button>
+                        ) : null}
+                      </Stack>
+                      <Typography variant='caption' color={documentoIdentidadError ? 'error' : 'text.secondary'}>
+                        {documentoIdentidadError
+                          ? documentoIdentidadError
+                          : 'Sube un PDF con licencia o pasaporte. Opcional.'}
+                      </Typography>
+                      {documentoIdentidadFile ? (
+                        <Typography variant='body2' color='text.secondary'>
+                          {documentoIdentidadFile.name} • {(documentoIdentidadFile.size / (1024 * 1024)).toFixed(2)} MB
+                        </Typography>
+                      ) : null}
+                    </Stack>
                   </Grid>
                   {!clienteId ? (
                     <Grid size={{ xs: 12 }}>
