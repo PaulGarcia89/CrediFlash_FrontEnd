@@ -632,6 +632,26 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       disabled={!form.es_referido}
                     />
                   </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Stack
+                      spacing={1}
+                      sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: 'background.default' }}
+                    >
+                      <Typography variant='h6' sx={{ fontWeight: 700 }}>
+                        IMPORTANT (FILE) * / ARCHIVOS (IMPORTANTE)
+                      </Typography>
+                      <Typography color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
+                        UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
+                      </Typography>
+                      <Button variant='outlined' component='label'>
+                        Cargar documento ID (obligatorio)
+                        <input hidden type='file' accept='application/pdf,.pdf' onChange={handleDocumentoIdentidad} />
+                      </Button>
+                      <Typography variant='caption' color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
+                        {documentoIdentidad ? `Archivo seleccionado: ${documentoIdentidad.name}` : 'Aún no has cargado el documento ID.'}
+                      </Typography>
+                    </Stack>
+                  </Grid>
                 </Grid>
               </CardContent>
             </Card>
@@ -802,25 +822,6 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               <Divider />
               <CardContent>
                 <Stack spacing={2}>
-                  <Stack
-                    spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: 'background.default' }}
-                  >
-                    <Typography variant='h6' sx={{ fontWeight: 700 }}>
-                      IMPORTANT (FILE) * / ARCHIVOS (IMPORTANTE)
-                    </Typography>
-                    <Typography color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
-                      UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
-                    </Typography>
-                    <Button variant='outlined' component='label'>
-                      Cargar documento ID (obligatorio)
-                      <input hidden type='file' accept='application/pdf,.pdf' onChange={handleDocumentoIdentidad} />
-                    </Button>
-                    <Typography variant='caption' color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
-                      {documentoIdentidad ? `Archivo seleccionado: ${documentoIdentidad.name}` : 'Aún no has cargado el documento ID.'}
-                    </Typography>
-                  </Stack>
-
                   <Stack
                     spacing={1}
                     sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: 'background.default' }}
