@@ -476,41 +476,7 @@ export default function ClienteFormModule({ clienteId = null }) {
                     />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <Stack spacing={1}>
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
-                        <Button variant='outlined' component='label' color='info'>
-                          Cargar documento de identidad (PDF)
-                          <input
-                            hidden
-                            type='file'
-                            accept='application/pdf,.pdf'
-                            onChange={handleDocumentoIdentidadChange}
-                          />
-                        </Button>
-                        {documentoIdentidadFile ? (
-                          <Button
-                            variant='text'
-                            color='inherit'
-                            onClick={() => {
-                              setDocumentoIdentidadFile(null)
-                              setDocumentoIdentidadError('')
-                            }}
-                          >
-                            Quitar archivo
-                          </Button>
-                        ) : null}
-                      </Stack>
-                      <Typography variant='caption' color={documentoIdentidadError ? 'error' : 'text.secondary'}>
-                        {documentoIdentidadError
-                          ? documentoIdentidadError
-                          : 'Sube un PDF con licencia o pasaporte. Opcional.'}
-                      </Typography>
-                      {documentoIdentidadFile ? (
-                        <Typography variant='body2' color='text.secondary'>
-                          {documentoIdentidadFile.name} • {(documentoIdentidadFile.size / (1024 * 1024)).toFixed(2)} MB
-                        </Typography>
-                      ) : null}
-                    </Stack>
+                    {null}
                   </Grid>
                   {!clienteId ? (
                     <Grid size={{ xs: 12 }}>
@@ -647,6 +613,43 @@ export default function ClienteFormModule({ clienteId = null }) {
                       fullWidth
                       disabled={!form.es_referido}
                     />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Stack spacing={1}>
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                        <Button variant='outlined' component='label' color='info'>
+                          Cargar documento de identidad (PDF)
+                          <input
+                            hidden
+                            type='file'
+                            accept='application/pdf,.pdf'
+                            onChange={handleDocumentoIdentidadChange}
+                          />
+                        </Button>
+                        {documentoIdentidadFile ? (
+                          <Button
+                            variant='text'
+                            color='inherit'
+                            onClick={() => {
+                              setDocumentoIdentidadFile(null)
+                              setDocumentoIdentidadError('')
+                            }}
+                          >
+                            Quitar archivo
+                          </Button>
+                        ) : null}
+                      </Stack>
+                      <Typography variant='caption' color={documentoIdentidadError ? 'error' : 'text.secondary'}>
+                        {documentoIdentidadError
+                          ? documentoIdentidadError
+                          : 'Sube un PDF con licencia o pasaporte. Opcional.'}
+                      </Typography>
+                      {documentoIdentidadFile ? (
+                        <Typography variant='body2' color='text.secondary'>
+                          {documentoIdentidadFile.name} • {(documentoIdentidadFile.size / (1024 * 1024)).toFixed(2)} MB
+                        </Typography>
+                      ) : null}
+                    </Stack>
                   </Grid>
                 </Grid>
               </CardContent>
