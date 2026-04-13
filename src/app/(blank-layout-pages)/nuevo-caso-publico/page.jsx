@@ -17,7 +17,7 @@ export default function NuevoCasoPublicoPage() {
         <Stack spacing={2} sx={{ mb: 3 }}>
           <Box
             component='img'
-            src={`${basePath}/creditflash-logo.svg`}
+            src='/creditflash-logo.svg'
             alt='CreditFlash'
             sx={{ height: 44, width: 'auto' }}
           />

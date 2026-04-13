@@ -158,7 +158,22 @@ const extractSolicitudIdFromPayload = payload =>
 export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const router = useRouter()
 
-  const [form, setForm] = useState(initialForm)
+  const publicDefaults = useMemo(
+    () =>
+      publicMode
+        ? {
+            plazo_semanas: '1',
+            tasa_variable_pct: '1',
+            modelo_calificacion: 'EDITAR',
+            modelo_aprobacion: 'EDITAR'
+          }
+        : {},
+    [publicMode]
+  )
+
+  const defaultForm = useMemo(() => ({ ...initialForm, ...publicDefaults }), [publicDefaults])
+
+  const [form, setForm] = useState(defaultForm)
   const [clientesActivos, setClientesActivos] = useState([])
   const [loadingReferidos, setLoadingReferidos] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -515,7 +530,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         throw new Error('El backend no devolvió el ID del cliente creado.')
       }
 
-      const tasaVariable = publicMode ? 0 : calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
+      const tasaVariable = publicMode ? Number(form.tasa_variable_pct || 1) : calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
 
       if (!publicMode && (!Number.isFinite(tasaVariable) || tasaVariable <= 0)) {
         throw new Error('No se pudo calcular una tasa válida para la modalidad seleccionada.')
@@ -527,7 +542,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       solicitudPayload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
       solicitudPayload.append('modalidad', form.modalidad)
       solicitudPayload.append('plazo_semanas', String(publicMode ? 1 : Number(form.plazo_semanas || 0)))
-      solicitudPayload.append('tasa_variable', String(publicMode ? 0 : tasaVariable))
+      solicitudPayload.append('tasa_variable', String(publicMode ? Number(form.tasa_variable_pct || 1) : tasaVariable))
       solicitudPayload.append('modelo_calificacion', publicMode ? 'EDITAR' : form.modelo_calificacion)
       solicitudPayload.append('modelo_aprobacion', publicMode ? 'EDITAR' : form.modelo_aprobacion)
       solicitudPayload.append('destino', form.destino)
@@ -550,7 +565,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       const solicitudCreated = publicMode ? await crearSolicitudPublica(solicitudPayload) : await crearSolicitud(solicitudPayload)
       const solicitudId = extractSolicitudIdFromPayload(solicitudCreated)
       if (publicMode) {
-        setForm(initialForm)
+        setForm(defaultForm)
         setDocumentoIdentidad(null)
         setDocumentosEstadoCuenta([])
         setDocumentosComprobantesIngreso([])
@@ -1250,8 +1265,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
           <Card
             sx={{
               borderRadius: 3,
-              position: { xs: 'static', lg: 'sticky' },
-              top: { lg: 24 }
+              position: 'sticky',
+              top: 24,
+              alignSelf: 'flex-start'
             }}
           >
             <CardHeader title='Acciones' />
