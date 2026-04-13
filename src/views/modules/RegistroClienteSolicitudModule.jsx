@@ -1247,7 +1247,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Card sx={{ borderRadius: 3 }}>
+          <Card sx={{ borderRadius: 3, position: 'static' }}>
             <CardHeader title='Acciones' />
             <Divider />
             <CardContent>
