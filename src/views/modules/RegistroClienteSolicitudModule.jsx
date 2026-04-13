@@ -526,7 +526,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       solicitudPayload.append('cliente_id', String(clienteId))
       solicitudPayload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
       solicitudPayload.append('modalidad', form.modalidad)
-      solicitudPayload.append('plazo_semanas', String(publicMode ? 0 : Number(form.plazo_semanas || 0)))
+      solicitudPayload.append('plazo_semanas', String(publicMode ? 1 : Number(form.plazo_semanas || 0)))
       solicitudPayload.append('tasa_variable', String(publicMode ? 0 : tasaVariable))
       solicitudPayload.append('modelo_calificacion', publicMode ? 'EDITAR' : form.modelo_calificacion)
       solicitudPayload.append('modelo_aprobacion', publicMode ? 'EDITAR' : form.modelo_aprobacion)
