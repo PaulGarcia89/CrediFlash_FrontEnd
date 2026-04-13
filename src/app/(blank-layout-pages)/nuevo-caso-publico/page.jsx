@@ -9,11 +9,18 @@ export const metadata = {
 }
 
 export default function NuevoCasoPublicoPage() {
+  const basePath = process.env.BASEPATH || ''
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#fff', py: { xs: 2, md: 4 } }}>
       <Box sx={{ maxWidth: 980, mx: 'auto', px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={2} sx={{ mb: 3 }}>
-          <Box component='img' src='/creditflash-logo.svg' alt='CreditFlash' sx={{ height: 44, width: 'auto' }} />
+          <Box
+            component='img'
+            src={`${basePath}/creditflash-logo.svg`}
+            alt='CreditFlash'
+            sx={{ height: 44, width: 'auto' }}
+          />
           <Typography variant='h4' sx={{ fontWeight: 700 }}>
             CreditFlash · Formulario público
           </Typography>
