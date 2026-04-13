@@ -53,8 +53,30 @@ const deduplicarDocumentos = documentos => {
     if (!key || seen.has(key)) return false
     seen.add(key)
 
-    return true
+  return true
   })
+}
+
+const buildDocumentoIdentidadCliente = cliente => {
+  if (!cliente) return null
+
+  const rawUrl =
+    cliente?.documento_identidad_url ||
+    cliente?.documento_identidad ||
+    cliente?.documento_identidad_path ||
+    cliente?.documento_identidad_file ||
+    ''
+
+  if (!rawUrl) return null
+
+  return {
+    id: cliente?.documento_identidad_id || 'doc-id-cliente',
+    nombre: cliente?.documento_identidad_nombre || 'Documento de identidad',
+    url: rawUrl,
+    url_descarga: rawUrl,
+    url_ver: rawUrl,
+    size_bytes: cliente?.documento_identidad_size_bytes || cliente?.documento_identidad_size || null
+  }
 }
 
 const formatCurrency = value => formatUSD(value)
@@ -208,9 +230,17 @@ export default function ClienteDashboardModule({ clienteId }) {
       }
 
       if (documentosResponse.status === 'fulfilled') {
-        setDocumentos(deduplicarDocumentos(extractRows(documentosResponse.value)))
+        const docs = extractRows(documentosResponse.value)
+        const identityDoc = buildDocumentoIdentidadCliente(clienteResponse.status === 'fulfilled' ? clienteResponse.value?.data || clienteResponse.value : null)
+        const merged = identityDoc ? [identityDoc, ...docs] : docs
+
+        setDocumentos(deduplicarDocumentos(merged))
       } else {
-        setDocumentos([])
+        const identityDoc = buildDocumentoIdentidadCliente(
+          clienteResponse.status === 'fulfilled' ? clienteResponse.value?.data || clienteResponse.value : null
+        )
+
+        setDocumentos(deduplicarDocumentos(identityDoc ? [identityDoc] : []))
       }
 
       try {
