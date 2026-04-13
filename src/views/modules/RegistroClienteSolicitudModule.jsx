@@ -11,14 +11,15 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import CardHeader from '@mui/material/CardHeader'
+import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
+import Checkbox from '@mui/material/Checkbox'
 import FormControl from '@mui/material/FormControl'
 import FormControlLabel from '@mui/material/FormControlLabel'
+import FormGroup from '@mui/material/FormGroup'
 import FormLabel from '@mui/material/FormLabel'
 import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
-import Radio from '@mui/material/Radio'
-import RadioGroup from '@mui/material/RadioGroup'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
@@ -40,9 +41,9 @@ import { crearSolicitud, crearSolicitudPublica } from '@/api/solicitudes'
 const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
 const MODELO_APROBACION_OPTIONS = ['AUTOMATICO', 'MANUAL']
 const MODALIDAD_OPTIONS = [
-  { value: 'SEMANAL', label: 'WEEKLY (SEMANAL)' },
-  { value: 'QUINCENAL', label: 'FORTNIGHTLY (QUINCENAL)' },
-  { value: 'MENSUAL', label: 'MONTHLY (MENSUAL)' }
+  { value: 'SEMANAL', label: 'WEEKLY (SEMANAL) 4/8/12' },
+  { value: 'QUINCENAL', label: 'FORTNIGHTLY (QUINCENAL) 2/4/6' },
+  { value: 'MENSUAL', label: 'MONTHLY (MENSUAL) 1/2/3' }
 ]
 const SEXO_OPTIONS = [
   { value: 'M', label: 'Masculino (Male)' },
@@ -55,6 +56,12 @@ const STATUS_LEGAL_OPTIONS = [
   { value: 'TEMPORAL', label: 'TEMPORAL (TEMPORARY)' },
   { value: 'IRREGULAR', label: 'IRREGULAR (IRREGULAR)' },
   { value: 'OTRO', label: 'OTRO (OTHER)' }
+]
+const ANTIGUEDAD_LABORAL_OPTIONS = [
+  { value: '12', label: '6 - 12 MESES (MONTHS)' },
+  { value: '24', label: '12 - 24 MESES (MONTHS)' },
+  { value: '60', label: '24 - 60 MESES (MONTHS)' },
+  { value: '61', label: 'MAS DE 60 MESES (MONTHS)' }
 ]
 const MONTO_RANGO_OPTIONS = [
   { value: '100-500', label: '100 - 500' },
@@ -220,6 +227,33 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     setForm(previous => ({ ...previous, [name]: value }))
   }
 
+  const handleSingleCheckbox = (name, value) => event => {
+    setForm(previous => ({
+      ...previous,
+      [name]: event.target.checked ? value : ''
+    }))
+  }
+
+  const renderFileChips = (files = [], onRemove) => {
+    if (!files.length) return null
+
+    return (
+      <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
+        {files.map((file, index) => (
+          <Chip
+            key={`${file?.name || 'archivo'}-${index}`}
+            label={file?.name || `Archivo ${index + 1}`}
+            onDelete={onRemove ? () => onRemove(index) : undefined}
+            variant='outlined'
+            color='info'
+            size='small'
+            sx={{ maxWidth: '100%' }}
+          />
+        ))}
+      </Stack>
+    )
+  }
+
   const isRequiredMissing = field => {
     if (!submitAttempted) return false
 
@@ -293,6 +327,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     setDocumentoIdentidad(selected[0] || null)
   }
 
+  const handleRemoveDocumentoIdentidad = () => {
+    setDocumentoIdentidad(null)
+  }
+
   const handleEstadoCuentaFiles = event => {
     const selected = Array.from(event.target.files || [])
     const validationError = validatePdfFiles({ selected, min: 2, max: 10 })
@@ -304,6 +342,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     }
 
     setDocumentosEstadoCuenta(selected)
+  }
+
+  const handleRemoveEstadoCuenta = indexToRemove => {
+    setDocumentosEstadoCuenta(previous => previous.filter((_, index) => index !== indexToRemove))
   }
 
   const handleComprobantesIngresoFiles = event => {
@@ -318,6 +360,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     }
 
     setDocumentosComprobantesIngreso(selected)
+  }
+
+  const handleRemoveComprobanteIngreso = indexToRemove => {
+    setDocumentosComprobantesIngreso(previous => previous.filter((_, index) => index !== indexToRemove))
   }
 
   const handleSendVerificationCode = async () => {
@@ -536,7 +582,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   }
 
   return (
-    <Stack spacing={3} component='form' onSubmit={handleSubmit}>
+    <Stack spacing={3} component='form' onSubmit={handleSubmit} sx={{ bgcolor: '#e9f4e5', p: { xs: 2, md: 3 }, borderRadius: 4 }}>
+      <Box sx={{ bgcolor: '#7fb36d', borderRadius: 3, height: { xs: 90, md: 120 } }} />
       <Card sx={{ borderTop: theme => `10px solid ${theme.palette.primary.main}`, borderRadius: 3 }}>
         <CardContent>
           <Stack spacing={1}>
@@ -563,33 +610,33 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack spacing={3}>
-            <Card sx={{ borderRadius: 3 }}>
+            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
               <CardHeader title='Datos personales / Personal data' />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label='Nombre *'
+                      label='Nombre completo * / Full name'
                       name='nombre'
                       value={form.nombre}
                       onChange={handleChange}
                       fullWidth
                       required
                       error={isRequiredMissing('nombre')}
-                      helperText={isRequiredMissing('nombre') ? 'Campo obligatorio' : 'Ejemplo: Juan'}
+                      helperText={isRequiredMissing('nombre') ? 'Campo obligatorio' : 'Tu respuesta'}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label='Apellido *'
+                      label='Apellido * / Last name'
                       name='apellido'
                       value={form.apellido}
                       onChange={handleChange}
                       fullWidth
                       required
                       error={isRequiredMissing('apellido')}
-                      helperText={isRequiredMissing('apellido') ? 'Campo obligatorio' : 'Ejemplo: Pérez'}
+                      helperText={isRequiredMissing('apellido') ? 'Campo obligatorio' : 'Tu respuesta'}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -659,22 +706,25 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      select
-                      label='Sexo *'
-                      name='sexo'
-                      value={form.sexo}
-                      onChange={handleChange}
+                    <FormControl
                       fullWidth
                       required
                       error={isRequiredMissing('sexo')}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
                     >
-                      {SEXO_OPTIONS.map(option => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
+                        SEX * / SEXO
+                      </FormLabel>
+                      <FormGroup>
+                        {SEXO_OPTIONS.map(option => (
+                          <FormControlLabel
+                            key={option.value}
+                            control={<Checkbox checked={form.sexo === option.value} onChange={handleSingleCheckbox('sexo', option.value)} />}
+                            label={option.label}
+                          />
+                        ))}
+                      </FormGroup>
+                    </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12 }}>
                     <TextField label='Dirección' name='direccion' value={form.direccion} onChange={handleChange} fullWidth />
@@ -683,7 +733,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
+            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
               <CardHeader title='Información de contacto alterno o emergente' />
               <Divider />
               <CardContent>
@@ -725,63 +775,89 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
+            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
               <CardHeader title='Perfil legal y laboral / Legal & work profile' />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      select
-                      label='Current legal status * / Estatus legal actual'
-                      name='status_legal'
-                      value={form.status_legal}
-                      onChange={handleChange}
+                  <Grid size={{ xs: 12 }}>
+                    <FormControl
                       fullWidth
                       required
                       error={isRequiredMissing('status_legal')}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
                     >
-                      {STATUS_LEGAL_OPTIONS.map(option => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
+                        CURRENT LEGAL STATUS * / ESTATUS LEGAL ACTUAL
+                      </FormLabel>
+                      <FormGroup>
+                        {STATUS_LEGAL_OPTIONS.map(option => (
+                          <FormControlLabel
+                            key={option.value}
+                            control={
+                              <Checkbox
+                                checked={form.status_legal === option.value}
+                                onChange={handleSingleCheckbox('status_legal', option.value)}
+                              />
+                            }
+                            label={option.label}
+                          />
+                        ))}
+                      </FormGroup>
+                    </FormControl>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      select
-                      label='You are currently employed? * / ¿Tiene empleo actualmente?'
-                      name='empleo_actual'
-                      value={form.empleo_actual}
-                      onChange={handleChange}
+                  <Grid size={{ xs: 12 }}>
+                    <FormControl
                       fullWidth
                       required
                       error={isRequiredMissing('empleo_actual')}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
                     >
-                      <MenuItem value='SI'>YES (SÍ)</MenuItem>
-                      <MenuItem value='NO'>NO</MenuItem>
-                      <MenuItem value='OTRO'>OTHER (OTRO)</MenuItem>
-                    </TextField>
+                      <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
+                        YOU ARE CURRENTLY EMPLOYED * / ¿TIENES EMPLEO ACTUALMENTE?
+                      </FormLabel>
+                      <FormGroup>
+                        {['SI', 'NO', 'OTRO'].map(option => (
+                          <FormControlLabel
+                            key={option}
+                            control={<Checkbox checked={form.empleo_actual === option} onChange={handleSingleCheckbox('empleo_actual', option)} />}
+                            label={option === 'SI' ? 'SI (YES)' : option === 'NO' ? 'NO' : 'OTRO (OTHER)'}
+                          />
+                        ))}
+                      </FormGroup>
+                    </FormControl>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label='Antigüedad laboral (meses) *'
-                      name='antiguedad_laboral_meses'
-                      type='number'
-                      value={form.antiguedad_laboral_meses}
-                      onChange={handleChange}
+                  <Grid size={{ xs: 12 }}>
+                    <FormControl
                       fullWidth
                       required
                       error={isRequiredMissing('antiguedad_laboral_meses')}
-                      helperText={isRequiredMissing('antiguedad_laboral_meses') ? 'Campo obligatorio' : 'Ejemplo: 12'}
-                    />
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
+                    >
+                      <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
+                        ANTIQUITY AT WORK * / ANTIGUEDAD EN EL TRABAJO
+                      </FormLabel>
+                      <FormGroup>
+                        {ANTIGUEDAD_LABORAL_OPTIONS.map(option => (
+                          <FormControlLabel
+                            key={option.value}
+                            control={
+                              <Checkbox
+                                checked={form.antiguedad_laboral_meses === option.value}
+                                onChange={handleSingleCheckbox('antiguedad_laboral_meses', option.value)}
+                              />
+                            }
+                            label={option.label}
+                          />
+                        ))}
+                      </FormGroup>
+                    </FormControl>
                   </Grid>
                 </Grid>
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
+            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
               <CardHeader title='Finanzas / Financial profile' />
               <Divider />
               <CardContent>
@@ -842,7 +918,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
+            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
               <CardHeader title='Información crediticia / Credit details' />
               <Divider />
               <CardContent>
@@ -852,16 +928,22 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('destino')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
                         DESTINATION OF THE REQUEST * / DESTINO DE LA SOLICITUD
                       </FormLabel>
-                      <RadioGroup name='destino' value={form.destino} onChange={handleChange}>
+                      <FormGroup>
                         {DESTINO_OPTIONS.map(option => (
-                          <FormControlLabel key={option.value} value={option.value} control={<Radio />} label={option.label} />
+                          <FormControlLabel
+                            key={option.value}
+                            control={
+                              <Checkbox checked={form.destino === option.value} onChange={handleSingleCheckbox('destino', option.value)} />
+                            }
+                            label={option.label}
+                          />
                         ))}
-                      </RadioGroup>
+                      </FormGroup>
                     </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12 }}>
@@ -869,35 +951,49 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('modalidad')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
-                        TYPE OF PAYMENT * / TIPO DE PAGO
+                        FORM OF PAYMENT * / FORMA DE PAGOS
                       </FormLabel>
-                      <RadioGroup name='modalidad' value={form.modalidad} onChange={handleChange}>
+                      <FormGroup>
                         {MODALIDAD_OPTIONS.map(option => (
-                          <FormControlLabel key={option.value} value={option.value} control={<Radio />} label={option.label} />
+                          <FormControlLabel
+                            key={option.value}
+                            control={
+                              <Checkbox checked={form.modalidad === option.value} onChange={handleSingleCheckbox('modalidad', option.value)} />
+                            }
+                            label={option.label}
+                          />
                         ))}
-                      </RadioGroup>
+                      </FormGroup>
                     </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      select
-                      label='Monto de solicitud (rango) *'
-                      name='monto_solicitud_rango'
-                      value={form.monto_solicitud_rango}
-                      onChange={handleChange}
+                    <FormControl
                       fullWidth
                       required
                       error={isRequiredMissing('monto_solicitud_rango')}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
                     >
-                      {MONTO_RANGO_OPTIONS.map(option => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
+                        APPLICATION AMOUNT * / MONTO DE SU SOLICITUD
+                      </FormLabel>
+                      <FormGroup>
+                        {MONTO_RANGO_OPTIONS.map(option => (
+                          <FormControlLabel
+                            key={option.value}
+                            control={
+                              <Checkbox
+                                checked={form.monto_solicitud_rango === option.value}
+                                onChange={handleSingleCheckbox('monto_solicitud_rango', option.value)}
+                              />
+                            }
+                            label={option.label}
+                          />
+                        ))}
+                      </FormGroup>
+                    </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
@@ -979,7 +1075,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
+            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
               <CardHeader title='Referido / Referral' />
               <Divider />
               <CardContent>
@@ -1059,14 +1155,14 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
+            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
               <CardHeader title='Archivos / Files' />
               <Divider />
               <CardContent>
                 <Stack spacing={2}>
                   <Stack
                     spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: 'background.default' }}
+                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: '#fff' }}
                   >
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       IMPORTANT (FILE) * / ARCHIVOS (IMPORTANTE)
@@ -1075,17 +1171,18 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
                     </Typography>
                     <Button variant='outlined' component='label'>
-                      Cargar documento ID (obligatorio)
+                      Añadir archivo
                       <input hidden type='file' accept='application/pdf,.pdf' onChange={handleDocumentoIdentidad} />
                     </Button>
+                    {documentoIdentidad ? renderFileChips([documentoIdentidad], handleRemoveDocumentoIdentidad) : null}
                     <Typography variant='caption' color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
-                      {documentoIdentidad ? `Archivo seleccionado: ${documentoIdentidad.name}` : 'Aún no has cargado el documento ID.'}
+                      {documentoIdentidad ? '1 archivo cargado.' : 'Sube 1 archivo compatible. Tamaño máximo: 10 MB.'}
                     </Typography>
                   </Stack>
 
                   <Stack
                     spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: 'background.default' }}
+                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: '#fff' }}
                   >
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       HOW MANY BANK STATEMENTS * / ESTADOS DE CUENTAS BANCARIOS
@@ -1095,19 +1192,20 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       Sube mínimo 2 archivos compatibles (máximo 10). Tamaño máximo por archivo: 10MB.
                     </Typography>
                     <Button variant='outlined' component='label'>
-                      Cargar estados de cuenta (mínimo 2)
+                      Añadir archivo
                       <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
                     </Button>
+                    {renderFileChips(documentosEstadoCuenta, handleRemoveEstadoCuenta)}
                     <Typography variant='caption' color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
                       {documentosEstadoCuenta.length
-                        ? `${documentosEstadoCuenta.length} archivo(s) seleccionado(s)`
+                        ? `${documentosEstadoCuenta.length} archivo(s) cargado(s)`
                         : 'No hay estados de cuenta cargados'}
                     </Typography>
                   </Stack>
 
                   <Stack
                     spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: 'background.default' }}
+                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: '#fff' }}
                   >
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       PROOF OF INCOME * / COMPROBANTES DE INGRESOS
@@ -1121,12 +1219,13 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       Sube los comprobantes requeridos según la modalidad. Tamaño máximo por archivo: 10MB.
                     </Typography>
                     <Button variant='outlined' component='label'>
-                      Cargar comprobantes de ingreso
+                      Añadir archivo
                       <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleComprobantesIngresoFiles} />
                     </Button>
+                    {renderFileChips(documentosComprobantesIngreso, handleRemoveComprobanteIngreso)}
                     <Typography variant='caption' color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}>
                       {documentosComprobantesIngreso.length
-                        ? `${documentosComprobantesIngreso.length} archivo(s) seleccionado(s)`
+                        ? `${documentosComprobantesIngreso.length} archivo(s) cargado(s)`
                         : 'No hay comprobantes cargados'}
                     </Typography>
                   </Stack>
