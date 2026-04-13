@@ -521,9 +521,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         throw new Error('El backend no devolvió el ID del cliente creado.')
       }
 
-      const tasaVariable = calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
+      const tasaVariable = publicMode ? 0 : calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
 
-      if (!Number.isFinite(tasaVariable) || tasaVariable <= 0) {
+      if (!publicMode && (!Number.isFinite(tasaVariable) || tasaVariable <= 0)) {
         throw new Error('No se pudo calcular una tasa válida para la modalidad seleccionada.')
       }
 
@@ -532,10 +532,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       solicitudPayload.append('cliente_id', String(clienteId))
       solicitudPayload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
       solicitudPayload.append('modalidad', form.modalidad)
-      solicitudPayload.append('plazo_semanas', String(Number(form.plazo_semanas || 0)))
-      solicitudPayload.append('tasa_variable', String(tasaVariable))
-      solicitudPayload.append('modelo_calificacion', form.modelo_calificacion)
-      solicitudPayload.append('modelo_aprobacion', form.modelo_aprobacion)
+      solicitudPayload.append('plazo_semanas', String(publicMode ? 0 : Number(form.plazo_semanas || 0)))
+      solicitudPayload.append('tasa_variable', String(publicMode ? 0 : tasaVariable))
+      solicitudPayload.append('modelo_calificacion', publicMode ? 'EDITAR' : form.modelo_calificacion)
+      solicitudPayload.append('modelo_aprobacion', publicMode ? 'EDITAR' : form.modelo_aprobacion)
       solicitudPayload.append('destino', form.destino)
       solicitudPayload.append('status_legal', form.status_legal)
       solicitudPayload.append('empleo_actual', form.empleo_actual)
