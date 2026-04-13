@@ -582,8 +582,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   }
 
   return (
-    <Stack spacing={3} component='form' onSubmit={handleSubmit} sx={{ bgcolor: '#e9f4e5', p: { xs: 2, md: 3 }, borderRadius: 4 }}>
-      <Box sx={{ bgcolor: '#7fb36d', borderRadius: 3, height: { xs: 90, md: 120 } }} />
+    <Stack spacing={3} component='form' onSubmit={handleSubmit} sx={{ p: { xs: 2, md: 3 } }}>
       <Card sx={{ borderTop: theme => `10px solid ${theme.palette.primary.main}`, borderRadius: 3 }}>
         <CardContent>
           <Stack spacing={1}>
@@ -610,7 +609,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack spacing={3}>
-            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
+            <Card sx={{ borderRadius: 3 }}>
               <CardHeader title='Datos personales / Personal data' />
               <Divider />
               <CardContent>
@@ -710,7 +709,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('sexo')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         SEX * / SEXO
@@ -733,7 +732,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
+            <Card sx={{ borderRadius: 3 }}>
               <CardHeader title='Información de contacto alterno o emergente' />
               <Divider />
               <CardContent>
@@ -775,7 +774,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
+            <Card sx={{ borderRadius: 3 }}>
               <CardHeader title='Perfil legal y laboral / Legal & work profile' />
               <Divider />
               <CardContent>
@@ -785,7 +784,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('status_legal')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         CURRENT LEGAL STATUS * / ESTATUS LEGAL ACTUAL
@@ -811,7 +810,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('empleo_actual')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         YOU ARE CURRENTLY EMPLOYED * / ¿TIENES EMPLEO ACTUALMENTE?
@@ -832,7 +831,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('antiguedad_laboral_meses')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         ANTIQUITY AT WORK * / ANTIGUEDAD EN EL TRABAJO
@@ -857,7 +856,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
+            <Card sx={{ borderRadius: 3 }}>
               <CardHeader title='Finanzas / Financial profile' />
               <Divider />
               <CardContent>
@@ -918,7 +917,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
+            <Card sx={{ borderRadius: 3 }}>
               <CardHeader title='Información crediticia / Credit details' />
               <Divider />
               <CardContent>
@@ -928,7 +927,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('destino')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
                         DESTINATION OF THE REQUEST * / DESTINO DE LA SOLICITUD
@@ -951,7 +950,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('modalidad')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
                         FORM OF PAYMENT * / FORMA DE PAGOS
@@ -974,7 +973,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('monto_solicitud_rango')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2, bgcolor: '#fff' }}
+                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         APPLICATION AMOUNT * / MONTO DE SU SOLICITUD
@@ -1075,7 +1074,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
+            <Card sx={{ borderRadius: 3 }}>
               <CardHeader title='Referido / Referral' />
               <Divider />
               <CardContent>
@@ -1155,14 +1154,14 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3, bgcolor: '#eef6e9' }}>
+            <Card sx={{ borderRadius: 3 }}>
               <CardHeader title='Archivos / Files' />
               <Divider />
               <CardContent>
                 <Stack spacing={2}>
                   <Stack
                     spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: '#fff' }}
+                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}` }}
                   >
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       IMPORTANT (FILE) * / ARCHIVOS (IMPORTANTE)
@@ -1182,7 +1181,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
                   <Stack
                     spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: '#fff' }}
+                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}` }}
                   >
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       HOW MANY BANK STATEMENTS * / ESTADOS DE CUENTAS BANCARIOS
@@ -1205,7 +1204,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
                   <Stack
                     spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: '#fff' }}
+                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}` }}
                   >
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       PROOF OF INCOME * / COMPROBANTES DE INGRESOS
