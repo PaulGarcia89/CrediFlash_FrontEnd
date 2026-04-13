@@ -177,6 +177,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const [emailVerificationLoading, setEmailVerificationLoading] = useState(false)
   const [emailCodeValidationLoading, setEmailCodeValidationLoading] = useState(false)
   const [emailVerificationMessage, setEmailVerificationMessage] = useState('')
+  const [acceptedPublicTerms, setAcceptedPublicTerms] = useState(false)
 
   useEffect(() => {
     const loadClientesActivos = async () => {
@@ -483,6 +484,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
           `Debes cargar ${comprobantesRequeridos} comprobante(s) de ingreso (PDF) según la modalidad seleccionada.`
         )
       }
+      if (publicMode && !acceptedPublicTerms) {
+        throw new Error('Debes aceptar el aviso legal para enviar la solicitud.')
+      }
 
       const referidoPorNombre = referidoSelected ? getClienteLabel(referidoSelected) : ''
       const referidoExterno = String(form.referido_externo || '').trim()
@@ -562,6 +566,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         setEmailVerified(false)
         setVerifiedEmail('')
         setEmailVerificationMessage('')
+        setAcceptedPublicTerms(false)
         setSnackbar({ open: true, message: 'Solicitud enviada correctamente. Nuestro equipo la revisará.' })
 
         return
@@ -1243,6 +1248,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 <Button variant='contained' type='submit' disabled={saving} fullWidth>
                   {saving ? 'Guardando...' : publicMode ? 'Enviar solicitud' : 'Publicar cliente y solicitud'}
                 </Button>
+                {publicMode ? (
+                  <FormControlLabel
+                    control={<Checkbox checked={acceptedPublicTerms} onChange={event => setAcceptedPublicTerms(event.target.checked)} />}
+                    label='Acepto el aviso legal y el tratamiento de mis datos.'
+                  />
+                ) : null}
                 {publicMode ? null : (
                   <Button variant='outlined' onClick={() => router.push('/clientes')} disabled={saving} fullWidth>
                     Cancelar

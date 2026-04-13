@@ -13,6 +13,7 @@ export default function NuevoCasoPublicoPage() {
     <Box sx={{ minHeight: '100vh', bgcolor: '#fff', py: { xs: 2, md: 4 } }}>
       <Box sx={{ maxWidth: 980, mx: 'auto', px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={2} sx={{ mb: 3 }}>
+          <Box component='img' src='/creditflash-logo.svg' alt='CreditFlash' sx={{ height: 44, width: 'auto' }} />
           <Typography variant='h4' sx={{ fontWeight: 700 }}>
             CreditFlash · Formulario público
           </Typography>
@@ -20,8 +21,8 @@ export default function NuevoCasoPublicoPage() {
             Complete este formulario para registrar su solicitud de crédito. Esta página no requiere iniciar sesión.
           </Typography>
           <Alert severity='info'>
-            Aviso legal: La información proporcionada será utilizada únicamente para la evaluación de crédito y podrá ser verificada por
-            nuestro equipo. Al enviar el formulario, usted acepta el tratamiento de sus datos conforme a las políticas de CreditFlash.
+            Aviso legal: Los datos enviados serán utilizados exclusivamente para evaluación crediticia y verificación. Al enviar, usted
+            acepta el tratamiento de datos conforme a las políticas de CreditFlash.
           </Alert>
         </Stack>
         <RegistroClienteSolicitudModule publicMode />
