@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const PUBLIC_PATH_PREFIXES = ['/login', '/register-analista', '/authentication', '/images']
+const PUBLIC_PATH_PREFIXES = ['/login', '/register-analista', '/authentication', '/images', '/nuevo-caso-publico']
 
 const isPublicPath = pathname =>
   PUBLIC_PATH_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
