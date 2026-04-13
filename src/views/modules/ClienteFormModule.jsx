@@ -731,7 +731,14 @@ export default function ClienteFormModule({ clienteId = null }) {
 
         <Grid size={{ xs: 12, lg: 4 }}>
           <Stack spacing={3}>
-            <Card>
+            <Card
+              sx={{
+                borderRadius: 3,
+                position: 'sticky',
+                top: 24,
+                alignSelf: 'flex-start'
+              }}
+            >
               <CardHeader title='Acciones' />
               <Divider />
               <CardContent>
