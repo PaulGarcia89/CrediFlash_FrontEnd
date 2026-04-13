@@ -284,11 +284,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     if (field === 'modelo_calificacion') return publicMode ? false : !String(form.modelo_calificacion || '').trim()
     if (field === 'modelo_aprobacion') return publicMode ? false : !String(form.modelo_aprobacion || '').trim()
     if (field === 'documento_identidad') return !documentoIdentidad
-    if (field === 'estado_cuenta') return documentosEstadoCuenta.length < 2
+    if (field === 'estado_cuenta') return documentosEstadoCuenta.length < 1
     if (field === 'comprobantes_ingreso') {
-      const required = form.modalidad === 'SEMANAL' ? 4 : 2
-
-      return documentosComprobantesIngreso.length < required
+      return documentosComprobantesIngreso.length < 1
     }
 
     return false
@@ -334,7 +332,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const handleEstadoCuentaFiles = event => {
     const selected = Array.from(event.target.files || [])
-    const validationError = validatePdfFiles({ selected, min: 2, max: 10 })
+    const validationError = validatePdfFiles({ selected, min: 1, max: 4 })
 
     if (validationError) {
       setSnackbar({ open: true, message: validationError })
@@ -351,8 +349,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const handleComprobantesIngresoFiles = event => {
     const selected = Array.from(event.target.files || [])
-    const required = form.modalidad === 'SEMANAL' ? 4 : 2
-    const validationError = validatePdfFiles({ selected, min: required, max: 10 })
+    const validationError = validatePdfFiles({ selected, min: 1, max: 4 })
 
     if (validationError) {
       setSnackbar({ open: true, message: validationError })
@@ -477,12 +474,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       if (!String(form.modalidad || '').trim()) throw new Error('Debes seleccionar la modalidad de préstamo.')
       if (!String(form.destino || '').trim()) throw new Error('Debes seleccionar el destino de la solicitud.')
       if (!documentoIdentidad) throw new Error('Debes cargar el documento de identidad (PDF).')
-      if (documentosEstadoCuenta.length < 2) throw new Error('Debes cargar al menos 2 estados de cuenta (PDF).')
-      const comprobantesRequeridos = form.modalidad === 'SEMANAL' ? 4 : 2
-      if (documentosComprobantesIngreso.length < comprobantesRequeridos) {
-        throw new Error(
-          `Debes cargar ${comprobantesRequeridos} comprobante(s) de ingreso (PDF) según la modalidad seleccionada.`
-        )
+      if (documentosEstadoCuenta.length < 1) throw new Error('Debes cargar al menos 1 estado de cuenta (PDF).')
+      if (documentosComprobantesIngreso.length < 1) {
+        throw new Error('Debes cargar entre 1 y 4 comprobantes de ingreso (PDF).')
       }
       if (publicMode && !acceptedPublicTerms) {
         throw new Error('Debes aceptar el aviso legal para enviar la solicitud.')
@@ -1210,7 +1204,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     </Typography>
                     <Typography color='text.secondary'>LAST 2 MONTHS / ULTIMOS 2 MESES</Typography>
                     <Typography color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
-                      Sube mínimo 2 archivos compatibles (máximo 10). Tamaño máximo por archivo: 10MB.
+                      Sube entre 1 y 4 archivos compatibles. Tamaño máximo por archivo: 10MB.
                     </Typography>
                     <Button variant='outlined' component='label'>
                       Añadir archivo
@@ -1231,13 +1225,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       PROOF OF INCOME * / COMPROBANTES DE INGRESOS
                     </Typography>
-                    <Typography color='text.secondary'>
-                      {form.modalidad === 'SEMANAL'
-                        ? '4 SI ES PAGO SEMANAL / 4 IF IT IS WEEKLY PAYMENT'
-                        : '2 SI ES PAGO QUINCENAL O MENSUAL / 2 IF FORTNIGHTLY OR MONTHLY'}
-                    </Typography>
+                    <Typography color='text.secondary'>Sube entre 1 y 4 comprobantes. Tamaño máximo por archivo: 10MB.</Typography>
                     <Typography color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}>
-                      Sube los comprobantes requeridos según la modalidad. Tamaño máximo por archivo: 10MB.
+                      Debes cargar entre 1 y 4 archivos PDF.
                     </Typography>
                     <Button variant='outlined' component='label'>
                       Añadir archivo
