@@ -44,6 +44,25 @@ const MODALIDAD_OPTIONS = [
   { value: 'QUINCENAL', label: 'FORTNIGHTLY (QUINCENAL)' },
   { value: 'MENSUAL', label: 'MONTHLY (MENSUAL)' }
 ]
+const SEXO_OPTIONS = [
+  { value: 'M', label: 'Masculino (Male)' },
+  { value: 'F', label: 'Femenino (Female)' },
+  { value: 'O', label: 'Otro (Other)' }
+]
+const STATUS_LEGAL_OPTIONS = [
+  { value: 'RESIDENTE', label: 'RESIDENTE AMERICANO (AMERICAN RESIDENT)' },
+  { value: 'CIUDADANO', label: 'CIUDADANO AMERICANO (AMERICAN CITIZEN)' },
+  { value: 'TEMPORAL', label: 'TEMPORAL (TEMPORARY)' },
+  { value: 'IRREGULAR', label: 'IRREGULAR (IRREGULAR)' },
+  { value: 'OTRO', label: 'OTRO (OTHER)' }
+]
+const MONTO_RANGO_OPTIONS = [
+  { value: '100-500', label: '100 - 500' },
+  { value: '500-1000', label: '500 - 1000' },
+  { value: '1000-1500', label: '1000 - 1500' },
+  { value: '1500-2000', label: '1500 - 2000' },
+  { value: '2000+', label: '2000+' }
+]
 const DESTINO_OPTIONS = [
   { value: 'salud', label: 'SALUD (HEALTH)' },
   { value: 'inversion', label: 'INVERSION (INVESTMENT)' },
@@ -58,6 +77,15 @@ const initialForm = {
   telefono: '',
   email: '',
   direccion: '',
+  fecha_nacimiento: '',
+  sexo: '',
+  status_legal: '',
+  empleo_actual: '',
+  antiguedad_laboral_meses: '',
+  ingresos_mensuales: '',
+  pago_casa_renta_mensual: '',
+  pago_carro_seguro_mensual: '',
+  otros_gastos_mensuales: '',
   es_referido: false,
   referido_por: '',
   referido_externo: '',
@@ -69,6 +97,7 @@ const initialForm = {
   direccion_contacto: '',
   observaciones: '',
   monto_solicitado: '',
+  monto_solicitud_rango: '',
   modalidad: 'SEMANAL',
   plazo_semanas: '',
   tasa_variable_pct: '',
@@ -132,6 +161,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const [documentoIdentidad, setDocumentoIdentidad] = useState(null)
   const [documentosEstadoCuenta, setDocumentosEstadoCuenta] = useState([])
+  const [documentosComprobantesIngreso, setDocumentosComprobantesIngreso] = useState([])
 
   const [emailVerificationCode, setEmailVerificationCode] = useState('')
   const [emailVerificationSent, setEmailVerificationSent] = useState(false)
@@ -196,12 +226,22 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     if (field === 'nombre') return !String(form.nombre || '').trim()
     if (field === 'apellido') return !String(form.apellido || '').trim()
     if (field === 'email') return !String(form.email || '').trim()
+    if (field === 'fecha_nacimiento') return !String(form.fecha_nacimiento || '').trim()
+    if (field === 'sexo') return !String(form.sexo || '').trim()
+    if (field === 'status_legal') return !String(form.status_legal || '').trim()
+    if (field === 'empleo_actual') return !String(form.empleo_actual || '').trim()
+    if (field === 'antiguedad_laboral_meses') return !(Number(form.antiguedad_laboral_meses || 0) > 0)
+    if (field === 'ingresos_mensuales') return !(Number(form.ingresos_mensuales || 0) > 0)
+    if (field === 'pago_casa_renta_mensual') return !(Number(form.pago_casa_renta_mensual || 0) >= 0)
+    if (field === 'pago_carro_seguro_mensual') return !(Number(form.pago_carro_seguro_mensual || 0) >= 0)
+    if (field === 'otros_gastos_mensuales') return !(Number(form.otros_gastos_mensuales || 0) >= 0)
     if (field === 'referido_por') {
       if (!Boolean(form.es_referido)) return false
 
       return !String(form.referido_por || '').trim() && !String(form.referido_externo || '').trim()
     }
     if (field === 'monto_solicitado') return !(Number(form.monto_solicitado || 0) > 0)
+    if (field === 'monto_solicitud_rango') return !String(form.monto_solicitud_rango || '').trim()
     if (field === 'modalidad') return !String(form.modalidad || '').trim()
     if (field === 'plazo_semanas') return !(Number(form.plazo_semanas || 0) > 0)
     if (field === 'tasa_variable_pct') return !(Number(form.tasa_variable_pct || 0) > 0)
@@ -209,7 +249,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     if (field === 'modelo_calificacion') return !String(form.modelo_calificacion || '').trim()
     if (field === 'modelo_aprobacion') return !String(form.modelo_aprobacion || '').trim()
     if (field === 'documento_identidad') return !documentoIdentidad
-    if (field === 'estado_cuenta') return documentosEstadoCuenta.length < 1
+    if (field === 'estado_cuenta') return documentosEstadoCuenta.length < 2
+    if (field === 'comprobantes_ingreso') {
+      const required = form.modalidad === 'SEMANAL' ? 4 : 2
+
+      return documentosComprobantesIngreso.length < required
+    }
 
     return false
   }
@@ -250,7 +295,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const handleEstadoCuentaFiles = event => {
     const selected = Array.from(event.target.files || [])
-    const validationError = validatePdfFiles({ selected, min: 1, max: 2 })
+    const validationError = validatePdfFiles({ selected, min: 2, max: 10 })
 
     if (validationError) {
       setSnackbar({ open: true, message: validationError })
@@ -259,6 +304,20 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     }
 
     setDocumentosEstadoCuenta(selected)
+  }
+
+  const handleComprobantesIngresoFiles = event => {
+    const selected = Array.from(event.target.files || [])
+    const required = form.modalidad === 'SEMANAL' ? 4 : 2
+    const validationError = validatePdfFiles({ selected, min: required, max: 10 })
+
+    if (validationError) {
+      setSnackbar({ open: true, message: validationError })
+
+      return
+    }
+
+    setDocumentosComprobantesIngreso(selected)
   }
 
   const handleSendVerificationCode = async () => {
@@ -349,6 +408,15 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       if (!email) throw new Error('Debes ingresar un correo para registrar y verificar el cliente.')
       if (!isValidEmailFormat(email)) throw new Error('Ingresa un correo con formato válido.')
       if (!emailVerified || verifiedEmail !== email) throw new Error('Debes verificar el correo con código antes de publicar.')
+      if (!String(form.fecha_nacimiento || '').trim()) throw new Error('Debes completar la fecha de nacimiento.')
+      if (!String(form.sexo || '').trim()) throw new Error('Debes seleccionar el sexo.')
+      if (!String(form.status_legal || '').trim()) throw new Error('Debes seleccionar el estatus legal.')
+      if (!String(form.empleo_actual || '').trim()) throw new Error('Debes indicar si tiene empleo actual.')
+      if (!(Number(form.antiguedad_laboral_meses || 0) > 0)) throw new Error('Debes indicar la antigüedad laboral en meses.')
+      if (!(Number(form.ingresos_mensuales || 0) > 0)) throw new Error('Debes indicar los ingresos mensuales.')
+      if (!(Number(form.pago_casa_renta_mensual || 0) >= 0)) throw new Error('Debes indicar el pago de casa o renta.')
+      if (!(Number(form.pago_carro_seguro_mensual || 0) >= 0)) throw new Error('Debes indicar el pago de carro o seguro.')
+      if (!(Number(form.otros_gastos_mensuales || 0) >= 0)) throw new Error('Debes indicar otros gastos mensuales.')
 
       const montoReferido = Number(String(form.monto_referido || '0').replace(',', '.'))
 
@@ -362,7 +430,13 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       if (!String(form.modalidad || '').trim()) throw new Error('Debes seleccionar la modalidad de préstamo.')
       if (!String(form.destino || '').trim()) throw new Error('Debes seleccionar el destino de la solicitud.')
       if (!documentoIdentidad) throw new Error('Debes cargar el documento de identidad (PDF).')
-      if (documentosEstadoCuenta.length < 1) throw new Error('Debes cargar al menos 1 estado de cuenta (PDF).')
+      if (documentosEstadoCuenta.length < 2) throw new Error('Debes cargar al menos 2 estados de cuenta (PDF).')
+      const comprobantesRequeridos = form.modalidad === 'SEMANAL' ? 4 : 2
+      if (documentosComprobantesIngreso.length < comprobantesRequeridos) {
+        throw new Error(
+          `Debes cargar ${comprobantesRequeridos} comprobante(s) de ingreso (PDF) según la modalidad seleccionada.`
+        )
+      }
 
       const referidoPorNombre = referidoSelected ? getClienteLabel(referidoSelected) : ''
       const referidoExterno = String(form.referido_externo || '').trim()
@@ -377,6 +451,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         telefono: form.telefono,
         email,
         direccion: form.direccion,
+        fecha_nacimiento: form.fecha_nacimiento,
+        sexo: form.sexo,
         es_referido: Boolean(form.es_referido),
         referido_por: form.es_referido ? referidoPorNombre || referidoExterno : '',
         monto_referido: form.es_referido ? Number(montoReferido.toFixed(2)) : 0,
@@ -411,10 +487,19 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       solicitudPayload.append('modelo_calificacion', form.modelo_calificacion)
       solicitudPayload.append('modelo_aprobacion', form.modelo_aprobacion)
       solicitudPayload.append('destino', form.destino)
+      solicitudPayload.append('status_legal', form.status_legal)
+      solicitudPayload.append('empleo_actual', form.empleo_actual)
+      solicitudPayload.append('antiguedad_laboral_meses', String(Number(form.antiguedad_laboral_meses || 0)))
+      solicitudPayload.append('ingresos_mensuales', String(Number(form.ingresos_mensuales || 0)))
+      solicitudPayload.append('pago_casa_renta_mensual', String(Number(form.pago_casa_renta_mensual || 0)))
+      solicitudPayload.append('pago_carro_seguro_mensual', String(Number(form.pago_carro_seguro_mensual || 0)))
+      solicitudPayload.append('otros_gastos_mensuales', String(Number(form.otros_gastos_mensuales || 0)))
+      solicitudPayload.append('monto_solicitud_rango', form.monto_solicitud_rango)
       solicitudPayload.append('tipo_documento_identidad', 'ID')
       solicitudPayload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
+      solicitudPayload.append('tipo_documentos_comprobantes', 'COMPROBANTES_INGRESO')
 
-      ;[documentoIdentidad, ...documentosEstadoCuenta].forEach(file => {
+      ;[documentoIdentidad, ...documentosEstadoCuenta, ...documentosComprobantesIngreso].forEach(file => {
         if (file) solicitudPayload.append('documentos', file)
       })
 
@@ -424,6 +509,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         setForm(initialForm)
         setDocumentoIdentidad(null)
         setDocumentosEstadoCuenta([])
+        setDocumentosComprobantesIngreso([])
         setSubmitAttempted(false)
         setEmailVerificationCode('')
         setEmailVerificationSent(false)
@@ -478,7 +564,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack spacing={3}>
             <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Información del cliente nuevo' />
+              <CardHeader title='Datos personales / Personal data' />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
@@ -558,79 +644,40 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       </Typography>
                     ) : null}
                   </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    <TextField label='Dirección' name='direccion' value={form.direccion} onChange={handleChange} fullWidth />
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label='Fecha de nacimiento *'
+                      name='fecha_nacimiento'
+                      type='date'
+                      value={form.fecha_nacimiento}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      InputLabelProps={{ shrink: true }}
+                      error={isRequiredMissing('fecha_nacimiento')}
+                      helperText={isRequiredMissing('fecha_nacimiento') ? 'Campo obligatorio' : 'mm/dd/yyyy'}
+                    />
                   </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField select label='¿Es referido?' name='es_referido' value={form.es_referido ? 'SI' : 'NO'} onChange={handleChange} fullWidth>
-                      <MenuItem value='NO'>No</MenuItem>
-                      <MenuItem value='SI'>Sí</MenuItem>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      select
+                      label='Sexo *'
+                      name='sexo'
+                      value={form.sexo}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('sexo')}
+                    >
+                      {SEXO_OPTIONS.map(option => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
                     </TextField>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <Autocomplete
-                      options={clientesActivos}
-                      value={referidoSelected}
-                      onChange={(_, value) =>
-                        setForm(previous => ({
-                          ...previous,
-                          referido_por: value ? getClienteId(value) || getClienteLabel(value) : '',
-                          referido_externo: value ? '' : previous.referido_externo
-                        }))
-                      }
-                      getOptionLabel={option => getClienteLabel(option) || 'Cliente'}
-                      isOptionEqualToValue={(option, value) => getClienteId(option) === getClienteId(value)}
-                      disabled={!form.es_referido || loadingReferidos}
-                      renderInput={params => (
-                        <TextField
-                          {...params}
-                          label='Referido por'
-                          placeholder='Seleccionar cliente activo'
-                          required={Boolean(form.es_referido)}
-                          error={isRequiredMissing('referido_por')}
-                          helperText={
-                            isRequiredMissing('referido_por')
-                              ? 'Campo obligatorio'
-                              : form.es_referido
-                                  ? loadingReferidos
-                                    ? 'Cargando clientes activos...'
-                                    : clientesActivos.length
-                                      ? 'Selecciona un cliente activo (o usa referido externo)'
-                                      : 'No hay clientes activos disponibles'
-                                : ''
-                          }
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      label='Referido externo (si no está en base)'
-                      name='referido_externo'
-                      value={form.referido_externo}
-                      onChange={handleChange}
-                      fullWidth
-                      disabled={!form.es_referido}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      label={
-                        <Stack direction='row' spacing={0.75} alignItems='center'>
-                          <span>Monto referido (USD)</span>
-                          <Tooltip title='Este monto se descontará de la última cuota cuando el cliente tenga descuento disponible.'>
-                            <i className='tabler-info-circle text-base' />
-                          </Tooltip>
-                        </Stack>
-                      }
-                      name='monto_referido'
-                      type='number'
-                      value={form.monto_referido}
-                      onChange={handleChange}
-                      inputProps={{ min: 0, step: '0.01' }}
-                      fullWidth
-                      disabled={!form.es_referido}
-                    />
+                  <Grid size={{ xs: 12 }}>
+                    <TextField label='Dirección' name='direccion' value={form.direccion} onChange={handleChange} fullWidth />
                   </Grid>
                 </Grid>
               </CardContent>
@@ -679,7 +726,124 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             </Card>
 
             <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Información crediticia' />
+              <CardHeader title='Perfil legal y laboral / Legal & work profile' />
+              <Divider />
+              <CardContent>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      select
+                      label='Current legal status * / Estatus legal actual'
+                      name='status_legal'
+                      value={form.status_legal}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('status_legal')}
+                    >
+                      {STATUS_LEGAL_OPTIONS.map(option => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      select
+                      label='You are currently employed? * / ¿Tiene empleo actualmente?'
+                      name='empleo_actual'
+                      value={form.empleo_actual}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('empleo_actual')}
+                    >
+                      <MenuItem value='SI'>YES (SÍ)</MenuItem>
+                      <MenuItem value='NO'>NO</MenuItem>
+                      <MenuItem value='OTRO'>OTHER (OTRO)</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label='Antigüedad laboral (meses) *'
+                      name='antiguedad_laboral_meses'
+                      type='number'
+                      value={form.antiguedad_laboral_meses}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('antiguedad_laboral_meses')}
+                      helperText={isRequiredMissing('antiguedad_laboral_meses') ? 'Campo obligatorio' : 'Ejemplo: 12'}
+                    />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ borderRadius: 3 }}>
+              <CardHeader title='Finanzas / Financial profile' />
+              <Divider />
+              <CardContent>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label='Ingresos mensuales *'
+                      name='ingresos_mensuales'
+                      type='number'
+                      value={form.ingresos_mensuales}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('ingresos_mensuales')}
+                      helperText={isRequiredMissing('ingresos_mensuales') ? 'Campo obligatorio' : 'Ejemplo: 2500'}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label='Pago casa o renta mensual *'
+                      name='pago_casa_renta_mensual'
+                      type='number'
+                      value={form.pago_casa_renta_mensual}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('pago_casa_renta_mensual')}
+                      helperText={isRequiredMissing('pago_casa_renta_mensual') ? 'Campo obligatorio' : 'Ejemplo: 500'}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label='Pago carro/seguro mensual *'
+                      name='pago_carro_seguro_mensual'
+                      type='number'
+                      value={form.pago_carro_seguro_mensual}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('pago_carro_seguro_mensual')}
+                      helperText={isRequiredMissing('pago_carro_seguro_mensual') ? 'Campo obligatorio' : 'Ejemplo: 300'}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label='Otros gastos mensuales *'
+                      name='otros_gastos_mensuales'
+                      type='number'
+                      value={form.otros_gastos_mensuales}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('otros_gastos_mensuales')}
+                      helperText={isRequiredMissing('otros_gastos_mensuales') ? 'Campo obligatorio' : 'Ejemplo: 200'}
+                    />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ borderRadius: 3 }}>
+              <CardHeader title='Información crediticia / Credit details' />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
@@ -716,6 +880,24 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                         ))}
                       </RadioGroup>
                     </FormControl>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      select
+                      label='Monto de solicitud (rango) *'
+                      name='monto_solicitud_rango'
+                      value={form.monto_solicitud_rango}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      error={isRequiredMissing('monto_solicitud_rango')}
+                    >
+                      {MONTO_RANGO_OPTIONS.map(option => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
@@ -798,7 +980,87 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             </Card>
 
             <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Carga de documentos que respaldan la solicitud' />
+              <CardHeader title='Referido / Referral' />
+              <Divider />
+              <CardContent>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField select label='¿Es referido?' name='es_referido' value={form.es_referido ? 'SI' : 'NO'} onChange={handleChange} fullWidth>
+                      <MenuItem value='NO'>No</MenuItem>
+                      <MenuItem value='SI'>Sí</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Autocomplete
+                      options={clientesActivos}
+                      value={referidoSelected}
+                      onChange={(_, value) =>
+                        setForm(previous => ({
+                          ...previous,
+                          referido_por: value ? getClienteId(value) || getClienteLabel(value) : '',
+                          referido_externo: value ? '' : previous.referido_externo
+                        }))
+                      }
+                      getOptionLabel={option => getClienteLabel(option) || 'Cliente'}
+                      isOptionEqualToValue={(option, value) => getClienteId(option) === getClienteId(value)}
+                      disabled={!form.es_referido || loadingReferidos}
+                      renderInput={params => (
+                        <TextField
+                          {...params}
+                          label='Referido por'
+                          placeholder='Seleccionar cliente activo'
+                          required={Boolean(form.es_referido)}
+                          error={isRequiredMissing('referido_por')}
+                          helperText={
+                            isRequiredMissing('referido_por')
+                              ? 'Campo obligatorio'
+                              : form.es_referido
+                                  ? loadingReferidos
+                                    ? 'Cargando clientes activos...'
+                                    : clientesActivos.length
+                                      ? 'Selecciona un cliente activo (o usa referido externo)'
+                                      : 'No hay clientes activos disponibles'
+                                : ''
+                          }
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      label='Referido externo (si no está en base)'
+                      name='referido_externo'
+                      value={form.referido_externo}
+                      onChange={handleChange}
+                      fullWidth
+                      disabled={!form.es_referido}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      label={
+                        <Stack direction='row' spacing={0.75} alignItems='center'>
+                          <span>Monto referido (USD)</span>
+                          <Tooltip title='Este monto se descontará de la última cuota cuando el cliente tenga descuento disponible.'>
+                            <i className='tabler-info-circle text-base' />
+                          </Tooltip>
+                        </Stack>
+                      }
+                      name='monto_referido'
+                      type='number'
+                      value={form.monto_referido}
+                      onChange={handleChange}
+                      inputProps={{ min: 0, step: '0.01' }}
+                      fullWidth
+                      disabled={!form.es_referido}
+                    />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ borderRadius: 3 }}>
+              <CardHeader title='Archivos / Files' />
               <Divider />
               <CardContent>
                 <Stack spacing={2}>
@@ -830,16 +1092,42 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     </Typography>
                     <Typography color='text.secondary'>LAST 2 MONTHS / ULTIMOS 2 MESES</Typography>
                     <Typography color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
-                      Sube hasta 2 archivos compatibles. Tamaño máximo por archivo: 10MB.
+                      Sube mínimo 2 archivos compatibles (máximo 10). Tamaño máximo por archivo: 10MB.
                     </Typography>
                     <Button variant='outlined' component='label'>
-                      Cargar estados de cuenta (1 o 2)
+                      Cargar estados de cuenta (mínimo 2)
                       <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
                     </Button>
                     <Typography variant='caption' color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
                       {documentosEstadoCuenta.length
                         ? `${documentosEstadoCuenta.length} archivo(s) seleccionado(s)`
                         : 'No hay estados de cuenta cargados'}
+                    </Typography>
+                  </Stack>
+
+                  <Stack
+                    spacing={1}
+                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}`, bgcolor: 'background.default' }}
+                  >
+                    <Typography variant='h6' sx={{ fontWeight: 700 }}>
+                      PROOF OF INCOME * / COMPROBANTES DE INGRESOS
+                    </Typography>
+                    <Typography color='text.secondary'>
+                      {form.modalidad === 'SEMANAL'
+                        ? '4 SI ES PAGO SEMANAL / 4 IF IT IS WEEKLY PAYMENT'
+                        : '2 SI ES PAGO QUINCENAL O MENSUAL / 2 IF FORTNIGHTLY OR MONTHLY'}
+                    </Typography>
+                    <Typography color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}>
+                      Sube los comprobantes requeridos según la modalidad. Tamaño máximo por archivo: 10MB.
+                    </Typography>
+                    <Button variant='outlined' component='label'>
+                      Cargar comprobantes de ingreso
+                      <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleComprobantesIngresoFiles} />
+                    </Button>
+                    <Typography variant='caption' color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}>
+                      {documentosComprobantesIngreso.length
+                        ? `${documentosComprobantesIngreso.length} archivo(s) seleccionado(s)`
+                        : 'No hay comprobantes cargados'}
                     </Typography>
                   </Stack>
                 </Stack>
