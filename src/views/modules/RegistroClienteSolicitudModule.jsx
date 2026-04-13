@@ -278,11 +278,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     if (field === 'monto_solicitado') return !(Number(form.monto_solicitado || 0) > 0)
     if (field === 'monto_solicitud_rango') return !String(form.monto_solicitud_rango || '').trim()
     if (field === 'modalidad') return !String(form.modalidad || '').trim()
-    if (field === 'plazo_semanas') return !(Number(form.plazo_semanas || 0) > 0)
-    if (field === 'tasa_variable_pct') return !(Number(form.tasa_variable_pct || 0) > 0)
+    if (field === 'plazo_semanas') return publicMode ? false : !(Number(form.plazo_semanas || 0) > 0)
+    if (field === 'tasa_variable_pct') return publicMode ? false : !(Number(form.tasa_variable_pct || 0) > 0)
     if (field === 'destino') return !String(form.destino || '').trim()
-    if (field === 'modelo_calificacion') return !String(form.modelo_calificacion || '').trim()
-    if (field === 'modelo_aprobacion') return !String(form.modelo_aprobacion || '').trim()
+    if (field === 'modelo_calificacion') return publicMode ? false : !String(form.modelo_calificacion || '').trim()
+    if (field === 'modelo_aprobacion') return publicMode ? false : !String(form.modelo_aprobacion || '').trim()
     if (field === 'documento_identidad') return !documentoIdentidad
     if (field === 'estado_cuenta') return documentosEstadoCuenta.length < 2
     if (field === 'comprobantes_ingreso') {
@@ -472,8 +472,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       }
 
       if (!(Number(form.monto_solicitado || 0) > 0)) throw new Error('Debes ingresar un monto solicitado mayor a 0.')
-      if (!(Number(form.plazo_semanas || 0) > 0)) throw new Error('Debes ingresar un plazo válido en semanas.')
-      if (!(Number(form.tasa_variable_pct || 0) > 0)) throw new Error('Debes ingresar una tasa variable válida.')
+      if (!publicMode && !(Number(form.plazo_semanas || 0) > 0)) throw new Error('Debes ingresar un plazo válido en semanas.')
+      if (!publicMode && !(Number(form.tasa_variable_pct || 0) > 0)) throw new Error('Debes ingresar una tasa variable válida.')
       if (!String(form.modalidad || '').trim()) throw new Error('Debes seleccionar la modalidad de préstamo.')
       if (!String(form.destino || '').trim()) throw new Error('Debes seleccionar el destino de la solicitud.')
       if (!documentoIdentidad) throw new Error('Debes cargar el documento de identidad (PDF).')
@@ -1012,152 +1012,169 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       helperText={isRequiredMissing('monto_solicitado') ? 'Campo obligatorio' : 'Ejemplo: 2000'}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label='Plazo (semanas) *'
-                      name='plazo_semanas'
-                      type='number'
-                      value={form.plazo_semanas}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('plazo_semanas')}
-                      helperText={isRequiredMissing('plazo_semanas') ? 'Campo obligatorio' : 'Ejemplo: 8'}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label='Tasa variable (%) *'
-                      name='tasa_variable_pct'
-                      type='number'
-                      value={form.tasa_variable_pct}
-                      onChange={handleChange}
-                      inputProps={{ min: 1, max: 100 }}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('tasa_variable_pct')}
-                      helperText={isRequiredMissing('tasa_variable_pct') ? 'Campo obligatorio' : 'Ejemplo: 23'}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      select
-                      label='Modelo de calificación *'
-                      name='modelo_calificacion'
-                      value={form.modelo_calificacion}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('modelo_calificacion')}
-                    >
-                      {MODELO_OPTIONS.map(model => (
-                        <MenuItem key={model} value={model}>
-                          {model}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      select
-                      label='Modelo de aprobación *'
-                      name='modelo_aprobacion'
-                      value={form.modelo_aprobacion}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('modelo_aprobacion')}
-                    >
-                      {MODELO_APROBACION_OPTIONS.map(model => (
-                        <MenuItem key={model} value={model}>
-                          {model}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Grid>
+                  {publicMode ? null : (
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        label='Plazo (semanas) *'
+                        name='plazo_semanas'
+                        type='number'
+                        value={form.plazo_semanas}
+                        onChange={handleChange}
+                        fullWidth
+                        required
+                        error={isRequiredMissing('plazo_semanas')}
+                        helperText={isRequiredMissing('plazo_semanas') ? 'Campo obligatorio' : 'Ejemplo: 8'}
+                      />
+                    </Grid>
+                  )}
+                  {publicMode ? null : (
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        label='Tasa variable (%) *'
+                        name='tasa_variable_pct'
+                        type='number'
+                        value={form.tasa_variable_pct}
+                        onChange={handleChange}
+                        inputProps={{ min: 1, max: 100 }}
+                        fullWidth
+                        required
+                        error={isRequiredMissing('tasa_variable_pct')}
+                        helperText={isRequiredMissing('tasa_variable_pct') ? 'Campo obligatorio' : 'Ejemplo: 23'}
+                      />
+                    </Grid>
+                  )}
+                  {publicMode ? null : (
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        select
+                        label='Modelo de calificación *'
+                        name='modelo_calificacion'
+                        value={form.modelo_calificacion}
+                        onChange={handleChange}
+                        fullWidth
+                        required
+                        error={isRequiredMissing('modelo_calificacion')}
+                      >
+                        {MODELO_OPTIONS.map(model => (
+                          <MenuItem key={model} value={model}>
+                            {model}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+                  )}
+                  {publicMode ? null : (
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        select
+                        label='Modelo de aprobación *'
+                        name='modelo_aprobacion'
+                        value={form.modelo_aprobacion}
+                        onChange={handleChange}
+                        fullWidth
+                        required
+                        error={isRequiredMissing('modelo_aprobacion')}
+                      >
+                        {MODELO_APROBACION_OPTIONS.map(model => (
+                          <MenuItem key={model} value={model}>
+                            {model}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+                  )}
                 </Grid>
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Referido / Referral' />
-              <Divider />
-              <CardContent>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField select label='¿Es referido?' name='es_referido' value={form.es_referido ? 'SI' : 'NO'} onChange={handleChange} fullWidth>
-                      <MenuItem value='NO'>No</MenuItem>
-                      <MenuItem value='SI'>Sí</MenuItem>
-                    </TextField>
+            {publicMode ? null : (
+              <Card sx={{ borderRadius: 3 }}>
+                <CardHeader title='Referido / Referral' />
+                <Divider />
+                <CardContent>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        select
+                        label='¿Es referido?'
+                        name='es_referido'
+                        value={form.es_referido ? 'SI' : 'NO'}
+                        onChange={handleChange}
+                        fullWidth
+                      >
+                        <MenuItem value='NO'>No</MenuItem>
+                        <MenuItem value='SI'>Sí</MenuItem>
+                      </TextField>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <Autocomplete
+                        options={clientesActivos}
+                        value={referidoSelected}
+                        onChange={(_, value) =>
+                          setForm(previous => ({
+                            ...previous,
+                            referido_por: value ? getClienteId(value) || getClienteLabel(value) : '',
+                            referido_externo: value ? '' : previous.referido_externo
+                          }))
+                        }
+                        getOptionLabel={option => getClienteLabel(option) || 'Cliente'}
+                        isOptionEqualToValue={(option, value) => getClienteId(option) === getClienteId(value)}
+                        disabled={!form.es_referido || loadingReferidos}
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            label='Referido por'
+                            placeholder='Seleccionar cliente activo'
+                            required={Boolean(form.es_referido)}
+                            error={isRequiredMissing('referido_por')}
+                            helperText={
+                              isRequiredMissing('referido_por')
+                                ? 'Campo obligatorio'
+                                : form.es_referido
+                                    ? loadingReferidos
+                                      ? 'Cargando clientes activos...'
+                                      : clientesActivos.length
+                                        ? 'Selecciona un cliente activo (o usa referido externo)'
+                                        : 'No hay clientes activos disponibles'
+                                  : ''
+                            }
+                          />
+                        )}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        label='Referido externo (si no está en base)'
+                        name='referido_externo'
+                        value={form.referido_externo}
+                        onChange={handleChange}
+                        fullWidth
+                        disabled={!form.es_referido}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        label={
+                          <Stack direction='row' spacing={0.75} alignItems='center'>
+                            <span>Monto referido (USD)</span>
+                            <Tooltip title='Este monto se descontará de la última cuota cuando el cliente tenga descuento disponible.'>
+                              <i className='tabler-info-circle text-base' />
+                            </Tooltip>
+                          </Stack>
+                        }
+                        name='monto_referido'
+                        type='number'
+                        value={form.monto_referido}
+                        onChange={handleChange}
+                        inputProps={{ min: 0, step: '0.01' }}
+                        fullWidth
+                        disabled={!form.es_referido}
+                      />
+                    </Grid>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <Autocomplete
-                      options={clientesActivos}
-                      value={referidoSelected}
-                      onChange={(_, value) =>
-                        setForm(previous => ({
-                          ...previous,
-                          referido_por: value ? getClienteId(value) || getClienteLabel(value) : '',
-                          referido_externo: value ? '' : previous.referido_externo
-                        }))
-                      }
-                      getOptionLabel={option => getClienteLabel(option) || 'Cliente'}
-                      isOptionEqualToValue={(option, value) => getClienteId(option) === getClienteId(value)}
-                      disabled={!form.es_referido || loadingReferidos}
-                      renderInput={params => (
-                        <TextField
-                          {...params}
-                          label='Referido por'
-                          placeholder='Seleccionar cliente activo'
-                          required={Boolean(form.es_referido)}
-                          error={isRequiredMissing('referido_por')}
-                          helperText={
-                            isRequiredMissing('referido_por')
-                              ? 'Campo obligatorio'
-                              : form.es_referido
-                                  ? loadingReferidos
-                                    ? 'Cargando clientes activos...'
-                                    : clientesActivos.length
-                                      ? 'Selecciona un cliente activo (o usa referido externo)'
-                                      : 'No hay clientes activos disponibles'
-                                : ''
-                          }
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      label='Referido externo (si no está en base)'
-                      name='referido_externo'
-                      value={form.referido_externo}
-                      onChange={handleChange}
-                      fullWidth
-                      disabled={!form.es_referido}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      label={
-                        <Stack direction='row' spacing={0.75} alignItems='center'>
-                          <span>Monto referido (USD)</span>
-                          <Tooltip title='Este monto se descontará de la última cuota cuando el cliente tenga descuento disponible.'>
-                            <i className='tabler-info-circle text-base' />
-                          </Tooltip>
-                        </Stack>
-                      }
-                      name='monto_referido'
-                      type='number'
-                      value={form.monto_referido}
-                      onChange={handleChange}
-                      inputProps={{ min: 0, step: '0.01' }}
-                      fullWidth
-                      disabled={!form.es_referido}
-                    />
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             <Card sx={{ borderRadius: 3 }}>
               <CardHeader title='Archivos / Files' />
