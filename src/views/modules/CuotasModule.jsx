@@ -1116,6 +1116,7 @@ export default function CuotasModule() {
                     <TableCell>Pago semanal</TableCell>
                     <TableCell>Semanas</TableCell>
                     <TableCell>Pagos hechos</TableCell>
+                    <TableCell>Fecha inicio</TableCell>
                     <TableCell>Saldo pendiente</TableCell>
                     <TableCell>Cuotas restantes</TableCell>
                     <TableCell>Estado</TableCell>
@@ -1142,6 +1143,7 @@ export default function CuotasModule() {
                       <TableCell>{formatCurrency(row.pagos_semanales)}</TableCell>
                       <TableCell>{row.num_semanas ?? '-'}</TableCell>
                       <TableCell>{formatNaturalNumber(row.pagos_hechos)}</TableCell>
+                      <TableCell>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
                       <TableCell>
                         {(() => {
                           const saldoInfo = getSaldoPendienteInfo(row)
@@ -1175,7 +1177,7 @@ export default function CuotasModule() {
                   ))}
                   {tableRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} align='center'>
+                      <TableCell colSpan={11} align='center'>
                         Sin resultados
                       </TableCell>
                     </TableRow>
@@ -1227,6 +1229,9 @@ export default function CuotasModule() {
                         <Typography variant='body2' color='text.secondary'>
                           Semanas: {row.num_semanas ?? '-'} • Pagos hechos: {formatNaturalNumber(row.pagos_hechos)} • Cuotas restantes:{' '}
                           {row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Fecha inicio: {formatDateMMDDYYYY(row.fecha_inicio)}
                         </Typography>
                         {hasDescuentoReferidoObservacion(row) ? (
                           <Chip size='small' variant='tonal' color='success' label='Descuento referido' sx={{ width: 'fit-content' }} />
