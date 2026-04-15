@@ -800,7 +800,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const publicBannerSx = publicMode
     ? {
-        height: { xs: 112, md: 128 },
+        height: { xs: 108, md: 122 },
         borderRadius: 2,
         overflow: 'hidden',
         border: '1px solid #5a9536',
@@ -973,11 +973,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   if (publicMode) {
     return (
-      <Stack spacing={0.55} component='form' onSubmit={handleSubmit} sx={rootFormSx}>
+      <Stack spacing={0.7} component='form' onSubmit={handleSubmit} sx={rootFormSx}>
         <Box sx={publicBannerSx} />
         <Card sx={introCardSx}>
-          <CardContent sx={{ px: { xs: 1.9, md: 2.05 }, py: { xs: 1.55, md: 1.75 } }}>
-            <Stack spacing={0.9}>
+          <CardContent sx={{ px: { xs: 1.9, md: 2.05 }, py: { xs: 1.45, md: 1.65 } }}>
+            <Stack spacing={0.8}>
               <Typography
                 sx={{
                   fontFamily: '"Roboto", Arial, sans-serif',
@@ -986,7 +986,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   lineHeight: 1.05,
                   letterSpacing: '-0.03em',
                   color: '#202124',
-                  fontSize: { xs: '1.85rem', md: '1.98rem' }
+                  fontSize: { xs: '1.8rem', md: '1.92rem' }
                 }}
               >
                 CUSTOMER PRE-QUALIFICATION
@@ -996,7 +996,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               <Typography
                 sx={{
                   color: '#3c4043',
-                  fontSize: 13,
+                  fontSize: 12.75,
                   lineHeight: 1.4,
                   pl: 1.05
                 }}
@@ -1006,25 +1006,25 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </Typography>
               <Box
                 sx={{
-                  py: 0.85,
+                  py: 0.8,
                   pl: 0.15,
                   pr: 0.15,
                   borderTop: '1px solid #e0e0e0',
                   borderBottom: '1px solid #e0e0e0'
                 }}
               >
-                <Typography sx={{ color: '#5f6368', fontSize: 12, lineHeight: 1.35 }}>
+                <Typography sx={{ color: '#5f6368', fontSize: 11.8, lineHeight: 1.35 }}>
                   paulandresgarcianarvaez@gmail.com{' '}
-                  <Typography component='span' sx={{ color: '#1a73e8', fontSize: 12, cursor: 'pointer' }}>
+                  <Typography component='span' sx={{ color: '#1a73e8', fontSize: 11.8, cursor: 'pointer' }}>
                     Cambiar de cuenta
                   </Typography>
                 </Typography>
-                <Typography sx={{ color: '#5f6368', fontSize: 12, lineHeight: 1.35, mt: 0.85 }}>
+                <Typography sx={{ color: '#5f6368', fontSize: 11.8, lineHeight: 1.35, mt: 0.8 }}>
                   El nombre, el correo y la foto asociados a tu cuenta de Google se registrarán cuando subas archivos y
                   envíes este formulario
                 </Typography>
               </Box>
-              <Typography sx={{ color: '#ea4335', fontWeight: 600, fontSize: 12 }}>
+              <Typography sx={{ color: '#ea4335', fontWeight: 600, fontSize: 11.8 }}>
                 * Indica que la pregunta es obligatoria
               </Typography>
             </Stack>
