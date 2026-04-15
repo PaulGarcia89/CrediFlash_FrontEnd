@@ -254,17 +254,17 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const googleTextFieldSx = {
     width: '100%',
-    maxWidth: 560,
+    maxWidth: 420,
     '& .MuiInput-root': {
-      mt: 0.05,
+      mt: 0,
       fontFamily: '"Roboto", Arial, sans-serif',
-      fontSize: 15,
+      fontSize: 14.5,
       color: '#202124',
       alignItems: 'flex-end'
     },
     '& .MuiInputBase-input': {
       px: 0,
-      py: 0.35,
+      py: 0.2,
       '&::placeholder': {
         color: '#80868b',
         opacity: 1
@@ -282,7 +282,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     '& .MuiFormHelperText-root': {
       ml: 0,
       mt: 0.25,
-      color: '#5f6368'
+      color: '#5f6368',
+      display: 'none'
+    },
+    '& .MuiFormHelperText-root.Mui-error': {
+      display: 'block'
     },
     '& .MuiSelect-icon': {
       color: '#5f6368'
@@ -787,19 +791,35 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const rootFormSx = publicMode
     ? {
         p: 0,
-        gap: 1
+        gap: 0.6,
+        alignItems: 'stretch'
       }
     : {
         p: { xs: 2, md: 3 }
       }
 
+  const publicBannerSx = publicMode
+    ? {
+        height: { xs: 108, md: 122 },
+        borderRadius: 2,
+        overflow: 'hidden',
+        border: '1px solid #5a9536',
+        backgroundColor: '#67a842',
+        backgroundImage:
+          'radial-gradient(circle at 14% 24%, rgba(255,255,255,0.06) 0 7px, transparent 8px), radial-gradient(circle at 36% 62%, rgba(255,255,255,0.06) 0 10px, transparent 11px), radial-gradient(circle at 68% 28%, rgba(255,255,255,0.055) 0 8px, transparent 9px), radial-gradient(circle at 84% 72%, rgba(255,255,255,0.05) 0 12px, transparent 13px), linear-gradient(135deg, rgba(255,255,255,0.04) 0 22%, transparent 22% 100%), linear-gradient(225deg, rgba(0,0,0,0.04) 0 18%, transparent 18% 100%)',
+        backgroundSize: '100% 100%',
+        boxShadow: 'none'
+      }
+    : undefined
+
   const introCardSx = publicMode
     ? {
-        borderRadius: 0,
+        borderRadius: 2,
         overflow: 'hidden',
         bgcolor: '#ffffff',
         boxShadow: 'none',
-        borderTop: '10px solid #34a853'
+        border: '1px solid #dadce0',
+        borderTop: '5px solid #5f9b3b'
       }
     : {
         borderTop: theme => `10px solid ${theme.palette.primary.main}`,
@@ -897,7 +917,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     : undefined
   const publicQuestionCardSx = publicMode
     ? {
-        borderRadius: 3,
+        borderRadius: 2,
+        border: '1px solid #dadce0',
         bgcolor: '#fff',
         boxShadow: 'none',
         overflow: 'hidden'
@@ -905,28 +926,28 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     : undefined
   const publicQuestionInnerSx = publicMode
     ? {
-        px: { xs: 1.5, md: 1.75 },
-        py: { xs: 1.35, md: 1.5 },
-        minHeight: 128
+        px: { xs: 1.4, md: 1.5 },
+        py: { xs: 1.3, md: 1.4 },
+        minHeight: 122
       }
     : undefined
   const publicQuestionTitleSx = publicMode
     ? {
-        fontSize: 12.25,
+        fontSize: 11.5,
         fontWeight: 600,
-        lineHeight: 1.04,
-        letterSpacing: '-0.02em',
-        color: '#202124',
+        lineHeight: 1.05,
+        letterSpacing: '-0.01em',
+        color: '#2b2b2b',
         textTransform: 'uppercase'
       }
     : undefined
   const publicQuestionSubtitleSx = publicMode
     ? {
-        fontSize: 12.25,
+        fontSize: 11.5,
         fontWeight: 600,
-        lineHeight: 1.04,
-        letterSpacing: '-0.02em',
-        color: '#202124',
+        lineHeight: 1.05,
+        letterSpacing: '-0.01em',
+        color: '#2b2b2b',
         textTransform: 'uppercase'
       }
     : undefined
@@ -934,12 +955,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const PublicQuestionCard = ({ title, subtitle, required = false, children }) => (
     <Card sx={publicQuestionCardSx}>
       <CardContent sx={publicQuestionInnerSx}>
-        <Stack spacing={2.5}>
+        <Stack spacing={2.15}>
           <Box>
-            <Stack direction='row' spacing={0.65} alignItems='flex-start' flexWrap='wrap'>
+            <Stack direction='row' spacing={0.55} alignItems='flex-start' flexWrap='wrap'>
               <Typography sx={publicQuestionTitleSx}>{title}</Typography>
               {required ? (
-                <Typography sx={{ color: '#d93025', fontSize: 10, lineHeight: 1, mt: 0.12, ml: 0.75 }}>*</Typography>
+                <Typography sx={{ color: '#ea4335', fontSize: 9.5, lineHeight: 1, mt: 0.15, ml: 0.9 }}>*</Typography>
               ) : null}
             </Stack>
             <Typography sx={publicQuestionSubtitleSx}>{subtitle}</Typography>
@@ -952,49 +973,58 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   if (publicMode) {
     return (
-      <Stack spacing={1.25} component='form' onSubmit={handleSubmit} sx={rootFormSx}>
+      <Stack spacing={0.8} component='form' onSubmit={handleSubmit} sx={rootFormSx}>
+        <Box sx={publicBannerSx} />
         <Card sx={introCardSx}>
-          <CardContent>
-            <Stack spacing={0.75}>
+          <CardContent sx={{ px: { xs: 1.9, md: 2.05 }, py: { xs: 1.55, md: 1.75 } }}>
+            <Stack spacing={0.9}>
               <Typography
-                variant='overline'
                 sx={{
-                  letterSpacing: '0.12em',
-                  color: '#137333',
+                  fontFamily: '"Roboto", Arial, sans-serif',
                   fontWeight: 700,
-                  fontSize: '0.68rem'
-                }}
-              >
-                Public intake form
-              </Typography>
-              <Typography
-                variant='h4'
-                sx={{
-                  fontWeight: 700,
-                  lineHeight: 1.06,
-                  letterSpacing: '-0.02em',
+                  mt: 0.15,
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.035em',
                   color: '#202124',
-                  fontSize: '2.05rem'
+                  fontSize: { xs: '1.28rem', md: '1.4rem' }
                 }}
               >
                 CUSTOMER PRE-QUALIFICATION
-              </Typography>
-              <Typography
-                variant='h4'
-                sx={{
-                  fontWeight: 700,
-                  lineHeight: 1.06,
-                  letterSpacing: '-0.02em',
-                  color: '#202124',
-                  fontSize: '2.05rem'
-                }}
-              >
+                <br />
                 PRECALIFICACION DE CLIENTES
               </Typography>
-              <Typography color='text.secondary' sx={{ fontSize: 14.5, lineHeight: 1.45 }}>
-                Formulario público para registrar cliente y crear solicitud de crédito en un solo flujo.
+              <Typography
+                sx={{
+                  color: '#3c4043',
+                  fontSize: 12.75,
+                  lineHeight: 1.45,
+                  pl: 1.05
+                }}
+              >
+                1. Complete este formulario para evaluar su solicitud de préstamo. Toda la información proporcionada
+                será tratada de manera confidencial y utilizada únicamente con fines de evaluación crediticia.
               </Typography>
-              <Typography sx={{ color: '#d93025', fontWeight: 700, fontSize: 12.5 }}>
+              <Box
+                sx={{
+                  py: 0.8,
+                  pl: 0.15,
+                  pr: 0.15,
+                  borderTop: '1px solid #e0e0e0',
+                  borderBottom: '1px solid #e0e0e0'
+                }}
+              >
+                <Typography sx={{ color: '#5f6368', fontSize: 12, lineHeight: 1.35 }}>
+                  paulandresgarcianarvaez@gmail.com{' '}
+                  <Typography component='span' sx={{ color: '#1a73e8', fontSize: 12, cursor: 'pointer' }}>
+                    Cambiar de cuenta
+                  </Typography>
+                </Typography>
+                <Typography sx={{ color: '#5f6368', fontSize: 12, lineHeight: 1.35, mt: 1.1 }}>
+                  El nombre, el correo y la foto asociados a tu cuenta de Google se registrarán cuando subas archivos y
+                  envíes este formulario
+                </Typography>
+              </Box>
+              <Typography sx={{ color: '#ea4335', fontWeight: 600, fontSize: 12 }}>
                 * Indica que la pregunta es obligatoria
               </Typography>
             </Stack>
