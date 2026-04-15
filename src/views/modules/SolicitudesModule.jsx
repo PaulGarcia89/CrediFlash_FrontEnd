@@ -324,27 +324,34 @@ const isTruthyFlag = value => {
     .trim()
     .toLowerCase()
 
-  return ['1', 'true', 'si', 'sí', 'yes', 'externo', 'externa', 'publico', 'público', 'publica', 'pública'].includes(
-    normalized
-  )
+  return ['1', 'true', 'si', 'sí', 'yes'].includes(normalized)
 }
 
 const getSolicitudOrigen = row => {
-  const source = row?.origen_solicitud || row?.origen || row?.source || row?.canal || row?.canal_registro || ''
-  const normalized = String(source || '')
-    .trim()
-    .toLowerCase()
+  const origenSolicitud = String(row?.origen_solicitud || '').trim().toUpperCase()
+  const origen = String(row?.origen || '').trim().toUpperCase()
+  const canalRegistro = String(row?.canal_registro || '').trim().toUpperCase()
+  const source = String(row?.source || '').trim().toUpperCase()
 
   if (
+    origenSolicitud === 'EXTERNO' ||
+    origen === 'EXTERNO' ||
+    canalRegistro === 'EXTERNO' ||
+    source === 'PUBLIC' ||
     isTruthyFlag(row?.es_externa) ||
     isTruthyFlag(row?.es_publica) ||
-    isTruthyFlag(row?.publica) ||
-    Boolean(row?.solicitud_enviada_en) ||
-    Boolean(row?.fecha_envio_solicitud) ||
-    normalized.includes('extern') ||
-    normalized.includes('public')
+    isTruthyFlag(row?.publica)
   ) {
     return 'EXTERNO'
+  }
+
+  if (
+    origenSolicitud === 'INTERNO' ||
+    origen === 'INTERNO' ||
+    canalRegistro === 'INTERNO' ||
+    source === 'INTERNAL'
+  ) {
+    return 'INTERNO'
   }
 
   return 'INTERNO'
