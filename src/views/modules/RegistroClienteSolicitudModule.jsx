@@ -218,8 +218,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     const selected = String(form.referido_por || '')
 
     return (
-      clientesActivos.find(item => getClienteId(item) === selected || normalizeText(getClienteLabel(item)) === normalizeText(selected)) ||
-      null
+      clientesActivos.find(
+        item => getClienteId(item) === selected || normalizeText(getClienteLabel(item)) === normalizeText(selected)
+      ) || null
     )
   }, [clientesActivos, form.referido_por])
 
@@ -380,7 +381,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   }
 
   const handleSendVerificationCode = async () => {
-    const email = String(form.email || '').trim().toLowerCase()
+    const email = String(form.email || '')
+      .trim()
+      .toLowerCase()
 
     setError('')
     setEmailVerificationMessage('')
@@ -415,7 +418,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   }
 
   const handleVerifyCode = async () => {
-    const email = String(form.email || '').trim().toLowerCase()
+    const email = String(form.email || '')
+      .trim()
+      .toLowerCase()
     const codigo = String(emailVerificationCode || '').trim()
 
     setError('')
@@ -460,21 +465,26 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     setError('')
 
     try {
-      const email = String(form.email || '').trim().toLowerCase()
+      const email = String(form.email || '')
+        .trim()
+        .toLowerCase()
 
       if (!String(form.nombre || '').trim()) throw new Error('Debes completar el nombre.')
       if (!String(form.apellido || '').trim()) throw new Error('Debes completar el apellido.')
       if (!email) throw new Error('Debes ingresar un correo para registrar y verificar el cliente.')
       if (!isValidEmailFormat(email)) throw new Error('Ingresa un correo con formato válido.')
-      if (!emailVerified || verifiedEmail !== email) throw new Error('Debes verificar el correo con código antes de publicar.')
+      if (!emailVerified || verifiedEmail !== email)
+        throw new Error('Debes verificar el correo con código antes de publicar.')
       if (!String(form.fecha_nacimiento || '').trim()) throw new Error('Debes completar la fecha de nacimiento.')
       if (!String(form.sexo || '').trim()) throw new Error('Debes seleccionar el sexo.')
       if (!String(form.status_legal || '').trim()) throw new Error('Debes seleccionar el estatus legal.')
       if (!String(form.empleo_actual || '').trim()) throw new Error('Debes indicar si tiene empleo actual.')
-      if (!(Number(form.antiguedad_laboral_meses || 0) > 0)) throw new Error('Debes indicar la antigüedad laboral en meses.')
+      if (!(Number(form.antiguedad_laboral_meses || 0) > 0))
+        throw new Error('Debes indicar la antigüedad laboral en meses.')
       if (!(Number(form.ingresos_mensuales || 0) > 0)) throw new Error('Debes indicar los ingresos mensuales.')
       if (!(Number(form.pago_casa_renta_mensual || 0) >= 0)) throw new Error('Debes indicar el pago de casa o renta.')
-      if (!(Number(form.pago_carro_seguro_mensual || 0) >= 0)) throw new Error('Debes indicar el pago de carro o seguro.')
+      if (!(Number(form.pago_carro_seguro_mensual || 0) >= 0))
+        throw new Error('Debes indicar el pago de carro o seguro.')
       if (!(Number(form.otros_gastos_mensuales || 0) >= 0)) throw new Error('Debes indicar otros gastos mensuales.')
 
       const montoReferido = Number(String(form.monto_referido || '0').replace(',', '.'))
@@ -484,8 +494,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       }
 
       if (!(Number(form.monto_solicitado || 0) > 0)) throw new Error('Debes ingresar un monto solicitado mayor a 0.')
-      if (!publicMode && !(Number(form.plazo_semanas || 0) > 0)) throw new Error('Debes ingresar un plazo válido en semanas.')
-      if (!publicMode && !(Number(form.tasa_variable_pct || 0) > 0)) throw new Error('Debes ingresar una tasa variable válida.')
+      if (!publicMode && !(Number(form.plazo_semanas || 0) > 0))
+        throw new Error('Debes ingresar un plazo válido en semanas.')
+      if (!publicMode && !(Number(form.tasa_variable_pct || 0) > 0))
+        throw new Error('Debes ingresar una tasa variable válida.')
       if (!String(form.modalidad || '').trim()) throw new Error('Debes seleccionar la modalidad de préstamo.')
       if (!String(form.destino || '').trim()) throw new Error('Debes seleccionar el destino de la solicitud.')
       if (!documentoIdentidad) throw new Error('Debes cargar el documento de identidad (PDF).')
@@ -530,7 +542,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         throw new Error('El backend no devolvió el ID del cliente creado.')
       }
 
-      const tasaVariable = publicMode ? Number(form.tasa_variable_pct || 1) : calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
+      const tasaVariable = publicMode
+        ? Number(form.tasa_variable_pct || 1)
+        : calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
 
       if (!publicMode && (!Number.isFinite(tasaVariable) || tasaVariable <= 0)) {
         throw new Error('No se pudo calcular una tasa válida para la modalidad seleccionada.')
@@ -557,12 +571,13 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       solicitudPayload.append('tipo_documento_identidad', 'ID')
       solicitudPayload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
       solicitudPayload.append('tipo_documentos_comprobantes', 'COMPROBANTES_INGRESO')
-
       ;[documentoIdentidad, ...documentosEstadoCuenta, ...documentosComprobantesIngreso].forEach(file => {
         if (file) solicitudPayload.append('documentos', file)
       })
 
-      const solicitudCreated = publicMode ? await crearSolicitudPublica(solicitudPayload) : await crearSolicitud(solicitudPayload)
+      const solicitudCreated = publicMode
+        ? await crearSolicitudPublica(solicitudPayload)
+        : await crearSolicitud(solicitudPayload)
       const solicitudId = extractSolicitudIdFromPayload(solicitudCreated)
       if (publicMode) {
         setForm(defaultForm)
@@ -595,15 +610,111 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     }
   }
 
+  const rootFormSx = publicMode
+    ? {
+        p: 0
+      }
+    : {
+        p: { xs: 2, md: 3 }
+      }
+
+  const introCardSx = publicMode
+    ? {
+        borderRadius: 4,
+        overflow: 'hidden',
+        border: '1px solid rgba(131, 156, 122, 0.22)',
+        bgcolor: '#ffffff',
+        boxShadow: '0 18px 45px rgba(25, 38, 17, 0.08)',
+        borderTop: '10px solid #53a451'
+      }
+    : {
+        borderTop: theme => `10px solid ${theme.palette.primary.main}`,
+        borderRadius: 3
+      }
+
+  const sectionCardSx = publicMode
+    ? {
+        borderRadius: 4,
+        overflow: 'hidden',
+        border: '1px solid rgba(131, 156, 122, 0.18)',
+        bgcolor: '#ffffff',
+        boxShadow: '0 10px 28px rgba(25, 38, 17, 0.06)',
+        '& .MuiCardHeader-root': {
+          px: { xs: 2, md: 3 },
+          py: { xs: 2, md: 2.5 },
+          backgroundColor: '#fbfef8'
+        },
+        '& .MuiCardHeader-title': {
+          fontSize: '1.05rem',
+          fontWeight: 800,
+          color: '#1f3b22'
+        },
+        '& .MuiDivider-root': {
+          borderColor: 'rgba(131, 156, 122, 0.16)'
+        }
+      }
+    : { borderRadius: 3 }
+
+  const questionBoxSx = publicMode
+    ? {
+        p: { xs: 2, md: 2.5 },
+        border: '1px solid rgba(131, 156, 122, 0.18)',
+        borderRadius: 3,
+        bgcolor: '#fbfef8'
+      }
+    : {
+        p: 2,
+        border: theme => `1px solid ${theme.palette.divider}`,
+        borderRadius: 2
+      }
+
+  const actionCardSx = publicMode
+    ? {
+        borderRadius: 4,
+        overflow: 'hidden',
+        position: { lg: 'sticky' },
+        top: { lg: 24 },
+        alignSelf: { lg: 'flex-start' },
+        border: '1px solid rgba(131, 156, 122, 0.18)',
+        bgcolor: '#ffffff',
+        boxShadow: '0 10px 28px rgba(25, 38, 17, 0.06)',
+        '& .MuiCardHeader-root': {
+          px: { xs: 2, md: 3 },
+          py: { xs: 2, md: 2.5 },
+          backgroundColor: '#fbfef8'
+        },
+        '& .MuiCardHeader-title': {
+          fontSize: '1.05rem',
+          fontWeight: 800,
+          color: '#1f3b22'
+        }
+      }
+    : {
+        borderRadius: 3,
+        position: 'sticky',
+        top: 24,
+        alignSelf: 'flex-start'
+      }
+
   return (
-    <Stack spacing={3} component='form' onSubmit={handleSubmit} sx={{ p: { xs: 2, md: 3 } }}>
-      <Card sx={{ borderTop: theme => `10px solid ${theme.palette.primary.main}`, borderRadius: 3 }}>
+    <Stack spacing={publicMode ? 2.5 : 3} component='form' onSubmit={handleSubmit} sx={rootFormSx}>
+      <Card sx={introCardSx}>
         <CardContent>
           <Stack spacing={1}>
-            <Typography variant='h3' sx={{ fontWeight: 800 }}>
+            <Typography
+              variant='overline'
+              sx={{
+                letterSpacing: '0.18em',
+                color: publicMode ? '#53a451' : 'text.secondary',
+                fontWeight: 800
+              }}
+            >
+              {publicMode ? 'Public intake form' : 'Formulario interno'}
+            </Typography>
+            <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.05 }}>
               CUSTOMER PRE-QUALIFICATION
             </Typography>
-            <Typography variant='h3' sx={{ fontWeight: 800 }}>
+            <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.05 }}>
               PRECALIFICACION DE CLIENTES
             </Typography>
             <Typography color='text.secondary'>
@@ -620,11 +731,14 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
       {error ? <Alert severity='error'>{error}</Alert> : null}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={publicMode ? 2.5 : 3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Stack spacing={3}>
-            <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Datos personales / Personal data' />
+          <Stack spacing={publicMode ? 2.5 : 3}>
+            <Card sx={sectionCardSx}>
+              <CardHeader
+                title='Datos personales / Personal data'
+                subheader={publicMode ? 'La información principal del solicitante' : undefined}
+              />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
@@ -653,7 +767,13 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField label='Teléfono' name='telefono' value={form.telefono} onChange={handleChange} fullWidth />
+                    <TextField
+                      label='Teléfono'
+                      name='telefono'
+                      value={form.telefono}
+                      onChange={handleChange}
+                      fullWidth
+                    />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
@@ -669,7 +789,16 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
+                    <Stack
+                      direction={{ xs: 'column', md: 'row' }}
+                      spacing={1.5}
+                      alignItems={{ md: 'center' }}
+                      sx={
+                        publicMode
+                          ? { p: 2, border: '1px solid rgba(131, 156, 122, 0.18)', borderRadius: 3, bgcolor: '#fbfef8' }
+                          : undefined
+                      }
+                    >
                       <Button
                         type='button'
                         variant='tonal'
@@ -732,7 +861,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                         {SEXO_OPTIONS.map(option => (
                           <FormControlLabel
                             key={option.value}
-                            control={<Checkbox checked={form.sexo === option.value} onChange={handleSingleCheckbox('sexo', option.value)} />}
+                            control={
+                              <Checkbox
+                                checked={form.sexo === option.value}
+                                onChange={handleSingleCheckbox('sexo', option.value)}
+                              />
+                            }
                             label={option.label}
                           />
                         ))}
@@ -740,25 +874,52 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <TextField label='Dirección' name='direccion' value={form.direccion} onChange={handleChange} fullWidth />
+                    <TextField
+                      label='Dirección'
+                      name='direccion'
+                      value={form.direccion}
+                      onChange={handleChange}
+                      fullWidth
+                    />
                   </Grid>
                 </Grid>
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Información de contacto alterno o emergente' />
+            <Card sx={sectionCardSx}>
+              <CardHeader
+                title='Información de contacto alterno o emergente'
+                subheader={publicMode ? 'Contacto de respaldo' : undefined}
+              />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField label='Nombre contacto' name='nombre_contacto' value={form.nombre_contacto} onChange={handleChange} fullWidth />
+                    <TextField
+                      label='Nombre contacto'
+                      name='nombre_contacto'
+                      value={form.nombre_contacto}
+                      onChange={handleChange}
+                      fullWidth
+                    />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField label='Apellido contacto' name='apellido_contacto' value={form.apellido_contacto} onChange={handleChange} fullWidth />
+                    <TextField
+                      label='Apellido contacto'
+                      name='apellido_contacto'
+                      value={form.apellido_contacto}
+                      onChange={handleChange}
+                      fullWidth
+                    />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField label='Teléfono contacto' name='telefono_contacto' value={form.telefono_contacto} onChange={handleChange} fullWidth />
+                    <TextField
+                      label='Teléfono contacto'
+                      name='telefono_contacto'
+                      value={form.telefono_contacto}
+                      onChange={handleChange}
+                      fullWidth
+                    />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
@@ -771,7 +932,13 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <TextField label='Dirección contacto' name='direccion_contacto' value={form.direccion_contacto} onChange={handleChange} fullWidth />
+                    <TextField
+                      label='Dirección contacto'
+                      name='direccion_contacto'
+                      value={form.direccion_contacto}
+                      onChange={handleChange}
+                      fullWidth
+                    />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
                     <TextField
@@ -788,18 +955,16 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Perfil legal y laboral / Legal & work profile' />
+            <Card sx={sectionCardSx}>
+              <CardHeader
+                title='Perfil legal y laboral / Legal & work profile'
+                subheader={publicMode ? 'Datos de elegibilidad' : undefined}
+              />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12 }}>
-                    <FormControl
-                      fullWidth
-                      required
-                      error={isRequiredMissing('status_legal')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
-                    >
+                    <FormControl fullWidth required error={isRequiredMissing('status_legal')} sx={questionBoxSx}>
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         CURRENT LEGAL STATUS * / ESTATUS LEGAL ACTUAL
                       </FormLabel>
@@ -820,12 +985,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <FormControl
-                      fullWidth
-                      required
-                      error={isRequiredMissing('empleo_actual')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
-                    >
+                    <FormControl fullWidth required error={isRequiredMissing('empleo_actual')} sx={questionBoxSx}>
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         YOU ARE CURRENTLY EMPLOYED * / ¿TIENES EMPLEO ACTUALMENTE?
                       </FormLabel>
@@ -833,7 +993,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                         {['SI', 'NO', 'OTRO'].map(option => (
                           <FormControlLabel
                             key={option}
-                            control={<Checkbox checked={form.empleo_actual === option} onChange={handleSingleCheckbox('empleo_actual', option)} />}
+                            control={
+                              <Checkbox
+                                checked={form.empleo_actual === option}
+                                onChange={handleSingleCheckbox('empleo_actual', option)}
+                              />
+                            }
                             label={option === 'SI' ? 'SI (YES)' : option === 'NO' ? 'NO' : 'OTRO (OTHER)'}
                           />
                         ))}
@@ -845,7 +1010,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('antiguedad_laboral_meses')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
+                      sx={questionBoxSx}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         ANTIQUITY AT WORK * / ANTIGUEDAD EN EL TRABAJO
@@ -870,8 +1035,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Finanzas / Financial profile' />
+            <Card sx={sectionCardSx}>
+              <CardHeader
+                title='Finanzas / Financial profile'
+                subheader={publicMode ? 'Ingresos y gastos mensuales' : undefined}
+              />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
@@ -931,18 +1099,16 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Información crediticia / Credit details' />
+            <Card sx={sectionCardSx}>
+              <CardHeader
+                title='Información crediticia / Credit details'
+                subheader={publicMode ? 'Destino, monto y forma de pago' : undefined}
+              />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12 }}>
-                    <FormControl
-                      fullWidth
-                      required
-                      error={isRequiredMissing('destino')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
-                    >
+                    <FormControl fullWidth required error={isRequiredMissing('destino')} sx={questionBoxSx}>
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
                         DESTINATION OF THE REQUEST * / DESTINO DE LA SOLICITUD
                       </FormLabel>
@@ -951,7 +1117,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                           <FormControlLabel
                             key={option.value}
                             control={
-                              <Checkbox checked={form.destino === option.value} onChange={handleSingleCheckbox('destino', option.value)} />
+                              <Checkbox
+                                checked={form.destino === option.value}
+                                onChange={handleSingleCheckbox('destino', option.value)}
+                              />
                             }
                             label={option.label}
                           />
@@ -960,12 +1129,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <FormControl
-                      fullWidth
-                      required
-                      error={isRequiredMissing('modalidad')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
-                    >
+                    <FormControl fullWidth required error={isRequiredMissing('modalidad')} sx={questionBoxSx}>
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
                         FORM OF PAYMENT * / FORMA DE PAGOS
                       </FormLabel>
@@ -974,7 +1138,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                           <FormControlLabel
                             key={option.value}
                             control={
-                              <Checkbox checked={form.modalidad === option.value} onChange={handleSingleCheckbox('modalidad', option.value)} />
+                              <Checkbox
+                                checked={form.modalidad === option.value}
+                                onChange={handleSingleCheckbox('modalidad', option.value)}
+                              />
                             }
                             label={option.label}
                           />
@@ -987,7 +1154,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       fullWidth
                       required
                       error={isRequiredMissing('monto_solicitud_rango')}
-                      sx={{ p: 2, border: theme => `1px solid ${theme.palette.divider}`, borderRadius: 2 }}
+                      sx={questionBoxSx}
                     >
                       <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1rem', fontWeight: 700 }}>
                         APPLICATION AMOUNT * / MONTO DE SU SOLICITUD
@@ -1097,7 +1264,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             </Card>
 
             {publicMode ? null : (
-              <Card sx={{ borderRadius: 3 }}>
+              <Card sx={sectionCardSx}>
                 <CardHeader title='Referido / Referral' />
                 <Divider />
                 <CardContent>
@@ -1140,11 +1307,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                               isRequiredMissing('referido_por')
                                 ? 'Campo obligatorio'
                                 : form.es_referido
-                                    ? loadingReferidos
-                                      ? 'Cargando clientes activos...'
-                                      : clientesActivos.length
-                                        ? 'Selecciona un cliente activo (o usa referido externo)'
-                                        : 'No hay clientes activos disponibles'
+                                  ? loadingReferidos
+                                    ? 'Cargando clientes activos...'
+                                    : clientesActivos.length
+                                      ? 'Selecciona un cliente activo (o usa referido externo)'
+                                      : 'No hay clientes activos disponibles'
                                   : ''
                             }
                           />
@@ -1185,15 +1352,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </Card>
             )}
 
-            <Card sx={{ borderRadius: 3 }}>
-              <CardHeader title='Archivos / Files' />
+            <Card sx={sectionCardSx}>
+              <CardHeader title='Archivos / Files' subheader={publicMode ? 'Documentación requerida' : undefined} />
               <Divider />
               <CardContent>
                 <Stack spacing={2}>
-                  <Stack
-                    spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}` }}
-                  >
+                  <Stack spacing={1} sx={questionBoxSx}>
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       IMPORTANT (FILE) * / ARCHIVOS (IMPORTANTE)
                     </Typography>
@@ -1205,15 +1369,15 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       <input hidden type='file' accept='application/pdf,.pdf' onChange={handleDocumentoIdentidad} />
                     </Button>
                     {documentoIdentidad ? renderFileChips([documentoIdentidad], handleRemoveDocumentoIdentidad) : null}
-                    <Typography variant='caption' color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
+                    <Typography
+                      variant='caption'
+                      color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
+                    >
                       {documentoIdentidad ? '1 archivo cargado.' : 'Sube 1 archivo compatible. Tamaño máximo: 10 MB.'}
                     </Typography>
                   </Stack>
 
-                  <Stack
-                    spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}` }}
-                  >
+                  <Stack spacing={1} sx={questionBoxSx}>
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       HOW MANY BANK STATEMENTS * / ESTADOS DE CUENTAS BANCARIOS
                     </Typography>
@@ -1223,33 +1387,50 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     </Typography>
                     <Button variant='outlined' component='label'>
                       Añadir archivo
-                      <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
+                      <input
+                        hidden
+                        type='file'
+                        accept='application/pdf,.pdf'
+                        multiple
+                        onChange={handleEstadoCuentaFiles}
+                      />
                     </Button>
                     {renderFileChips(documentosEstadoCuenta, handleRemoveEstadoCuenta)}
-                    <Typography variant='caption' color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
+                    <Typography
+                      variant='caption'
+                      color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}
+                    >
                       {documentosEstadoCuenta.length
                         ? `${documentosEstadoCuenta.length} archivo(s) cargado(s)`
                         : 'No hay estados de cuenta cargados'}
                     </Typography>
                   </Stack>
 
-                  <Stack
-                    spacing={1}
-                    sx={{ p: 2, borderRadius: 2, border: theme => `1px solid ${theme.palette.divider}` }}
-                  >
+                  <Stack spacing={1} sx={questionBoxSx}>
                     <Typography variant='h6' sx={{ fontWeight: 700 }}>
                       PROOF OF INCOME * / COMPROBANTES DE INGRESOS
                     </Typography>
-                    <Typography color='text.secondary'>Sube entre 1 y 4 comprobantes. Tamaño máximo por archivo: 10MB.</Typography>
+                    <Typography color='text.secondary'>
+                      Sube entre 1 y 4 comprobantes. Tamaño máximo por archivo: 10MB.
+                    </Typography>
                     <Typography color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}>
                       Debes cargar entre 1 y 4 archivos PDF.
                     </Typography>
                     <Button variant='outlined' component='label'>
                       Añadir archivo
-                      <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleComprobantesIngresoFiles} />
+                      <input
+                        hidden
+                        type='file'
+                        accept='application/pdf,.pdf'
+                        multiple
+                        onChange={handleComprobantesIngresoFiles}
+                      />
                     </Button>
                     {renderFileChips(documentosComprobantesIngreso, handleRemoveComprobanteIngreso)}
-                    <Typography variant='caption' color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}>
+                    <Typography
+                      variant='caption'
+                      color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}
+                    >
                       {documentosComprobantesIngreso.length
                         ? `${documentosComprobantesIngreso.length} archivo(s) cargado(s)`
                         : 'No hay comprobantes cargados'}
@@ -1262,15 +1443,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Card
-            sx={{
-              borderRadius: 3,
-              position: 'sticky',
-              top: 24,
-              alignSelf: 'flex-start'
-            }}
-          >
-            <CardHeader title='Acciones' />
+          <Card sx={actionCardSx}>
+            <CardHeader title='Acciones' subheader={publicMode ? 'Revisa y envía tu solicitud' : undefined} />
             <Divider />
             <CardContent>
               <Stack spacing={1.5}>
@@ -1279,7 +1453,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 </Button>
                 {publicMode ? (
                   <FormControlLabel
-                    control={<Checkbox checked={acceptedPublicTerms} onChange={event => setAcceptedPublicTerms(event.target.checked)} />}
+                    control={
+                      <Checkbox
+                        checked={acceptedPublicTerms}
+                        onChange={event => setAcceptedPublicTerms(event.target.checked)}
+                      />
+                    }
                     label='Acepto el aviso legal y el tratamiento de mis datos.'
                   />
                 ) : null}
