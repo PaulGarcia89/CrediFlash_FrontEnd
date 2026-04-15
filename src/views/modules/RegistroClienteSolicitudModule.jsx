@@ -304,7 +304,7 @@ function PublicQuestionCard({ title, subtitle, required = false, children }) {
   )
 }
 
-export default function RegistroClienteSolicitudModule({ publicMode = false }) {
+export default function RegistroClienteSolicitudModule({ publicMode = false, origenSolicitud }) {
   const router = useRouter()
 
   const publicDefaults = useMemo(
@@ -704,7 +704,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
       solicitudPayload.append('cliente_id', String(clienteId))
       if (publicMode) {
-        solicitudPayload.append('origen_solicitud', 'EXTERNO')
+        solicitudPayload.append('origen_solicitud', origenSolicitud || 'EXTERNO')
         solicitudPayload.append('solicitud_enviada_en', publicSubmissionTimestamp)
         solicitudPayload.append('fecha_envio_solicitud', publicSubmissionTimestamp)
       }

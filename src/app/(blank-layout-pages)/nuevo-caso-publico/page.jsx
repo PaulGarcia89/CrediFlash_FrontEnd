@@ -18,7 +18,7 @@ export default function NuevoCasoPublicoPage() {
       }}
     >
       <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 681, mx: 'auto', px: { xs: 1.25, sm: 1.5, md: 0 } }}>
-        <RegistroClienteSolicitudModule publicMode />
+        <RegistroClienteSolicitudModule publicMode origenSolicitud='EXTERNO' />
       </Box>
     </Box>
   )
