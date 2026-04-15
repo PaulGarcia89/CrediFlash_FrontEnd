@@ -919,31 +919,39 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const emailVerificationButtonSx = publicMode
     ? {
         textTransform: 'none',
-        bgcolor: '#e8f0fe',
+        bgcolor: '#dbeafe',
         color: '#1a73e8',
-        border: '1px solid #b6d4fe',
+        border: '1px solid #a8c7fa',
         boxShadow: 'none',
+        fontWeight: 700,
+        width: { xs: '100%', md: 'auto' },
+        py: 1.1,
         '&:hover': {
-          bgcolor: '#d2e3fc',
+          bgcolor: '#c9ddfb',
           boxShadow: 'none'
         },
         '&.Mui-disabled': {
-          bgcolor: '#eef3fb',
-          color: '#8aa6d8',
-          borderColor: '#d6e0f5'
+          opacity: 1,
+          bgcolor: '#dbeafe',
+          color: '#1a73e8',
+          borderColor: '#a8c7fa'
         }
       }
     : undefined
   const emailVerifyButtonSx = publicMode
     ? {
         textTransform: 'none',
-        bgcolor: '#137333',
+        bgcolor: '#16a34a',
         color: '#ffffff',
         boxShadow: 'none',
-        '&:hover': { bgcolor: '#0f5f2d', boxShadow: 'none' },
+        fontWeight: 700,
+        width: { xs: '100%', md: 'auto' },
+        py: 1.1,
+        '&:hover': { bgcolor: '#15803d', boxShadow: 'none' },
         '&.Mui-disabled': {
-          bgcolor: '#b8dfc5',
-          color: '#ffffff'
+          opacity: 1,
+          bgcolor: '#a7e3b6',
+          color: '#0f5f2d'
         }
       }
     : undefined
@@ -1147,16 +1155,19 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
           <Stack
             direction={{ xs: 'column', md: 'row' }}
             spacing={1.25}
-            alignItems={{ md: 'center' }}
+            alignItems={{ xs: 'stretch', md: 'center' }}
             sx={{ mt: 2.5, flexWrap: 'wrap' }}
           >
             <Button
               type='button'
-              variant='tonal'
-              color='info'
+              variant='outlined'
               onClick={handleSendVerificationCode}
               disabled={emailVerificationLoading || emailCodeValidationLoading || !form.email}
-              sx={emailVerificationButtonSx}
+              fullWidth
+              sx={{
+                ...emailVerificationButtonSx,
+                width: { md: 'auto' }
+              }}
             >
               {emailVerificationLoading ? 'Enviando código...' : 'Enviar código de verificación'}
             </Button>
@@ -1172,10 +1183,13 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             <Button
               type='button'
               variant='contained'
-              color='success'
               onClick={handleVerifyCode}
               disabled={!emailVerificationSent || emailCodeValidationLoading || !emailVerificationCode}
-              sx={emailVerifyButtonSx}
+              fullWidth
+              sx={{
+                ...emailVerifyButtonSx,
+                width: { md: 'auto' }
+              }}
             >
               {emailCodeValidationLoading ? 'Verificando...' : 'Verificar correo'}
             </Button>
