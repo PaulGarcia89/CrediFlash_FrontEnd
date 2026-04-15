@@ -17,7 +17,7 @@ export default function NuevoCasoPublicoPage() {
         backgroundImage: 'linear-gradient(180deg, #eaf3e4 0%, #e4efe0 100%)'
       }}
     >
-      <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 480, mx: 'auto', px: { xs: 1.25, sm: 1.5, md: 0 } }}>
+      <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 504, mx: 'auto', px: { xs: 1.25, sm: 1.5, md: 0 } }}>
         <RegistroClienteSolicitudModule publicMode />
       </Box>
     </Box>

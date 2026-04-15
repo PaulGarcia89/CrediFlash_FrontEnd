@@ -254,7 +254,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const googleTextFieldSx = {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 378,
     '& .MuiInput-root': {
       mt: 0,
       fontFamily: '"Roboto", Arial, sans-serif',
