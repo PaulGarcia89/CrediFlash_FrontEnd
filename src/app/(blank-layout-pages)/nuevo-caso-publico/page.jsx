@@ -12,7 +12,7 @@ export default function NuevoCasoPublicoPage() {
         minHeight: '100vh',
         position: 'relative',
         overflow: 'hidden',
-        py: { xs: 2, md: 4 },
+        py: { xs: 1.75, md: 3.5 },
         bgcolor: '#eaf3e4',
         backgroundImage: 'linear-gradient(180deg, #eaf3e4 0%, #e4efe0 100%)'
       }}
