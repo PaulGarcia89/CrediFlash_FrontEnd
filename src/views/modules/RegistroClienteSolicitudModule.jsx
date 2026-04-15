@@ -254,7 +254,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const googleTextFieldSx = {
     width: '100%',
-    maxWidth: 378,
+    maxWidth: 454,
     '& .MuiInput-root': {
       mt: 0,
       fontFamily: '"Roboto", Arial, sans-serif',
@@ -927,14 +927,14 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     : undefined
   const publicQuestionInnerSx = publicMode
     ? {
-        px: { xs: 1.25, md: 1.35 },
-        py: { xs: 1.1, md: 1.2 },
-        minHeight: 116
+        px: { xs: 1.5, md: 1.62 },
+        py: { xs: 1.32, md: 1.44 },
+        minHeight: 139
       }
     : undefined
   const publicQuestionTitleSx = publicMode
     ? {
-        fontSize: 12.5,
+        fontSize: 15,
         fontWeight: 700,
         lineHeight: 1.08,
         letterSpacing: '-0.015em',
@@ -945,7 +945,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     : undefined
   const publicQuestionSubtitleSx = publicMode
     ? {
-        fontSize: 12.5,
+        fontSize: 15,
         fontWeight: 700,
         lineHeight: 1.08,
         letterSpacing: '-0.015em',
@@ -958,7 +958,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const PublicQuestionCard = ({ title, subtitle, required = false, children }) => (
     <Card sx={publicQuestionCardSx}>
       <CardContent sx={publicQuestionInnerSx}>
-        <Stack spacing={2}>
+        <Stack spacing={2.4}>
           <Box>
             <Stack direction='row' spacing={0.55} alignItems='flex-start' flexWrap='wrap'>
               <Typography sx={publicQuestionTitleSx}>{title}</Typography>
@@ -987,9 +987,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   fontWeight: 700,
                   mt: 0.1,
                   lineHeight: 1.04,
-                  letterSpacing: '-0.035em',
+                  letterSpacing: '-0.03em',
                   color: '#202124',
-                  fontSize: { xs: '1.58rem', md: '1.7rem' }
+                  fontSize: { xs: '1.9rem', md: '2.04rem' }
                 }}
               >
                 CUSTOMER PRE-QUALIFICATION
@@ -1000,7 +1000,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 sx={{
                   fontFamily: '"Roboto", Arial, sans-serif',
                   color: '#3c4043',
-                  fontSize: 12.25,
+                  fontSize: 14.7,
                   lineHeight: 1.4,
                   pl: 1.05
                 }}
@@ -1018,7 +1018,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 }}
               >
                 <Typography
-                  sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#5f6368', fontSize: 11.5, lineHeight: 1.35 }}
+                  sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#5f6368', fontSize: 13.8, lineHeight: 1.35 }}
                 >
                   paulandresgarcianarvaez@gmail.com{' '}
                   <Typography
@@ -1026,7 +1026,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     sx={{
                       fontFamily: '"Roboto", Arial, sans-serif',
                       color: '#1a73e8',
-                      fontSize: 11.5,
+                      fontSize: 13.8,
                       cursor: 'pointer'
                     }}
                   >
@@ -1037,9 +1037,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   sx={{
                     fontFamily: '"Roboto", Arial, sans-serif',
                     color: '#5f6368',
-                    fontSize: 11.5,
+                    fontSize: 13.8,
                     lineHeight: 1.35,
-                    mt: 0.8
+                    mt: 0.9
                   }}
                 >
                   El nombre, el correo y la foto asociados a tu cuenta de Google se registrarán cuando subas archivos y
@@ -1047,7 +1047,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 </Typography>
               </Box>
               <Typography
-                sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#ea4335', fontWeight: 600, fontSize: 11.5 }}
+                sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#ea4335', fontWeight: 600, fontSize: 13.8 }}
               >
                 * Indica que la pregunta es obligatoria
               </Typography>
