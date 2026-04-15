@@ -155,6 +155,245 @@ const extractClienteIdFromPayload = payload =>
   payload?.data?.id || payload?.id || payload?.data?.cliente_id || payload?.cliente_id || ''
 const extractSolicitudIdFromPayload = payload =>
   payload?.data?.id || payload?.id || payload?.data?.solicitud_id || payload?.solicitud_id || ''
+const GOOGLE_TEXT_FIELD_SX = {
+  width: '100%',
+  maxWidth: 522,
+  '& .MuiInput-root': {
+    mt: 0,
+    fontFamily: '"Roboto", Arial, sans-serif',
+    fontSize: 14.5,
+    color: '#202124',
+    alignItems: 'flex-end'
+  },
+  '& .MuiInputBase-input': {
+    px: 0,
+    py: 0.1,
+    '&::placeholder': {
+      color: '#80868b',
+      opacity: 1
+    }
+  },
+  '& .MuiInput-underline:before': {
+    borderBottomColor: '#dadce0'
+  },
+  '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
+    borderBottomColor: '#202124'
+  },
+  '& .MuiInput-underline:after': {
+    borderBottomColor: '#137333'
+  },
+  '& .MuiFormHelperText-root': {
+    ml: 0,
+    mt: 0.25,
+    color: '#3c4043',
+    display: 'none'
+  },
+  '& .MuiFormHelperText-root.Mui-error': {
+    display: 'block'
+  },
+  '& .MuiSelect-icon': {
+    color: '#5f6368'
+  }
+}
+
+function PublicFormTextField({ publicMode, label, placeholder, helperText, sx, InputLabelProps, variant, ...props }) {
+  if (publicMode && label) {
+    return (
+      <Stack spacing={0.75} sx={{ width: '100%' }}>
+        <Typography
+          sx={{
+            fontFamily: '"Roboto", Arial, sans-serif',
+            fontSize: 13.5,
+            fontWeight: 400,
+            color: '#111111',
+            lineHeight: 1.35
+          }}
+        >
+          {label}
+        </Typography>
+        <MuiTextField
+          {...props}
+          label={undefined}
+          placeholder={placeholder || 'Tu respuesta'}
+          helperText={helperText}
+          variant='standard'
+          InputLabelProps={{ shrink: true, ...InputLabelProps }}
+          sx={[GOOGLE_TEXT_FIELD_SX, sx]}
+        />
+      </Stack>
+    )
+  }
+
+  return (
+    <MuiTextField
+      {...props}
+      label={label}
+      placeholder={placeholder}
+      helperText={helperText}
+      variant={variant || 'outlined'}
+      InputLabelProps={InputLabelProps}
+      sx={sx}
+    />
+  )
+}
+
+function GoogleRadio(props) {
+  return (
+    <Radio
+      disableRipple
+      icon={
+        <Box
+          sx={{
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            border: '2px solid #5f6368',
+            bgcolor: 'transparent',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        />
+      }
+      checkedIcon={
+        <Box
+          sx={{
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            border: '2px solid #2f8f2a',
+            bgcolor: '#2f8f2a',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#fff' }} />
+        </Box>
+      }
+      sx={{
+        p: 0.5,
+        mr: 0.5,
+        color: 'transparent',
+        '&:hover': { bgcolor: 'rgba(61, 143, 45, 0.04)' }
+      }}
+      {...props}
+    />
+  )
+}
+
+function GoogleCheckbox(props) {
+  return (
+    <Checkbox
+      disableRipple
+      icon={
+        <Box
+          sx={{
+            width: 20,
+            height: 20,
+            borderRadius: 1,
+            border: '2px solid #5f6368',
+            bgcolor: 'transparent',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        />
+      }
+      checkedIcon={
+        <Box
+          sx={{
+            width: 20,
+            height: 20,
+            borderRadius: 1,
+            border: '2px solid #2f8f2a',
+            bgcolor: '#2f8f2a',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <Box
+            sx={{
+              width: 9,
+              height: 5,
+              borderLeft: '2px solid #fff',
+              borderBottom: '2px solid #fff',
+              transform: 'rotate(-45deg)',
+              mt: -0.25
+            }}
+          />
+        </Box>
+      }
+      sx={{
+        p: 0.5,
+        mr: 0.5,
+        color: 'transparent',
+        '&:hover': { bgcolor: 'rgba(61, 143, 45, 0.04)' }
+      }}
+      {...props}
+    />
+  )
+}
+
+function PublicQuestionCard({ title, subtitle, required = false, children }) {
+  return (
+    <Card
+      sx={{
+        borderRadius: 2,
+        border: '1px solid #dadce0',
+        bgcolor: '#fff',
+        boxShadow: 'none',
+        overflow: 'hidden'
+      }}
+    >
+      <CardContent
+        sx={{
+          px: { xs: 1.72, md: 1.86 },
+          py: { xs: 1.52, md: 1.65 },
+          minHeight: 160
+        }}
+      >
+        <Stack spacing={2.75}>
+          <Box>
+            <Stack direction='row' spacing={0.55} alignItems='flex-start' flexWrap='wrap'>
+              <Typography
+                sx={{
+                  fontSize: 17,
+                  fontWeight: 700,
+                  lineHeight: 1.08,
+                  letterSpacing: '-0.015em',
+                  color: '#111111',
+                  fontFamily: '"Roboto", Arial, sans-serif',
+                  textTransform: 'uppercase'
+                }}
+              >
+                {title}
+              </Typography>
+              {required ? (
+                <Typography sx={{ color: '#ea4335', fontSize: 11.5, lineHeight: 1, mt: 0.12, ml: 0.65 }}>*</Typography>
+              ) : null}
+            </Stack>
+            <Typography
+              sx={{
+                fontSize: 17,
+                fontWeight: 700,
+                lineHeight: 1.08,
+                letterSpacing: '-0.015em',
+                color: '#111111',
+                fontFamily: '"Roboto", Arial, sans-serif',
+                textTransform: 'uppercase'
+              }}
+            >
+              {subtitle}
+            </Typography>
+          </Box>
+          {children}
+        </Stack>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const router = useRouter()
@@ -165,8 +404,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         ? {
             plazo_semanas: '1',
             tasa_variable_pct: '1',
-            modelo_calificacion: 'EDITAR',
-            modelo_aprobacion: 'EDITAR'
+            modelo_calificacion: 'CLIENTE_NUEVO',
+            modelo_aprobacion: 'AUTOMATICO'
           }
         : {},
     [publicMode]
@@ -251,183 +490,6 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       [name]: event.target.value
     }))
   }
-
-  const googleTextFieldSx = {
-    width: '100%',
-    maxWidth: 522,
-    '& .MuiInput-root': {
-      mt: 0,
-      fontFamily: '"Roboto", Arial, sans-serif',
-      fontSize: 14.5,
-      color: '#202124',
-      alignItems: 'flex-end'
-    },
-    '& .MuiInputBase-input': {
-      px: 0,
-      py: 0.1,
-      '&::placeholder': {
-        color: '#80868b',
-        opacity: 1
-      }
-    },
-    '& .MuiInput-underline:before': {
-      borderBottomColor: '#dadce0'
-    },
-    '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
-      borderBottomColor: '#202124'
-    },
-    '& .MuiInput-underline:after': {
-      borderBottomColor: '#137333'
-    },
-    '& .MuiFormHelperText-root': {
-      ml: 0,
-      mt: 0.25,
-      color: '#3c4043',
-      display: 'none'
-    },
-    '& .MuiFormHelperText-root.Mui-error': {
-      display: 'block'
-    },
-    '& .MuiSelect-icon': {
-      color: '#5f6368'
-    }
-  }
-
-  const TextField = ({ label, placeholder, helperText, sx, InputLabelProps, variant, ...props }) => {
-    if (publicMode && label) {
-      return (
-        <Stack spacing={0.75} sx={{ width: '100%' }}>
-          <Typography
-            sx={{
-              fontFamily: '"Roboto", Arial, sans-serif',
-              fontSize: 13.5,
-              fontWeight: 400,
-              color: '#111111',
-              lineHeight: 1.35
-            }}
-          >
-            {label}
-          </Typography>
-          <MuiTextField
-            {...props}
-            label={undefined}
-            placeholder={placeholder || 'Tu respuesta'}
-            helperText={helperText}
-            variant='standard'
-            InputLabelProps={{ shrink: true, ...InputLabelProps }}
-            sx={[googleTextFieldSx, sx]}
-          />
-        </Stack>
-      )
-    }
-
-    return (
-      <MuiTextField
-        {...props}
-        label={label}
-        placeholder={placeholder}
-        helperText={helperText}
-        variant={variant || 'outlined'}
-        InputLabelProps={InputLabelProps}
-        sx={sx}
-      />
-    )
-  }
-
-  const GoogleRadio = props => (
-    <Radio
-      disableRipple
-      icon={
-        <Box
-          sx={{
-            width: 20,
-            height: 20,
-            borderRadius: '50%',
-            border: '2px solid #5f6368',
-            bgcolor: 'transparent',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        />
-      }
-      checkedIcon={
-        <Box
-          sx={{
-            width: 20,
-            height: 20,
-            borderRadius: '50%',
-            border: '2px solid #2f8f2a',
-            bgcolor: '#2f8f2a',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#fff' }} />
-        </Box>
-      }
-      sx={{
-        p: 0.5,
-        mr: 0.5,
-        color: 'transparent',
-        '&:hover': { bgcolor: 'rgba(61, 143, 45, 0.04)' }
-      }}
-      {...props}
-    />
-  )
-
-  const GoogleCheckbox = props => (
-    <Checkbox
-      disableRipple
-      icon={
-        <Box
-          sx={{
-            width: 20,
-            height: 20,
-            borderRadius: 1,
-            border: '2px solid #5f6368',
-            bgcolor: 'transparent',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        />
-      }
-      checkedIcon={
-        <Box
-          sx={{
-            width: 20,
-            height: 20,
-            borderRadius: 1,
-            border: '2px solid #2f8f2a',
-            bgcolor: '#2f8f2a',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <Box
-            sx={{
-              width: 9,
-              height: 5,
-              borderLeft: '2px solid #fff',
-              borderBottom: '2px solid #fff',
-              transform: 'rotate(-45deg)',
-              mt: -0.25
-            }}
-          />
-        </Box>
-      }
-      sx={{
-        p: 0.5,
-        mr: 0.5,
-        color: 'transparent',
-        '&:hover': { bgcolor: 'rgba(61, 143, 45, 0.04)' }
-      }}
-      {...props}
-    />
-  )
 
   const renderFileChips = (files = [], onRemove) => {
     if (!files.length) return null
@@ -741,8 +803,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       solicitudPayload.append('modalidad', form.modalidad)
       solicitudPayload.append('plazo_semanas', String(publicMode ? 1 : Number(form.plazo_semanas || 0)))
       solicitudPayload.append('tasa_variable', String(publicMode ? Number(form.tasa_variable_pct || 1) : tasaVariable))
-      solicitudPayload.append('modelo_calificacion', publicMode ? 'EDITAR' : form.modelo_calificacion)
-      solicitudPayload.append('modelo_aprobacion', publicMode ? 'EDITAR' : form.modelo_aprobacion)
+      solicitudPayload.append('modelo_calificacion', publicMode ? 'CLIENTE_NUEVO' : form.modelo_calificacion)
+      solicitudPayload.append('modelo_aprobacion', publicMode ? 'AUTOMATICO' : form.modelo_aprobacion)
       solicitudPayload.append('destino', form.destino)
       solicitudPayload.append('status_legal', form.status_legal)
       solicitudPayload.append('empleo_actual', form.empleo_actual)
@@ -961,64 +1023,6 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         }
       }
     : undefined
-  const publicQuestionCardSx = publicMode
-    ? {
-        borderRadius: 2,
-        border: '1px solid #dadce0',
-        bgcolor: '#fff',
-        boxShadow: 'none',
-        overflow: 'hidden'
-      }
-    : undefined
-  const publicQuestionInnerSx = publicMode
-    ? {
-        px: { xs: 1.72, md: 1.86 },
-        py: { xs: 1.52, md: 1.65 },
-        minHeight: 160
-      }
-    : undefined
-  const publicQuestionTitleSx = publicMode
-    ? {
-        fontSize: 17,
-        fontWeight: 700,
-        lineHeight: 1.08,
-        letterSpacing: '-0.015em',
-        color: '#111111',
-        fontFamily: '"Roboto", Arial, sans-serif',
-        textTransform: 'uppercase'
-      }
-    : undefined
-  const publicQuestionSubtitleSx = publicMode
-    ? {
-        fontSize: 17,
-        fontWeight: 700,
-        lineHeight: 1.08,
-        letterSpacing: '-0.015em',
-        color: '#111111',
-        fontFamily: '"Roboto", Arial, sans-serif',
-        textTransform: 'uppercase'
-      }
-    : undefined
-
-  const PublicQuestionCard = ({ title, subtitle, required = false, children }) => (
-    <Card sx={publicQuestionCardSx}>
-      <CardContent sx={publicQuestionInnerSx}>
-        <Stack spacing={2.75}>
-          <Box>
-            <Stack direction='row' spacing={0.55} alignItems='flex-start' flexWrap='wrap'>
-              <Typography sx={publicQuestionTitleSx}>{title}</Typography>
-              {required ? (
-                <Typography sx={{ color: '#ea4335', fontSize: 11.5, lineHeight: 1, mt: 0.12, ml: 0.65 }}>*</Typography>
-              ) : null}
-            </Stack>
-            <Typography sx={publicQuestionSubtitleSx}>{subtitle}</Typography>
-          </Box>
-          {children}
-        </Stack>
-      </CardContent>
-    </Card>
-  )
-
   if (publicMode) {
     return (
       <Stack spacing={0.7} component='form' onSubmit={handleSubmit} sx={rootFormSx}>
@@ -1075,7 +1079,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             required
             error={isRequiredMissing('nombre')}
             helperText={isRequiredMissing('nombre') ? 'Campo obligatorio' : 'Tu respuesta'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1090,7 +1094,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             required
             error={isRequiredMissing('apellido')}
             helperText={isRequiredMissing('apellido') ? 'Campo obligatorio' : 'Tu respuesta'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1102,7 +1106,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             value={form.telefono}
             onChange={handleChange}
             fullWidth
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1118,7 +1122,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             required
             error={isRequiredMissing('email')}
             helperText={isRequiredMissing('email') ? 'Campo obligatorio' : 'Ejemplo: cliente@correo.com'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
           <Stack
             direction={{ xs: 'column', md: 'row' }}
@@ -1146,7 +1150,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               value={emailVerificationCode}
               onChange={event => setEmailVerificationCode(event.target.value)}
               placeholder='Ingresa el código'
-              sx={{ ...googleTextFieldSx, minWidth: { xs: '100%', md: 240 } }}
+              sx={{ ...GOOGLE_TEXT_FIELD_SX, minWidth: { xs: '100%', md: 240 } }}
             />
             <Button
               type='button'
@@ -1183,7 +1187,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             InputLabelProps={{ shrink: true }}
             error={isRequiredMissing('fecha_nacimiento')}
             helperText={isRequiredMissing('fecha_nacimiento') ? 'Campo obligatorio' : 'mm/dd/yyyy'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1209,7 +1213,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             value={form.direccion}
             onChange={handleChange}
             fullWidth
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1221,7 +1225,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             value={form.nombre_contacto}
             onChange={handleChange}
             fullWidth
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1233,7 +1237,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             value={form.apellido_contacto}
             onChange={handleChange}
             fullWidth
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1245,7 +1249,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             value={form.telefono_contacto}
             onChange={handleChange}
             fullWidth
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1258,7 +1262,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             value={form.email_contacto}
             onChange={handleChange}
             fullWidth
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1270,7 +1274,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             value={form.direccion_contacto}
             onChange={handleChange}
             fullWidth
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1284,7 +1288,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             fullWidth
             multiline
             minRows={3}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1346,7 +1350,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             required
             error={isRequiredMissing('ingresos_mensuales')}
             helperText={isRequiredMissing('ingresos_mensuales') ? 'Campo obligatorio' : 'Ejemplo: 2500'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1362,7 +1366,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             required
             error={isRequiredMissing('pago_casa_renta_mensual')}
             helperText={isRequiredMissing('pago_casa_renta_mensual') ? 'Campo obligatorio' : 'Ejemplo: 500'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1382,7 +1386,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             required
             error={isRequiredMissing('pago_carro_seguro_mensual')}
             helperText={isRequiredMissing('pago_carro_seguro_mensual') ? 'Campo obligatorio' : 'Ejemplo: 300'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1398,7 +1402,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             required
             error={isRequiredMissing('otros_gastos_mensuales')}
             helperText={isRequiredMissing('otros_gastos_mensuales') ? 'Campo obligatorio' : 'Ejemplo: 200'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1456,7 +1460,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             required
             error={isRequiredMissing('monto_solicitado')}
             helperText={isRequiredMissing('monto_solicitado') ? 'Campo obligatorio' : 'Ejemplo: 2000'}
-            sx={googleTextFieldSx}
+            sx={GOOGLE_TEXT_FIELD_SX}
           />
         </PublicQuestionCard>
 
@@ -1528,8 +1532,22 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
           </Stack>
         </PublicQuestionCard>
 
-        <Card sx={publicQuestionCardSx}>
-          <CardContent sx={publicQuestionInnerSx}>
+        <Card
+          sx={{
+            borderRadius: 2,
+            border: '1px solid #dadce0',
+            bgcolor: '#fff',
+            boxShadow: 'none',
+            overflow: 'hidden'
+          }}
+        >
+          <CardContent
+            sx={{
+              px: { xs: 1.72, md: 1.86 },
+              py: { xs: 1.52, md: 1.65 },
+              minHeight: 160
+            }}
+          >
             <Stack spacing={2}>
               <Button variant='contained' type='submit' disabled={saving} fullWidth sx={googlePrimaryButtonSx}>
                 {saving ? 'Guardando...' : 'Enviar solicitud'}
@@ -1627,7 +1645,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               <CardContent>
                 <Grid container spacing={publicMode ? 0.9 : 2}>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Nombre completo * / Full name'
                       name='nombre'
                       value={form.nombre}
@@ -1639,7 +1658,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Apellido * / Last name'
                       name='apellido'
                       value={form.apellido}
@@ -1651,7 +1671,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Teléfono'
                       name='telefono'
                       value={form.telefono}
@@ -1660,7 +1681,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Email *'
                       name='email'
                       type='email'
@@ -1688,7 +1710,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       >
                         {emailVerificationLoading ? 'Enviando código...' : 'Enviar código de verificación'}
                       </Button>
-                      <TextField
+                      <PublicFormTextField
+                        publicMode={publicMode}
                         size='small'
                         label='Código de verificación'
                         value={emailVerificationCode}
@@ -1714,7 +1737,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     ) : null}
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Fecha de nacimiento *'
                       name='fecha_nacimiento'
                       type='date'
@@ -1746,7 +1770,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Dirección'
                       name='direccion'
                       value={form.direccion}
@@ -1767,7 +1792,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               <CardContent>
                 <Grid container spacing={publicMode ? 0.9 : 2}>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Nombre contacto'
                       name='nombre_contacto'
                       value={form.nombre_contacto}
@@ -1776,7 +1802,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Apellido contacto'
                       name='apellido_contacto'
                       value={form.apellido_contacto}
@@ -1785,7 +1812,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Teléfono contacto'
                       name='telefono_contacto'
                       value={form.telefono_contacto}
@@ -1794,7 +1822,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Email contacto'
                       name='email_contacto'
                       type='email'
@@ -1804,7 +1833,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Dirección contacto'
                       name='direccion_contacto'
                       value={form.direccion_contacto}
@@ -1813,7 +1843,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Observaciones'
                       name='observaciones'
                       value={form.observaciones}
@@ -1914,7 +1945,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               <CardContent>
                 <Grid container spacing={publicMode ? 0.9 : 2}>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Ingresos mensuales *'
                       name='ingresos_mensuales'
                       type='number'
@@ -1927,7 +1959,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Pago casa o renta mensual *'
                       name='pago_casa_renta_mensual'
                       type='number'
@@ -1940,7 +1973,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Pago carro/seguro mensual *'
                       name='pago_carro_seguro_mensual'
                       type='number'
@@ -1953,7 +1987,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     />
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Otros gastos mensuales *'
                       name='otros_gastos_mensuales'
                       type='number'
@@ -2040,7 +2075,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     </FormControl>
                   </Grid>
                   <Grid size={fieldHalfSize}>
-                    <TextField
+                    <PublicFormTextField
+                      publicMode={publicMode}
                       label='Monto solicitado *'
                       name='monto_solicitado'
                       type='number'
@@ -2054,7 +2090,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   </Grid>
                   {publicMode ? null : (
                     <Grid size={fieldHalfSize}>
-                      <TextField
+                      <PublicFormTextField
+                        publicMode={publicMode}
                         label='Plazo (semanas) *'
                         name='plazo_semanas'
                         type='number'
@@ -2069,7 +2106,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   )}
                   {publicMode ? null : (
                     <Grid size={fieldHalfSize}>
-                      <TextField
+                      <PublicFormTextField
+                        publicMode={publicMode}
                         label='Tasa variable (%) *'
                         name='tasa_variable_pct'
                         type='number'
@@ -2085,7 +2123,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   )}
                   {publicMode ? null : (
                     <Grid size={fieldHalfSize}>
-                      <TextField
+                      <PublicFormTextField
+                        publicMode={publicMode}
                         select
                         label='Modelo de calificación *'
                         name='modelo_calificacion'
@@ -2100,12 +2139,13 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                             {model}
                           </MenuItem>
                         ))}
-                      </TextField>
+                      </PublicFormTextField>
                     </Grid>
                   )}
                   {publicMode ? null : (
                     <Grid size={fieldHalfSize}>
-                      <TextField
+                      <PublicFormTextField
+                        publicMode={publicMode}
                         select
                         label='Modelo de aprobación *'
                         name='modelo_aprobacion'
@@ -2120,7 +2160,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                             {model}
                           </MenuItem>
                         ))}
-                      </TextField>
+                      </PublicFormTextField>
                     </Grid>
                   )}
                 </Grid>
@@ -2134,7 +2174,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 <CardContent>
                   <Grid container spacing={publicMode ? 1.5 : 2}>
                     <Grid size={fieldThirdSize}>
-                      <TextField
+                      <PublicFormTextField
+                        publicMode={publicMode}
                         select
                         label='¿Es referido?'
                         name='es_referido'
@@ -2144,7 +2185,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       >
                         <MenuItem value='NO'>No</MenuItem>
                         <MenuItem value='SI'>Sí</MenuItem>
-                      </TextField>
+                      </PublicFormTextField>
                     </Grid>
                     <Grid size={fieldThirdSize}>
                       <Autocomplete
@@ -2161,7 +2202,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                         isOptionEqualToValue={(option, value) => getClienteId(option) === getClienteId(value)}
                         disabled={!form.es_referido || loadingReferidos}
                         renderInput={params => (
-                          <TextField
+                          <PublicFormTextField
+                            publicMode={publicMode}
                             {...params}
                             label='Referido por'
                             placeholder='Seleccionar cliente activo'
@@ -2183,7 +2225,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       />
                     </Grid>
                     <Grid size={fieldThirdSize}>
-                      <TextField
+                      <PublicFormTextField
+                        publicMode={publicMode}
                         label='Referido externo (si no está en base)'
                         name='referido_externo'
                         value={form.referido_externo}
@@ -2193,7 +2236,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                       />
                     </Grid>
                     <Grid size={fieldThirdSize}>
-                      <TextField
+                      <PublicFormTextField
+                        publicMode={publicMode}
                         label={
                           <Stack direction='row' spacing={0.75} alignItems='center'>
                             <span>Monto referido (USD)</span>
