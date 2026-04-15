@@ -254,11 +254,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const googleTextFieldSx = {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 440,
     '& .MuiInput-root': {
       mt: 0,
       fontFamily: '"Roboto", Arial, sans-serif',
-      fontSize: 14.5,
+      fontSize: 14.75,
       color: '#202124',
       alignItems: 'flex-end'
     },
@@ -926,28 +926,28 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     : undefined
   const publicQuestionInnerSx = publicMode
     ? {
-        px: { xs: 1.4, md: 1.5 },
-        py: { xs: 1.3, md: 1.4 },
-        minHeight: 122
+        px: { xs: 1.45, md: 1.6 },
+        py: { xs: 1.25, md: 1.35 },
+        minHeight: 124
       }
     : undefined
   const publicQuestionTitleSx = publicMode
     ? {
-        fontSize: 11.5,
+        fontSize: 13.5,
         fontWeight: 600,
-        lineHeight: 1.05,
-        letterSpacing: '-0.01em',
-        color: '#2b2b2b',
+        lineHeight: 1.08,
+        letterSpacing: '-0.015em',
+        color: '#202124',
         textTransform: 'uppercase'
       }
     : undefined
   const publicQuestionSubtitleSx = publicMode
     ? {
-        fontSize: 11.5,
+        fontSize: 13.5,
         fontWeight: 600,
-        lineHeight: 1.05,
-        letterSpacing: '-0.01em',
-        color: '#2b2b2b',
+        lineHeight: 1.08,
+        letterSpacing: '-0.015em',
+        color: '#202124',
         textTransform: 'uppercase'
       }
     : undefined
@@ -957,10 +957,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       <CardContent sx={publicQuestionInnerSx}>
         <Stack spacing={2.15}>
           <Box>
-            <Stack direction='row' spacing={0.55} alignItems='flex-start' flexWrap='wrap'>
+            <Stack direction='row' spacing={0.7} alignItems='flex-start' flexWrap='wrap'>
               <Typography sx={publicQuestionTitleSx}>{title}</Typography>
               {required ? (
-                <Typography sx={{ color: '#ea4335', fontSize: 9.5, lineHeight: 1, mt: 0.15, ml: 0.9 }}>*</Typography>
+                <Typography sx={{ color: '#ea4335', fontSize: 12, lineHeight: 1, mt: 0.12, ml: 0.8 }}>*</Typography>
               ) : null}
             </Stack>
             <Typography sx={publicQuestionSubtitleSx}>{subtitle}</Typography>
@@ -982,11 +982,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 sx={{
                   fontFamily: '"Roboto", Arial, sans-serif',
                   fontWeight: 700,
-                  mt: 0.15,
-                  lineHeight: 1.05,
-                  letterSpacing: '-0.035em',
+                  mt: 0.1,
+                  lineHeight: 1.03,
+                  letterSpacing: '-0.045em',
                   color: '#202124',
-                  fontSize: { xs: '1.28rem', md: '1.4rem' }
+                  fontSize: { xs: '1.38rem', md: '1.58rem' }
                 }}
               >
                 CUSTOMER PRE-QUALIFICATION
@@ -997,8 +997,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 sx={{
                   color: '#3c4043',
                   fontSize: 12.75,
-                  lineHeight: 1.45,
-                  pl: 1.05
+                  lineHeight: 1.4,
+                  pl: 1.1
                 }}
               >
                 1. Complete este formulario para evaluar su solicitud de préstamo. Toda la información proporcionada
@@ -1019,7 +1019,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                     Cambiar de cuenta
                   </Typography>
                 </Typography>
-                <Typography sx={{ color: '#5f6368', fontSize: 12, lineHeight: 1.35, mt: 1.1 }}>
+                <Typography sx={{ color: '#5f6368', fontSize: 12, lineHeight: 1.35, mt: 0.95 }}>
                   El nombre, el correo y la foto asociados a tu cuenta de Google se registrarán cuando subas archivos y
                   envíes este formulario
                 </Typography>
