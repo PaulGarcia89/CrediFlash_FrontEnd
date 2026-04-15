@@ -790,6 +790,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const rootFormSx = publicMode
     ? {
+        fontFamily: '"Roboto", Arial, sans-serif',
         p: 0,
         gap: 0.6,
         alignItems: 'stretch'
@@ -800,7 +801,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const publicBannerSx = publicMode
     ? {
-        height: { xs: 108, md: 122 },
+        height: { xs: 116, md: 136 },
         borderRadius: 2,
         overflow: 'hidden',
         border: '1px solid #5a9536',
@@ -926,28 +927,30 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     : undefined
   const publicQuestionInnerSx = publicMode
     ? {
-        px: { xs: 1.3, md: 1.45 },
-        py: { xs: 1.2, md: 1.3 },
-        minHeight: 118
+        px: { xs: 1.25, md: 1.35 },
+        py: { xs: 1.1, md: 1.2 },
+        minHeight: 116
       }
     : undefined
   const publicQuestionTitleSx = publicMode
     ? {
-        fontSize: 13.5,
-        fontWeight: 600,
+        fontSize: 12.5,
+        fontWeight: 700,
         lineHeight: 1.08,
         letterSpacing: '-0.015em',
         color: '#202124',
+        fontFamily: '"Roboto", Arial, sans-serif',
         textTransform: 'uppercase'
       }
     : undefined
   const publicQuestionSubtitleSx = publicMode
     ? {
-        fontSize: 13.5,
-        fontWeight: 600,
+        fontSize: 12.5,
+        fontWeight: 700,
         lineHeight: 1.08,
         letterSpacing: '-0.015em',
         color: '#202124',
+        fontFamily: '"Roboto", Arial, sans-serif',
         textTransform: 'uppercase'
       }
     : undefined
@@ -955,7 +958,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const PublicQuestionCard = ({ title, subtitle, required = false, children }) => (
     <Card sx={publicQuestionCardSx}>
       <CardContent sx={publicQuestionInnerSx}>
-        <Stack spacing={2.15}>
+        <Stack spacing={2}>
           <Box>
             <Stack direction='row' spacing={0.55} alignItems='flex-start' flexWrap='wrap'>
               <Typography sx={publicQuestionTitleSx}>{title}</Typography>
@@ -983,10 +986,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   fontFamily: '"Roboto", Arial, sans-serif',
                   fontWeight: 700,
                   mt: 0.1,
-                  lineHeight: 1.05,
-                  letterSpacing: '-0.03em',
+                  lineHeight: 1.04,
+                  letterSpacing: '-0.035em',
                   color: '#202124',
-                  fontSize: { xs: '1.8rem', md: '1.92rem' }
+                  fontSize: { xs: '1.58rem', md: '1.7rem' }
                 }}
               >
                 CUSTOMER PRE-QUALIFICATION
@@ -995,8 +998,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               </Typography>
               <Typography
                 sx={{
+                  fontFamily: '"Roboto", Arial, sans-serif',
                   color: '#3c4043',
-                  fontSize: 12.75,
+                  fontSize: 12.25,
                   lineHeight: 1.4,
                   pl: 1.05
                 }}
@@ -1013,18 +1017,38 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   borderBottom: '1px solid #e0e0e0'
                 }}
               >
-                <Typography sx={{ color: '#5f6368', fontSize: 11.8, lineHeight: 1.35 }}>
+                <Typography
+                  sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#5f6368', fontSize: 11.5, lineHeight: 1.35 }}
+                >
                   paulandresgarcianarvaez@gmail.com{' '}
-                  <Typography component='span' sx={{ color: '#1a73e8', fontSize: 11.8, cursor: 'pointer' }}>
+                  <Typography
+                    component='span'
+                    sx={{
+                      fontFamily: '"Roboto", Arial, sans-serif',
+                      color: '#1a73e8',
+                      fontSize: 11.5,
+                      cursor: 'pointer'
+                    }}
+                  >
                     Cambiar de cuenta
                   </Typography>
                 </Typography>
-                <Typography sx={{ color: '#5f6368', fontSize: 11.8, lineHeight: 1.35, mt: 0.8 }}>
+                <Typography
+                  sx={{
+                    fontFamily: '"Roboto", Arial, sans-serif',
+                    color: '#5f6368',
+                    fontSize: 11.5,
+                    lineHeight: 1.35,
+                    mt: 0.8
+                  }}
+                >
                   El nombre, el correo y la foto asociados a tu cuenta de Google se registrarán cuando subas archivos y
                   envíes este formulario
                 </Typography>
               </Box>
-              <Typography sx={{ color: '#ea4335', fontWeight: 600, fontSize: 11.8 }}>
+              <Typography
+                sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#ea4335', fontWeight: 600, fontSize: 11.5 }}
+              >
                 * Indica que la pregunta es obligatoria
               </Typography>
             </Stack>
