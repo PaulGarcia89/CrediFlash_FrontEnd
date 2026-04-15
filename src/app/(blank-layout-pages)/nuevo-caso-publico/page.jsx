@@ -34,16 +34,15 @@ export default function NuevoCasoPublicoPage() {
           pointerEvents: 'none'
         }}
       />
-      <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 820, mx: 'auto', px: { xs: 1.5, sm: 2.5, md: 3 } }}>
+      <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 1264, mx: 'auto', px: { xs: 1.25, sm: 1.5, md: 1.75 } }}>
         <Stack
           spacing={2}
           sx={{
             mb: { xs: 3, md: 4 },
-            p: { xs: 2.25, md: 3 },
+            p: { xs: 1.25, md: 1.5 },
             borderRadius: 4,
-            border: '1px solid #dadce0',
             bgcolor: 'rgba(255, 255, 255, 0.95)',
-            boxShadow: '0 1px 2px rgba(60, 64, 67, 0.15)',
+            boxShadow: 'none',
             backdropFilter: 'blur(8px)'
           }}
         >
@@ -53,26 +52,38 @@ export default function NuevoCasoPublicoPage() {
             alignItems={{ sm: 'center' }}
             justifyContent='space-between'
           >
-            <Stack spacing={1} sx={{ maxWidth: 760 }}>
+            <Stack spacing={1} sx={{ maxWidth: 720 }}>
               <Box
                 component='img'
                 src='/creditflash-logo.svg'
                 alt='CreditFlash'
-                sx={{ height: 46, width: 'auto', alignSelf: 'flex-start' }}
+                sx={{ height: 42, width: 'auto', alignSelf: 'flex-start' }}
               />
               <Typography
                 variant='h4'
-                sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.08, color: '#202124' }}
+                sx={{
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.04,
+                  color: '#202124',
+                  fontSize: '1.85rem'
+                }}
               >
                 CUSTOMER PRE-QUALIFICATION
               </Typography>
               <Typography
                 variant='h4'
-                sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.08, color: '#202124' }}
+                sx={{
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.04,
+                  color: '#202124',
+                  fontSize: '1.85rem'
+                }}
               >
                 PRECALIFICACION DE CLIENTES
               </Typography>
-              <Typography sx={{ color: '#5f6368', maxWidth: 720, fontSize: 15 }}>
+              <Typography sx={{ color: '#5f6368', maxWidth: 720, fontSize: 14 }}>
                 Complete este formulario para evaluar su solicitud de préstamo. La información será tratada de manera
                 confidencial y utilizada únicamente con fines de evaluación crediticia.
               </Typography>
@@ -80,8 +91,8 @@ export default function NuevoCasoPublicoPage() {
             <Stack spacing={1} sx={{ minWidth: { sm: 250 } }}>
               <Box
                 sx={{
-                  px: 2,
-                  py: 1.25,
+                  px: 1.75,
+                  py: 1,
                   borderRadius: 999,
                   bgcolor: '#eef7ea',
                   color: '#137333',
@@ -97,14 +108,15 @@ export default function NuevoCasoPublicoPage() {
               </Typography>
             </Stack>
           </Stack>
-          <Divider sx={{ borderColor: '#dadce0' }} />
+          <Divider sx={{ borderColor: 'rgba(60, 64, 67, 0.08)' }} />
           <Alert
             severity='info'
             sx={{
               borderRadius: 3,
-              border: '1px solid #d9ead3',
+              border: 'none',
               bgcolor: '#f8faf8',
               color: '#202124',
+              py: 0.75,
               '& .MuiAlert-icon': { color: '#137333' }
             }}
           >

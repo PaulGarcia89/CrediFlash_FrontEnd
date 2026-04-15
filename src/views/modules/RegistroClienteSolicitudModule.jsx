@@ -254,16 +254,17 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
   const googleTextFieldSx = {
     width: '100%',
+    maxWidth: 560,
     '& .MuiInput-root': {
-      mt: 0.15,
+      mt: 0.05,
       fontFamily: '"Roboto", Arial, sans-serif',
-      fontSize: 15.5,
+      fontSize: 15,
       color: '#202124',
       alignItems: 'flex-end'
     },
     '& .MuiInputBase-input': {
       px: 0,
-      py: 0.55,
+      py: 0.35,
       '&::placeholder': {
         color: '#80868b',
         opacity: 1
@@ -295,10 +296,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
           <Typography
             sx={{
               fontFamily: '"Roboto", Arial, sans-serif',
-              fontSize: 14.5,
+              fontSize: 13.5,
               fontWeight: 400,
               color: '#202124',
-              lineHeight: 1.4
+              lineHeight: 1.35
             }}
           >
             {label}
@@ -786,7 +787,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
   const rootFormSx = publicMode
     ? {
         p: 0,
-        gap: 1.5
+        gap: 1
       }
     : {
         p: { xs: 2, md: 3 }
@@ -796,7 +797,6 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     ? {
         borderRadius: 0,
         overflow: 'hidden',
-        border: '1px solid #dadce0',
         bgcolor: '#ffffff',
         boxShadow: 'none',
         borderTop: '10px solid #34a853'
@@ -810,7 +810,6 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     ? {
         borderRadius: 0,
         overflow: 'hidden',
-        border: '1px solid #dadce0',
         bgcolor: '#ffffff',
         boxShadow: 'none',
         '& .MuiCardHeader-root': {
@@ -854,7 +853,6 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     ? {
         borderRadius: 0,
         overflow: 'hidden',
-        border: '1px solid #dadce0',
         bgcolor: '#ffffff',
         boxShadow: 'none',
         '& .MuiCardHeader-root': {
@@ -897,6 +895,603 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         '&:hover': { borderColor: '#137333', bgcolor: 'rgba(19, 115, 51, 0.04)' }
       }
     : undefined
+  const publicQuestionCardSx = publicMode
+    ? {
+        borderRadius: 3,
+        bgcolor: '#fff',
+        boxShadow: 'none',
+        overflow: 'hidden'
+      }
+    : undefined
+  const publicQuestionInnerSx = publicMode
+    ? {
+        px: { xs: 1.5, md: 1.75 },
+        py: { xs: 1.35, md: 1.5 },
+        minHeight: 128
+      }
+    : undefined
+  const publicQuestionTitleSx = publicMode
+    ? {
+        fontSize: 12.25,
+        fontWeight: 600,
+        lineHeight: 1.04,
+        letterSpacing: '-0.02em',
+        color: '#202124',
+        textTransform: 'uppercase'
+      }
+    : undefined
+  const publicQuestionSubtitleSx = publicMode
+    ? {
+        fontSize: 12.25,
+        fontWeight: 600,
+        lineHeight: 1.04,
+        letterSpacing: '-0.02em',
+        color: '#202124',
+        textTransform: 'uppercase'
+      }
+    : undefined
+
+  const PublicQuestionCard = ({ title, subtitle, required = false, children }) => (
+    <Card sx={publicQuestionCardSx}>
+      <CardContent sx={publicQuestionInnerSx}>
+        <Stack spacing={2.5}>
+          <Box>
+            <Stack direction='row' spacing={0.65} alignItems='flex-start' flexWrap='wrap'>
+              <Typography sx={publicQuestionTitleSx}>{title}</Typography>
+              {required ? (
+                <Typography sx={{ color: '#d93025', fontSize: 10, lineHeight: 1, mt: 0.12, ml: 0.75 }}>*</Typography>
+              ) : null}
+            </Stack>
+            <Typography sx={publicQuestionSubtitleSx}>{subtitle}</Typography>
+          </Box>
+          {children}
+        </Stack>
+      </CardContent>
+    </Card>
+  )
+
+  if (publicMode) {
+    return (
+      <Stack spacing={1.25} component='form' onSubmit={handleSubmit} sx={rootFormSx}>
+        <Card sx={introCardSx}>
+          <CardContent>
+            <Stack spacing={0.75}>
+              <Typography
+                variant='overline'
+                sx={{
+                  letterSpacing: '0.12em',
+                  color: '#137333',
+                  fontWeight: 700,
+                  fontSize: '0.68rem'
+                }}
+              >
+                Public intake form
+              </Typography>
+              <Typography
+                variant='h4'
+                sx={{
+                  fontWeight: 700,
+                  lineHeight: 1.06,
+                  letterSpacing: '-0.02em',
+                  color: '#202124',
+                  fontSize: '2.05rem'
+                }}
+              >
+                CUSTOMER PRE-QUALIFICATION
+              </Typography>
+              <Typography
+                variant='h4'
+                sx={{
+                  fontWeight: 700,
+                  lineHeight: 1.06,
+                  letterSpacing: '-0.02em',
+                  color: '#202124',
+                  fontSize: '2.05rem'
+                }}
+              >
+                PRECALIFICACION DE CLIENTES
+              </Typography>
+              <Typography color='text.secondary' sx={{ fontSize: 14.5, lineHeight: 1.45 }}>
+                Formulario público para registrar cliente y crear solicitud de crédito en un solo flujo.
+              </Typography>
+              <Typography sx={{ color: '#d93025', fontWeight: 700, fontSize: 12.5 }}>
+                * Indica que la pregunta es obligatoria
+              </Typography>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {error ? <Alert severity='error'>{error}</Alert> : null}
+
+        <PublicQuestionCard title='FULL NAME' subtitle='NOMBRE COMPLETO' required>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='nombre'
+            value={form.nombre}
+            onChange={handleChange}
+            fullWidth
+            required
+            error={isRequiredMissing('nombre')}
+            helperText={isRequiredMissing('nombre') ? 'Campo obligatorio' : 'Tu respuesta'}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='LAST NAME' subtitle='APELLIDO' required>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='apellido'
+            value={form.apellido}
+            onChange={handleChange}
+            fullWidth
+            required
+            error={isRequiredMissing('apellido')}
+            helperText={isRequiredMissing('apellido') ? 'Campo obligatorio' : 'Tu respuesta'}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='TELEPHONE NUMBER' subtitle='NUMERO DE TELEFONO'>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='telefono'
+            value={form.telefono}
+            onChange={handleChange}
+            fullWidth
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='EMAIL' subtitle='CORREO ELECTRONICO' required>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='email'
+            type='email'
+            value={form.email}
+            onChange={handleChange}
+            fullWidth
+            required
+            error={isRequiredMissing('email')}
+            helperText={isRequiredMissing('email') ? 'Campo obligatorio' : 'Ejemplo: cliente@correo.com'}
+            sx={googleTextFieldSx}
+          />
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1.25}
+            alignItems={{ md: 'center' }}
+            sx={{ mt: 2.5, flexWrap: 'wrap' }}
+          >
+            <Button
+              type='button'
+              variant='tonal'
+              color='info'
+              onClick={handleSendVerificationCode}
+              disabled={emailVerificationLoading || emailCodeValidationLoading || !form.email}
+            >
+              {emailVerificationLoading ? 'Enviando código...' : 'Enviar código de verificación'}
+            </Button>
+            <MuiTextField
+              variant='standard'
+              label={undefined}
+              size='small'
+              value={emailVerificationCode}
+              onChange={event => setEmailVerificationCode(event.target.value)}
+              placeholder='Ingresa el código'
+              sx={{ ...googleTextFieldSx, minWidth: { xs: '100%', md: 240 } }}
+            />
+            <Button
+              type='button'
+              variant='contained'
+              color='success'
+              onClick={handleVerifyCode}
+              disabled={!emailVerificationSent || emailCodeValidationLoading || !emailVerificationCode}
+              sx={{ textTransform: 'none' }}
+            >
+              {emailCodeValidationLoading ? 'Verificando...' : 'Verificar correo'}
+            </Button>
+            {emailVerified ? <Alert severity='success'>Correo verificado</Alert> : null}
+          </Stack>
+          {emailVerificationMessage ? (
+            <Typography variant='caption' color='text.secondary' sx={{ mt: 0.75, display: 'block' }}>
+              {emailVerificationMessage}
+            </Typography>
+          ) : null}
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='DATE OF BIRTH' subtitle='FECHA DE NACIMIENTO' required>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='fecha_nacimiento'
+            type='date'
+            value={form.fecha_nacimiento}
+            onChange={handleChange}
+            fullWidth
+            required
+            InputLabelProps={{ shrink: true }}
+            error={isRequiredMissing('fecha_nacimiento')}
+            helperText={isRequiredMissing('fecha_nacimiento') ? 'Campo obligatorio' : 'mm/dd/yyyy'}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='SEX' subtitle='SEXO' required>
+          <FormControl fullWidth required error={isRequiredMissing('sexo')}>
+            <RadioGroup value={form.sexo} onChange={handleSingleValue('sexo')}>
+              {SEXO_OPTIONS.map(option => (
+                <FormControlLabel
+                  key={option.value}
+                  control={<GoogleRadio value={option.value} />}
+                  label={<Typography sx={{ color: '#202124', fontSize: 14.5 }}>{option.label}</Typography>}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='ADDRESS' subtitle='DIRECCION'>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='direccion'
+            value={form.direccion}
+            onChange={handleChange}
+            fullWidth
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='ALTERNATE CONTACT NAME' subtitle='NOMBRE CONTACTO'>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='nombre_contacto'
+            value={form.nombre_contacto}
+            onChange={handleChange}
+            fullWidth
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='ALTERNATE CONTACT LAST NAME' subtitle='APELLIDO CONTACTO'>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='apellido_contacto'
+            value={form.apellido_contacto}
+            onChange={handleChange}
+            fullWidth
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='ALTERNATE CONTACT TELEPHONE' subtitle='TELEFONO CONTACTO'>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='telefono_contacto'
+            value={form.telefono_contacto}
+            onChange={handleChange}
+            fullWidth
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='ALTERNATE CONTACT EMAIL' subtitle='EMAIL CONTACTO'>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='email_contacto'
+            type='email'
+            value={form.email_contacto}
+            onChange={handleChange}
+            fullWidth
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='ALTERNATE CONTACT ADDRESS' subtitle='DIRECCION CONTACTO'>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='direccion_contacto'
+            value={form.direccion_contacto}
+            onChange={handleChange}
+            fullWidth
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='OBSERVATIONS' subtitle='OBSERVACIONES'>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='observaciones'
+            value={form.observaciones}
+            onChange={handleChange}
+            fullWidth
+            multiline
+            minRows={3}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='CURRENT LEGAL STATUS' subtitle='ESTATUS LEGAL ACTUAL' required>
+          <FormControl fullWidth required error={isRequiredMissing('status_legal')}>
+            <RadioGroup value={form.status_legal} onChange={handleSingleValue('status_legal')}>
+              {STATUS_LEGAL_OPTIONS.map(option => (
+                <FormControlLabel
+                  key={option.value}
+                  control={<GoogleRadio value={option.value} />}
+                  label={<Typography sx={{ color: '#202124', fontSize: 14.5 }}>{option.label}</Typography>}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='YOU ARE CURRENTLY EMPLOYED' subtitle='TIENES EMPLEO ACTUALMENTE?' required>
+          <FormControl fullWidth required error={isRequiredMissing('empleo_actual')}>
+            <RadioGroup value={form.empleo_actual} onChange={handleSingleValue('empleo_actual')}>
+              {['SI', 'NO', 'OTRO'].map(option => (
+                <FormControlLabel
+                  key={option}
+                  control={<GoogleRadio value={option} />}
+                  label={
+                    <Typography sx={{ color: '#202124', fontSize: 14.5 }}>
+                      {option === 'SI' ? 'SI (YES)' : option === 'NO' ? 'NO' : 'OTRO (OTHER)'}
+                    </Typography>
+                  }
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='ANTIQUITY AT WORK' subtitle='ANTIGUEDAD EN EL TRABAJO' required>
+          <FormControl fullWidth required error={isRequiredMissing('antiguedad_laboral_meses')}>
+            <RadioGroup value={form.antiguedad_laboral_meses} onChange={handleSingleValue('antiguedad_laboral_meses')}>
+              {ANTIGUEDAD_LABORAL_OPTIONS.map(option => (
+                <FormControlLabel
+                  key={option.value}
+                  control={<GoogleRadio value={option.value} />}
+                  label={<Typography sx={{ color: '#202124', fontSize: 14.5 }}>{option.label}</Typography>}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='MONTHLY INCOME' subtitle='INGRESOS MENSUALES' required>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='ingresos_mensuales'
+            type='number'
+            value={form.ingresos_mensuales}
+            onChange={handleChange}
+            fullWidth
+            required
+            error={isRequiredMissing('ingresos_mensuales')}
+            helperText={isRequiredMissing('ingresos_mensuales') ? 'Campo obligatorio' : 'Ejemplo: 2500'}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='HOUSE PAYMENT OR RENT' subtitle='PAGO DE CASA PROPIO O RENTA' required>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='pago_casa_renta_mensual'
+            type='number'
+            value={form.pago_casa_renta_mensual}
+            onChange={handleChange}
+            fullWidth
+            required
+            error={isRequiredMissing('pago_casa_renta_mensual')}
+            helperText={isRequiredMissing('pago_casa_renta_mensual') ? 'Campo obligatorio' : 'Ejemplo: 500'}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard
+          title='CAR PAYMENT AND MONTHLY INSURANCE'
+          subtitle='PAGO DE CARRO Y SEGURO MENSUAL'
+          required
+        >
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='pago_carro_seguro_mensual'
+            type='number'
+            value={form.pago_carro_seguro_mensual}
+            onChange={handleChange}
+            fullWidth
+            required
+            error={isRequiredMissing('pago_carro_seguro_mensual')}
+            helperText={isRequiredMissing('pago_carro_seguro_mensual') ? 'Campo obligatorio' : 'Ejemplo: 300'}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='OTHER EXPENSES' subtitle='OTROS GASTOS' required>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='otros_gastos_mensuales'
+            type='number'
+            value={form.otros_gastos_mensuales}
+            onChange={handleChange}
+            fullWidth
+            required
+            error={isRequiredMissing('otros_gastos_mensuales')}
+            helperText={isRequiredMissing('otros_gastos_mensuales') ? 'Campo obligatorio' : 'Ejemplo: 200'}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='DESTINATION OF THE REQUEST' subtitle='DESTINO DE LA SOLICITUD' required>
+          <FormControl fullWidth required error={isRequiredMissing('destino')}>
+            <RadioGroup value={form.destino} onChange={handleSingleValue('destino')}>
+              {DESTINO_OPTIONS.map(option => (
+                <FormControlLabel
+                  key={option.value}
+                  control={<GoogleRadio value={option.value} />}
+                  label={<Typography sx={{ color: '#202124', fontSize: 14.5 }}>{option.label}</Typography>}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='FORM OF PAYMENT' subtitle='FORMA DE PAGOS' required>
+          <FormControl fullWidth required error={isRequiredMissing('modalidad')}>
+            <RadioGroup value={form.modalidad} onChange={handleSingleValue('modalidad')}>
+              {MODALIDAD_OPTIONS.map(option => (
+                <FormControlLabel
+                  key={option.value}
+                  control={<GoogleRadio value={option.value} />}
+                  label={<Typography sx={{ color: '#202124', fontSize: 14.5 }}>{option.label}</Typography>}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='APPLICATION AMOUNT' subtitle='MONTO DE SU SOLICITUD' required>
+          <FormControl fullWidth required error={isRequiredMissing('monto_solicitud_rango')}>
+            <RadioGroup value={form.monto_solicitud_rango} onChange={handleSingleValue('monto_solicitud_rango')}>
+              {MONTO_RANGO_OPTIONS.map(option => (
+                <FormControlLabel
+                  key={option.value}
+                  control={<GoogleRadio value={option.value} />}
+                  label={<Typography sx={{ color: '#202124', fontSize: 14.5 }}>{option.label}</Typography>}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='AMOUNT REQUESTED' subtitle='MONTO SOLICITADO' required>
+          <MuiTextField
+            variant='standard'
+            label={undefined}
+            name='monto_solicitado'
+            type='number'
+            value={form.monto_solicitado}
+            onChange={handleChange}
+            fullWidth
+            required
+            error={isRequiredMissing('monto_solicitado')}
+            helperText={isRequiredMissing('monto_solicitado') ? 'Campo obligatorio' : 'Ejemplo: 2000'}
+            sx={googleTextFieldSx}
+          />
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='IMPORTANT FILE' subtitle='ARCHIVOS (IMPORTANTE)' required>
+          <Stack spacing={1.25}>
+            <Typography color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
+              UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
+            </Typography>
+            <Button variant='outlined' component='label' size='small' sx={googleOutlinedButtonSx}>
+              Añadir archivo
+              <input hidden type='file' accept='application/pdf,.pdf' onChange={handleDocumentoIdentidad} />
+            </Button>
+            {documentoIdentidad ? renderFileChips([documentoIdentidad], handleRemoveDocumentoIdentidad) : null}
+            <Typography
+              variant='caption'
+              color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
+            >
+              {documentoIdentidad ? '1 archivo cargado.' : 'Sube 1 archivo compatible. Tamaño máximo: 10 MB.'}
+            </Typography>
+          </Stack>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='BANK STATEMENTS' subtitle='ESTADOS DE CUENTAS BANCARIOS' required>
+          <Stack spacing={1.25}>
+            <Typography color='text.secondary'>LAST 2 MONTHS / ULTIMOS 2 MESES</Typography>
+            <Typography color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
+              Sube entre 1 y 4 archivos compatibles. Tamaño máximo por archivo: 10MB.
+            </Typography>
+            <Button variant='outlined' component='label' size='small' sx={googleOutlinedButtonSx}>
+              Añadir archivo
+              <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
+            </Button>
+            {renderFileChips(documentosEstadoCuenta, handleRemoveEstadoCuenta)}
+            <Typography variant='caption' color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
+              {documentosEstadoCuenta.length
+                ? `${documentosEstadoCuenta.length} archivo(s) cargado(s)`
+                : 'No hay estados de cuenta cargados'}
+            </Typography>
+          </Stack>
+        </PublicQuestionCard>
+
+        <PublicQuestionCard title='PROOF OF INCOME' subtitle='COMPROBANTES DE INGRESOS' required>
+          <Stack spacing={1.25}>
+            <Typography color='text.secondary'>
+              Sube entre 1 y 4 comprobantes. Tamaño máximo por archivo: 10MB.
+            </Typography>
+            <Typography color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}>
+              Debes cargar entre 1 y 4 archivos PDF.
+            </Typography>
+            <Button variant='outlined' component='label' size='small' sx={googleOutlinedButtonSx}>
+              Añadir archivo
+              <input
+                hidden
+                type='file'
+                accept='application/pdf,.pdf'
+                multiple
+                onChange={handleComprobantesIngresoFiles}
+              />
+            </Button>
+            {renderFileChips(documentosComprobantesIngreso, handleRemoveComprobanteIngreso)}
+            <Typography
+              variant='caption'
+              color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}
+            >
+              {documentosComprobantesIngreso.length
+                ? `${documentosComprobantesIngreso.length} archivo(s) cargado(s)`
+                : 'No hay comprobantes cargados'}
+            </Typography>
+          </Stack>
+        </PublicQuestionCard>
+
+        <Card sx={publicQuestionCardSx}>
+          <CardContent sx={publicQuestionInnerSx}>
+            <Stack spacing={2}>
+              <Button variant='contained' type='submit' disabled={saving} fullWidth sx={googlePrimaryButtonSx}>
+                {saving ? 'Guardando...' : 'Enviar solicitud'}
+              </Button>
+              <FormControlLabel
+                control={
+                  <GoogleCheckbox
+                    checked={acceptedPublicTerms}
+                    onChange={event => setAcceptedPublicTerms(event.target.checked)}
+                  />
+                }
+                label='Acepto el aviso legal y el tratamiento de mis datos.'
+              />
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
+          onClose={() => setSnackbar({ open: false, message: '' })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert severity='warning' variant='filled'>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Stack>
+    )
+  }
 
   return (
     <Stack spacing={publicMode ? 1.5 : 3} component='form' onSubmit={handleSubmit} sx={rootFormSx}>
