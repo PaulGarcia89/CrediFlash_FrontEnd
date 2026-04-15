@@ -1,9 +1,9 @@
 import { apiRequest } from './http'
 
-export const listarSolicitudes = ({ page = 1, limit = 20, estado = '', search = '' } = {}) =>
+export const listarSolicitudes = ({ page = 1, limit = 20, estado = '', search = '', origen = '' } = {}) =>
   apiRequest('/solicitudes', {
     method: 'GET',
-    query: { page, limit, estado, search }
+    query: { page, limit, estado, search, origen }
   })
 
 export const crearSolicitud = formData =>

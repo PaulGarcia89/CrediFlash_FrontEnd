@@ -729,8 +729,14 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
       }
 
       const solicitudPayload = new FormData()
+      const publicSubmissionTimestamp = new Date().toISOString()
 
       solicitudPayload.append('cliente_id', String(clienteId))
+      if (publicMode) {
+        solicitudPayload.append('origen_solicitud', 'EXTERNO')
+        solicitudPayload.append('solicitud_enviada_en', publicSubmissionTimestamp)
+        solicitudPayload.append('fecha_envio_solicitud', publicSubmissionTimestamp)
+      }
       solicitudPayload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
       solicitudPayload.append('modalidad', form.modalidad)
       solicitudPayload.append('plazo_semanas', String(publicMode ? 1 : Number(form.plazo_semanas || 0)))

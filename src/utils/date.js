@@ -21,3 +21,18 @@ export const formatDateMMDDYYYY = value => {
 
   return `${mm}/${dd}/${yyyy}`
 }
+
+export const formatDateTimeMMDDYYYY = value => {
+  if (!value) return '-'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+
+  const datePart = formatDateMMDDYYYY(date)
+  const hours = date.getHours()
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const suffix = hours >= 12 ? 'PM' : 'AM'
+  const normalizedHours = hours % 12 || 12
+
+  return `${datePart} ${String(normalizedHours).padStart(2, '0')}:${minutes} ${suffix}`
+}

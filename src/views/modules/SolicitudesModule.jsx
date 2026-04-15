@@ -48,6 +48,7 @@ import { aprobarSolicitudComoPrestamo } from '@/api/prestamos'
 import usePermissions from '@/hooks/usePermissions'
 import { appendAuditLog } from '@/lib/audit/logs'
 import { formatUSD } from '@/utils/currency'
+import { formatDateTimeMMDDYYYY } from '@/utils/date'
 
 const LABEL_MAP = {
   scoreFinal: 'Puntaje',
@@ -318,6 +319,47 @@ const getEstadoColor = estado => {
   return 'warning'
 }
 
+const isTruthyFlag = value => {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
+
+  return ['1', 'true', 'si', 'sí', 'yes', 'externo', 'externa', 'publico', 'público', 'publica', 'pública'].includes(
+    normalized
+  )
+}
+
+const getSolicitudOrigen = row => {
+  const source = row?.origen_solicitud || row?.origen || row?.source || row?.canal || row?.canal_registro || ''
+  const normalized = String(source || '')
+    .trim()
+    .toLowerCase()
+
+  if (
+    isTruthyFlag(row?.es_externa) ||
+    isTruthyFlag(row?.es_publica) ||
+    isTruthyFlag(row?.publica) ||
+    normalized.includes('extern') ||
+    normalized.includes('public')
+  ) {
+    return 'EXTERNO'
+  }
+
+  return 'INTERNO'
+}
+
+const getSolicitudFechaEnvio = row =>
+  row?.solicitud_enviada_en ||
+  row?.fecha_envio_solicitud ||
+  row?.fecha_creacion_solicitud ||
+  row?.created_at ||
+  row?.createdAt ||
+  row?.creado_en ||
+  row?.timestamp ||
+  row?.updated_at ||
+  row?.updatedAt ||
+  ''
+
 const countEstado = (rows, estado) => rows.filter(item => String(item?.estado || '').toUpperCase() === estado).length
 
 const getClienteNombre = row => {
@@ -458,6 +500,7 @@ export default function SolicitudesModule() {
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
   const [estado, setEstado] = useState('')
+  const [origen, setOrigen] = useState('')
   const [modeloFiltro, setModeloFiltro] = useState('')
   const [orden, setOrden] = useState('pendientes')
   const [page, setPage] = useState(1)
@@ -500,7 +543,7 @@ export default function SolicitudesModule() {
         return
       }
 
-      const response = await listarSolicitudes({ page, limit, estado, search })
+      const response = await listarSolicitudes({ page, limit, estado, search, origen })
       const rows = extractRows(response)
 
       rows.sort((a, b) => {
@@ -517,7 +560,7 @@ export default function SolicitudesModule() {
     } finally {
       setLoading(false)
     }
-  }, [estado, focusSolicitudId, limit, page, search])
+  }, [estado, focusSolicitudId, limit, origen, page, search])
 
   useEffect(() => {
     loadSolicitudes()
@@ -525,7 +568,7 @@ export default function SolicitudesModule() {
 
   useEffect(() => {
     setPage(1)
-  }, [estado, limit, search])
+  }, [estado, limit, origen, search])
 
   useEffect(() => {
     if (!createdFromNuevoCaso) return
@@ -554,7 +597,8 @@ export default function SolicitudesModule() {
 
       const response = await aprobarSolicitudComoPrestamo(row.id, approvalRequestBody)
       const responsePayload = response?.data || response || {}
-      const nombreCliente = getClienteNombre(row) || responsePayload?.prestamo?.nombre_completo || 'cliente seleccionado'
+      const nombreCliente =
+        getClienteNombre(row) || responsePayload?.prestamo?.nombre_completo || 'cliente seleccionado'
       const cuotasGeneradasRaw = responsePayload?.cuotas_generadas
       const cuotasGeneradas = Array.isArray(cuotasGeneradasRaw)
         ? cuotasGeneradasRaw.length
@@ -849,6 +893,10 @@ export default function SolicitudesModule() {
       output = output.filter(item => String(item?.modelo_calificacion || '').toUpperCase() === modeloFiltro)
     }
 
+    if (origen) {
+      output = output.filter(item => getSolicitudOrigen(item) === origen)
+    }
+
     if (orden === 'monto_desc') {
       output.sort((a, b) => Number(b?.monto_solicitado || 0) - Number(a?.monto_solicitado || 0))
     }
@@ -895,7 +943,7 @@ export default function SolicitudesModule() {
     }
 
     return output
-  }, [modeloFiltro, orden, rows, search, focusActive, focusClienteId, focusSolicitudId])
+  }, [modeloFiltro, orden, origen, rows, search, focusActive, focusClienteId, focusSolicitudId])
 
   const metrics = useMemo(() => {
     return {
@@ -927,10 +975,21 @@ export default function SolicitudesModule() {
     : []
 
   const handleExportCsv = () => {
-    const headers = ['Cliente', 'Monto', 'Modalidad', 'PlazoSemanas', 'TasaVariablePct', 'Estado']
+    const headers = [
+      'Cliente',
+      'Origen',
+      'FechaHoraEnvio',
+      'Monto',
+      'Modalidad',
+      'PlazoSemanas',
+      'TasaVariablePct',
+      'Estado'
+    ]
 
     const lines = tableRows.map(item => [
       getClienteNombre(item) || '',
+      getSolicitudOrigen(item),
+      formatDateTimeMMDDYYYY(getSolicitudFechaEnvio(item)),
       item?.monto_solicitado || '',
       item?.modalidad || '',
       item?.plazo_semanas || '',
@@ -975,7 +1034,12 @@ export default function SolicitudesModule() {
         {canRunRatings ? (
           <Tooltip title='Ejecutar modelo'>
             <span>
-              <IconButton size='small' color='warning' disabled={!isPendiente || isBusy} onClick={() => openModeloDialog(row)}>
+              <IconButton
+                size='small'
+                color='warning'
+                disabled={!isPendiente || isBusy}
+                onClick={() => openModeloDialog(row)}
+              >
                 <i className='tabler-player-play text-3xl' />
               </IconButton>
             </span>
@@ -984,7 +1048,12 @@ export default function SolicitudesModule() {
         {canApproveSolicitud ? (
           <Tooltip title='Aprobar'>
             <span>
-              <IconButton size='small' color='success' disabled={!isPendiente || isBusy} onClick={() => openAprobacionDialog(row)}>
+              <IconButton
+                size='small'
+                color='success'
+                disabled={!isPendiente || isBusy}
+                onClick={() => openAprobacionDialog(row)}
+              >
                 <i className='tabler-check text-3xl' />
               </IconButton>
             </span>
@@ -1196,6 +1265,18 @@ export default function SolicitudesModule() {
                   <MenuItem value='APROBADO'>APROBADO</MenuItem>
                   <MenuItem value='RECHAZADO'>RECHAZADO</MenuItem>
                 </TextField>
+                <TextField
+                  select
+                  label='Origen'
+                  value={origen}
+                  onChange={event => setOrigen(event.target.value)}
+                  size='small'
+                  sx={{ minWidth: { xs: '100%', sm: 170 } }}
+                >
+                  <MenuItem value=''>Todos</MenuItem>
+                  <MenuItem value='INTERNO'>Internas</MenuItem>
+                  <MenuItem value='EXTERNO'>Externas</MenuItem>
+                </TextField>
               </Stack>
             </Stack>
             <Divider />
@@ -1229,6 +1310,8 @@ export default function SolicitudesModule() {
                       <Checkbox size='small' />
                     </TableCell>
                     <TableCell>Cliente</TableCell>
+                    <TableCell>Origen</TableCell>
+                    <TableCell>Fecha y hora</TableCell>
                     <TableCell>Monto</TableCell>
                     <TableCell>Modalidad</TableCell>
                     <TableCell>Plazo (semanas)</TableCell>
@@ -1258,6 +1341,15 @@ export default function SolicitudesModule() {
                           <Checkbox size='small' />
                         </TableCell>
                         <TableCell>{cliente || '-'}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={getSolicitudOrigen(row) === 'EXTERNO' ? 'Externo' : 'Interno'}
+                            color={getSolicitudOrigen(row) === 'EXTERNO' ? 'info' : 'default'}
+                            size='small'
+                            variant='tonal'
+                          />
+                        </TableCell>
+                        <TableCell>{formatDateTimeMMDDYYYY(getSolicitudFechaEnvio(row))}</TableCell>
                         <TableCell>{formatUSD(row.monto_solicitado)}</TableCell>
                         <TableCell>{row.modalidad || '-'}</TableCell>
                         <TableCell>{row.plazo_semanas ?? '-'}</TableCell>
@@ -1276,7 +1368,7 @@ export default function SolicitudesModule() {
                   })}
                   {tableRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align='center'>
+                      <TableCell colSpan={10} align='center'>
                         Sin resultados
                       </TableCell>
                     </TableRow>
@@ -1289,6 +1381,8 @@ export default function SolicitudesModule() {
                 {tableRows.map(row => {
                   const cliente = getClienteNombre(row)
                   const clienteId = row?.cliente_id || row?.cliente?.id || ''
+                  const origen = getSolicitudOrigen(row)
+                  const fechaEnvio = getSolicitudFechaEnvio(row)
 
                   return (
                     <Card
@@ -1304,10 +1398,26 @@ export default function SolicitudesModule() {
                         <Stack spacing={1}>
                           <Stack direction='row' justifyContent='space-between' alignItems='center'>
                             <Typography fontWeight={700}>{cliente || '-'}</Typography>
-                            <Chip label={row.estado || '-'} color={getEstadoColor(row.estado)} size='small' variant='tonal' />
+                            <Stack direction='row' spacing={0.75} flexWrap='wrap' justifyContent='flex-end'>
+                              <Chip
+                                label={origen === 'EXTERNO' ? 'Externo' : 'Interno'}
+                                color={origen === 'EXTERNO' ? 'info' : 'default'}
+                                size='small'
+                                variant='tonal'
+                              />
+                              <Chip
+                                label={row.estado || '-'}
+                                color={getEstadoColor(row.estado)}
+                                size='small'
+                                variant='tonal'
+                              />
+                            </Stack>
                           </Stack>
                           <Typography variant='body2' color='text.secondary'>
                             Monto: {formatUSD(row.monto_solicitado)}
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            Fecha y hora: {formatDateTimeMMDDYYYY(fechaEnvio)}
                           </Typography>
                           <Typography variant='body2' color='text.secondary'>
                             Modalidad: {row.modalidad || '-'}
@@ -1523,7 +1633,9 @@ export default function SolicitudesModule() {
               <input hidden type='file' accept='application/pdf,.pdf' onChange={handleContratoAprobacionFile} />
             </Button>
             <Typography variant='caption' color='text.secondary'>
-              {contratoAprobacionFile ? `Archivo seleccionado: ${contratoAprobacionFile.name}` : 'Aún no has cargado el contrato.'}
+              {contratoAprobacionFile
+                ? `Archivo seleccionado: ${contratoAprobacionFile.name}`
+                : 'Aún no has cargado el contrato.'}
             </Typography>
           </Stack>
         </DialogContent>
