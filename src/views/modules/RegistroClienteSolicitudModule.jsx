@@ -1047,44 +1047,6 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 1. Complete este formulario para evaluar su solicitud de préstamo. Toda la información proporcionada
                 será tratada de manera confidencial y utilizada únicamente con fines de evaluación crediticia.
               </Typography>
-              <Box
-                sx={{
-                  py: 0.8,
-                  pl: 0.15,
-                  pr: 0.15,
-                  borderTop: '1px solid #e0e0e0',
-                  borderBottom: '1px solid #e0e0e0'
-                }}
-              >
-                <Typography
-                  sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#202124', fontSize: 15.9, lineHeight: 1.35 }}
-                >
-                  paulandresgarcianarvaez@gmail.com{' '}
-                  <Typography
-                    component='span'
-                    sx={{
-                      fontFamily: '"Roboto", Arial, sans-serif',
-                      color: '#1a73e8',
-                      fontSize: 15.9,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Cambiar de cuenta
-                  </Typography>
-                </Typography>
-                <Typography
-                  sx={{
-                    fontFamily: '"Roboto", Arial, sans-serif',
-                    color: '#3c4043',
-                    fontSize: 15.9,
-                    lineHeight: 1.35,
-                    mt: 1
-                  }}
-                >
-                  El nombre, el correo y la foto asociados a tu cuenta de Google se registrarán cuando subas archivos y
-                  envíes este formulario
-                </Typography>
-              </Box>
               <Typography
                 sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#ea4335', fontWeight: 600, fontSize: 15.9 }}
               >
