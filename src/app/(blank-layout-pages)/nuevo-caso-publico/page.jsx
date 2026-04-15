@@ -16,10 +16,10 @@ export default function NuevoCasoPublicoPage() {
         minHeight: '100vh',
         position: 'relative',
         overflow: 'hidden',
-        py: { xs: 2, md: 5 },
-        bgcolor: '#f4f7f1',
+        py: { xs: 2, md: 4 },
+        bgcolor: '#f1f3f4',
         backgroundImage:
-          'radial-gradient(circle at top left, rgba(83, 164, 81, 0.13), transparent 28%), radial-gradient(circle at top right, rgba(36, 88, 39, 0.08), transparent 24%), linear-gradient(180deg, #f7faf4 0%, #eef4ea 100%)'
+          'radial-gradient(circle at top left, rgba(52, 168, 83, 0.1), transparent 26%), radial-gradient(circle at top right, rgba(95, 99, 104, 0.06), transparent 22%), linear-gradient(180deg, #f8f9fa 0%, #edf0ed 100%)'
       }}
     >
       <Box
@@ -34,16 +34,16 @@ export default function NuevoCasoPublicoPage() {
           pointerEvents: 'none'
         }}
       />
-      <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 1100, mx: 'auto', px: { xs: 2, sm: 3, md: 4 } }}>
+      <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 820, mx: 'auto', px: { xs: 1.5, sm: 2.5, md: 3 } }}>
         <Stack
           spacing={2}
           sx={{
             mb: { xs: 3, md: 4 },
-            p: { xs: 2.5, md: 3.5 },
+            p: { xs: 2.25, md: 3 },
             borderRadius: 4,
-            border: '1px solid rgba(131, 156, 122, 0.22)',
-            bgcolor: 'rgba(255, 255, 255, 0.84)',
-            boxShadow: '0 18px 45px rgba(25, 38, 17, 0.08)',
+            border: '1px solid #dadce0',
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            boxShadow: '0 1px 2px rgba(60, 64, 67, 0.15)',
             backdropFilter: 'blur(8px)'
           }}
         >
@@ -61,28 +61,18 @@ export default function NuevoCasoPublicoPage() {
                 sx={{ height: 46, width: 'auto', alignSelf: 'flex-start' }}
               />
               <Typography
-                variant='h3'
-                sx={{
-                  fontWeight: 800,
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1.05,
-                  color: '#153218'
-                }}
+                variant='h4'
+                sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.08, color: '#202124' }}
               >
                 CUSTOMER PRE-QUALIFICATION
               </Typography>
               <Typography
-                variant='h3'
-                sx={{
-                  fontWeight: 800,
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1.05,
-                  color: '#153218'
-                }}
+                variant='h4'
+                sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.08, color: '#202124' }}
               >
                 PRECALIFICACION DE CLIENTES
               </Typography>
-              <Typography sx={{ color: '#4e6350', maxWidth: 760 }}>
+              <Typography sx={{ color: '#5f6368', maxWidth: 720, fontSize: 15 }}>
                 Complete este formulario para evaluar su solicitud de préstamo. La información será tratada de manera
                 confidencial y utilizada únicamente con fines de evaluación crediticia.
               </Typography>
@@ -94,28 +84,28 @@ export default function NuevoCasoPublicoPage() {
                   py: 1.25,
                   borderRadius: 999,
                   bgcolor: '#eef7ea',
-                  color: '#2f6b35',
+                  color: '#137333',
                   fontWeight: 700,
-                  border: '1px solid rgba(83, 164, 81, 0.18)',
+                  border: '1px solid #dce8df',
                   alignSelf: { xs: 'flex-start', sm: 'flex-end' }
                 }}
               >
                 Formulario público
               </Box>
-              <Typography variant='body2' sx={{ color: '#5e7260', textAlign: { xs: 'left', sm: 'right' } }}>
+              <Typography variant='body2' sx={{ color: '#5f6368', textAlign: { xs: 'left', sm: 'right' } }}>
                 No requiere iniciar sesión.
               </Typography>
             </Stack>
           </Stack>
-          <Divider sx={{ borderColor: 'rgba(131, 156, 122, 0.2)' }} />
+          <Divider sx={{ borderColor: '#dadce0' }} />
           <Alert
             severity='info'
             sx={{
               borderRadius: 3,
-              border: '1px solid rgba(83, 164, 81, 0.18)',
-              bgcolor: '#fbfef8',
-              color: '#304633',
-              '& .MuiAlert-icon': { color: '#53a451' }
+              border: '1px solid #d9ead3',
+              bgcolor: '#f8faf8',
+              color: '#202124',
+              '& .MuiAlert-icon': { color: '#137333' }
             }}
           >
             Aviso legal: Los datos enviados serán utilizados exclusivamente para evaluación crediticia y verificación.
