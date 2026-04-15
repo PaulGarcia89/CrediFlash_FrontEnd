@@ -282,7 +282,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
     '& .MuiFormHelperText-root': {
       ml: 0,
       mt: 0.25,
-      color: '#5f6368',
+      color: '#3c4043',
       display: 'none'
     },
     '& .MuiFormHelperText-root.Mui-error': {
@@ -302,7 +302,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               fontFamily: '"Roboto", Arial, sans-serif',
               fontSize: 13.5,
               fontWeight: 400,
-              color: '#202124',
+              color: '#111111',
               lineHeight: 1.35
             }}
           >
@@ -916,6 +916,37 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         '&:hover': { borderColor: '#137333', bgcolor: 'rgba(19, 115, 51, 0.04)' }
       }
     : undefined
+  const emailVerificationButtonSx = publicMode
+    ? {
+        textTransform: 'none',
+        bgcolor: '#e8f0fe',
+        color: '#1a73e8',
+        border: '1px solid #b6d4fe',
+        boxShadow: 'none',
+        '&:hover': {
+          bgcolor: '#d2e3fc',
+          boxShadow: 'none'
+        },
+        '&.Mui-disabled': {
+          bgcolor: '#eef3fb',
+          color: '#8aa6d8',
+          borderColor: '#d6e0f5'
+        }
+      }
+    : undefined
+  const emailVerifyButtonSx = publicMode
+    ? {
+        textTransform: 'none',
+        bgcolor: '#137333',
+        color: '#ffffff',
+        boxShadow: 'none',
+        '&:hover': { bgcolor: '#0f5f2d', boxShadow: 'none' },
+        '&.Mui-disabled': {
+          bgcolor: '#b8dfc5',
+          color: '#ffffff'
+        }
+      }
+    : undefined
   const publicQuestionCardSx = publicMode
     ? {
         borderRadius: 2,
@@ -938,7 +969,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         fontWeight: 700,
         lineHeight: 1.08,
         letterSpacing: '-0.015em',
-        color: '#202124',
+        color: '#111111',
         fontFamily: '"Roboto", Arial, sans-serif',
         textTransform: 'uppercase'
       }
@@ -949,7 +980,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
         fontWeight: 700,
         lineHeight: 1.08,
         letterSpacing: '-0.015em',
-        color: '#202124',
+        color: '#111111',
         fontFamily: '"Roboto", Arial, sans-serif',
         textTransform: 'uppercase'
       }
@@ -988,7 +1019,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                   mt: 0.1,
                   lineHeight: 1.04,
                   letterSpacing: '-0.035em',
-                  color: '#202124',
+                  color: '#111111',
                   fontSize: { xs: '2.18rem', md: '2.35rem' }
                 }}
               >
@@ -999,7 +1030,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               <Typography
                 sx={{
                   fontFamily: '"Roboto", Arial, sans-serif',
-                  color: '#3c4043',
+                  color: '#111111',
                   fontSize: 16.9,
                   lineHeight: 1.4,
                   pl: 1.05
@@ -1018,7 +1049,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 }}
               >
                 <Typography
-                  sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#5f6368', fontSize: 15.9, lineHeight: 1.35 }}
+                  sx={{ fontFamily: '"Roboto", Arial, sans-serif', color: '#202124', fontSize: 15.9, lineHeight: 1.35 }}
                 >
                   paulandresgarcianarvaez@gmail.com{' '}
                   <Typography
@@ -1036,7 +1067,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
                 <Typography
                   sx={{
                     fontFamily: '"Roboto", Arial, sans-serif',
-                    color: '#5f6368',
+                    color: '#3c4043',
                     fontSize: 15.9,
                     lineHeight: 1.35,
                     mt: 1
@@ -1125,6 +1156,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               color='info'
               onClick={handleSendVerificationCode}
               disabled={emailVerificationLoading || emailCodeValidationLoading || !form.email}
+              sx={emailVerificationButtonSx}
             >
               {emailVerificationLoading ? 'Enviando código...' : 'Enviar código de verificación'}
             </Button>
@@ -1143,7 +1175,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               color='success'
               onClick={handleVerifyCode}
               disabled={!emailVerificationSent || emailCodeValidationLoading || !emailVerificationCode}
-              sx={{ textTransform: 'none' }}
+              sx={emailVerifyButtonSx}
             >
               {emailCodeValidationLoading ? 'Verificando...' : 'Verificar correo'}
             </Button>
@@ -1448,7 +1480,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
         <PublicQuestionCard title='IMPORTANT FILE' subtitle='ARCHIVOS (IMPORTANTE)' required>
           <Stack spacing={1.25}>
-            <Typography color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
+            <Typography sx={{ color: isRequiredMissing('documento_identidad') ? '#d93025' : '#111111' }}>
               UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
             </Typography>
             <Button variant='outlined' component='label' size='small' sx={googleOutlinedButtonSx}>
@@ -1458,7 +1490,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             {documentoIdentidad ? renderFileChips([documentoIdentidad], handleRemoveDocumentoIdentidad) : null}
             <Typography
               variant='caption'
-              color={isRequiredMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
+              sx={{ color: isRequiredMissing('documento_identidad') ? '#d93025' : '#3c4043' }}
             >
               {documentoIdentidad ? '1 archivo cargado.' : 'Sube 1 archivo compatible. Tamaño máximo: 10 MB.'}
             </Typography>
@@ -1467,8 +1499,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
         <PublicQuestionCard title='BANK STATEMENTS' subtitle='ESTADOS DE CUENTAS BANCARIOS' required>
           <Stack spacing={1.25}>
-            <Typography color='text.secondary'>LAST 2 MONTHS / ULTIMOS 2 MESES</Typography>
-            <Typography color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
+            <Typography sx={{ color: '#111111' }}>LAST 2 MONTHS / ULTIMOS 2 MESES</Typography>
+            <Typography sx={{ color: isRequiredMissing('estado_cuenta') ? '#d93025' : '#3c4043' }}>
               Sube entre 1 y 4 archivos compatibles. Tamaño máximo por archivo: 10MB.
             </Typography>
             <Button variant='outlined' component='label' size='small' sx={googleOutlinedButtonSx}>
@@ -1476,7 +1508,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
               <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
             </Button>
             {renderFileChips(documentosEstadoCuenta, handleRemoveEstadoCuenta)}
-            <Typography variant='caption' color={isRequiredMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
+            <Typography variant='caption' sx={{ color: isRequiredMissing('estado_cuenta') ? '#d93025' : '#3c4043' }}>
               {documentosEstadoCuenta.length
                 ? `${documentosEstadoCuenta.length} archivo(s) cargado(s)`
                 : 'No hay estados de cuenta cargados'}
@@ -1486,10 +1518,10 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
 
         <PublicQuestionCard title='PROOF OF INCOME' subtitle='COMPROBANTES DE INGRESOS' required>
           <Stack spacing={1.25}>
-            <Typography color='text.secondary'>
+            <Typography sx={{ color: '#111111' }}>
               Sube entre 1 y 4 comprobantes. Tamaño máximo por archivo: 10MB.
             </Typography>
-            <Typography color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}>
+            <Typography sx={{ color: isRequiredMissing('comprobantes_ingreso') ? '#d93025' : '#3c4043' }}>
               Debes cargar entre 1 y 4 archivos PDF.
             </Typography>
             <Button variant='outlined' component='label' size='small' sx={googleOutlinedButtonSx}>
@@ -1505,7 +1537,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false }) {
             {renderFileChips(documentosComprobantesIngreso, handleRemoveComprobanteIngreso)}
             <Typography
               variant='caption'
-              color={isRequiredMissing('comprobantes_ingreso') ? 'error.main' : 'text.secondary'}
+              sx={{ color: isRequiredMissing('comprobantes_ingreso') ? '#d93025' : '#3c4043' }}
             >
               {documentosComprobantesIngreso.length
                 ? `${documentosComprobantesIngreso.length} archivo(s) cargado(s)`
