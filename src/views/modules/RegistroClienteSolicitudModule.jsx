@@ -245,9 +245,10 @@ function GoogleCheckbox(props) {
   return <Checkbox disableRipple {...props} />
 }
 
-function PublicQuestionCard({ title, subtitle, required = false, children }) {
+function PublicQuestionCard({ fieldKey, title, subtitle, required = false, children }) {
   return (
     <Card
+      data-field-anchor={fieldKey || title}
       sx={{
         borderRadius: 2,
         border: '1px solid #dadce0',
@@ -304,6 +305,14 @@ function PublicQuestionCard({ title, subtitle, required = false, children }) {
   )
 }
 
+const createValidationError = (field, message) => {
+  const error = new Error(message)
+
+  error.field = field
+
+  return error
+}
+
 export default function RegistroClienteSolicitudModule({ publicMode = false, origenSolicitud }) {
   const router = useRouter()
 
@@ -342,6 +351,24 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
   const [emailCodeValidationLoading, setEmailCodeValidationLoading] = useState(false)
   const [emailVerificationMessage, setEmailVerificationMessage] = useState('')
   const [acceptedPublicTerms, setAcceptedPublicTerms] = useState(false)
+
+  const scrollToProblemField = field => {
+    if (!field) return
+
+    const target = document.querySelector(`[data-field-anchor="${field}"]`)
+
+    if (!target) return
+
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+      const focusable = target.querySelector('input, textarea, select, button, [tabindex]:not([tabindex="-1"])')
+
+      if (focusable && typeof focusable.focus === 'function') {
+        focusable.focus({ preventScroll: true })
+      }
+    })
+  }
 
   useEffect(() => {
     const loadClientesActivos = async () => {
@@ -618,51 +645,66 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
         .trim()
         .toLowerCase()
 
-      if (!String(form.nombre || '').trim()) throw new Error('Debes completar el nombre.')
-      if (!String(form.apellido || '').trim()) throw new Error('Debes completar el apellido.')
-      if (!email) throw new Error('Debes ingresar un correo para registrar y verificar el cliente.')
-      if (!isValidEmailFormat(email)) throw new Error('Ingresa un correo con formato válido.')
+      if (!String(form.nombre || '').trim()) throw createValidationError('nombre', 'Debes completar el nombre.')
+      if (!String(form.apellido || '').trim()) throw createValidationError('apellido', 'Debes completar el apellido.')
+      if (!email)
+        throw createValidationError('email', 'Debes ingresar un correo para registrar y verificar el cliente.')
+      if (!isValidEmailFormat(email)) throw createValidationError('email', 'Ingresa un correo con formato válido.')
       if (!emailVerified || verifiedEmail !== email)
-        throw new Error('Debes verificar el correo con código antes de publicar.')
-      if (!String(form.fecha_nacimiento || '').trim()) throw new Error('Debes completar la fecha de nacimiento.')
-      if (!String(form.sexo || '').trim()) throw new Error('Debes seleccionar el sexo.')
-      if (!String(form.status_legal || '').trim()) throw new Error('Debes seleccionar el estatus legal.')
-      if (!String(form.empleo_actual || '').trim()) throw new Error('Debes indicar si tiene empleo actual.')
+        throw createValidationError('email', 'Debes verificar el correo con código antes de publicar.')
+      if (!String(form.fecha_nacimiento || '').trim())
+        throw createValidationError('fecha_nacimiento', 'Debes completar la fecha de nacimiento.')
+      if (!String(form.sexo || '').trim()) throw createValidationError('sexo', 'Debes seleccionar el sexo.')
+      if (!String(form.status_legal || '').trim())
+        throw createValidationError('status_legal', 'Debes seleccionar el estatus legal.')
+      if (!String(form.empleo_actual || '').trim())
+        throw createValidationError('empleo_actual', 'Debes indicar si tiene empleo actual.')
       if (!(Number(form.antiguedad_laboral_meses || 0) > 0))
-        throw new Error('Debes indicar la antigüedad laboral en meses.')
-      if (!(Number(form.ingresos_mensuales || 0) > 0)) throw new Error('Debes indicar los ingresos mensuales.')
-      if (!(Number(form.pago_casa_renta_mensual || 0) >= 0)) throw new Error('Debes indicar el pago de casa o renta.')
+        throw createValidationError('antiguedad_laboral_meses', 'Debes indicar la antigüedad laboral en meses.')
+      if (!(Number(form.ingresos_mensuales || 0) > 0))
+        throw createValidationError('ingresos_mensuales', 'Debes indicar los ingresos mensuales.')
+      if (!(Number(form.pago_casa_renta_mensual || 0) >= 0))
+        throw createValidationError('pago_casa_renta_mensual', 'Debes indicar el pago de casa o renta.')
       if (!(Number(form.pago_carro_seguro_mensual || 0) >= 0))
-        throw new Error('Debes indicar el pago de carro o seguro.')
-      if (!(Number(form.otros_gastos_mensuales || 0) >= 0)) throw new Error('Debes indicar otros gastos mensuales.')
+        throw createValidationError('pago_carro_seguro_mensual', 'Debes indicar el pago de carro o seguro.')
+      if (!(Number(form.otros_gastos_mensuales || 0) >= 0))
+        throw createValidationError('otros_gastos_mensuales', 'Debes indicar otros gastos mensuales.')
 
       const montoReferido = Number(String(form.monto_referido || '0').replace(',', '.'))
 
       if (!Number.isFinite(montoReferido) || montoReferido < 0) {
-        throw new Error('El monto referido debe ser un valor mayor o igual a 0.')
+        throw createValidationError('monto_referido', 'El monto referido debe ser un valor mayor o igual a 0.')
       }
 
-      if (!(Number(form.monto_solicitado || 0) > 0)) throw new Error('Debes ingresar un monto solicitado mayor a 0.')
+      if (!(Number(form.monto_solicitado || 0) > 0))
+        throw createValidationError('monto_solicitado', 'Debes ingresar un monto solicitado mayor a 0.')
       if (!publicMode && !(Number(form.plazo_semanas || 0) > 0))
-        throw new Error('Debes ingresar un plazo válido en semanas.')
+        throw createValidationError('plazo_semanas', 'Debes ingresar un plazo válido en semanas.')
       if (!publicMode && !(Number(form.tasa_variable_pct || 0) > 0))
-        throw new Error('Debes ingresar una tasa variable válida.')
-      if (!String(form.modalidad || '').trim()) throw new Error('Debes seleccionar la modalidad de préstamo.')
-      if (!String(form.destino || '').trim()) throw new Error('Debes seleccionar el destino de la solicitud.')
-      if (!documentoIdentidad) throw new Error('Debes cargar el documento de identidad (PDF).')
-      if (documentosEstadoCuenta.length < 1) throw new Error('Debes cargar al menos 1 estado de cuenta (PDF).')
+        throw createValidationError('tasa_variable_pct', 'Debes ingresar una tasa variable válida.')
+      if (!String(form.modalidad || '').trim())
+        throw createValidationError('modalidad', 'Debes seleccionar la modalidad de préstamo.')
+      if (!String(form.destino || '').trim())
+        throw createValidationError('destino', 'Debes seleccionar el destino de la solicitud.')
+      if (!documentoIdentidad)
+        throw createValidationError('documento_identidad', 'Debes cargar el documento de identidad (PDF).')
+      if (documentosEstadoCuenta.length < 1)
+        throw createValidationError('estado_cuenta', 'Debes cargar al menos 1 estado de cuenta (PDF).')
       if (documentosComprobantesIngreso.length < 1) {
-        throw new Error('Debes cargar entre 1 y 4 comprobantes de ingreso (PDF).')
+        throw createValidationError('comprobantes_ingreso', 'Debes cargar entre 1 y 4 comprobantes de ingreso (PDF).')
       }
       if (publicMode && !acceptedPublicTerms) {
-        throw new Error('Debes aceptar el aviso legal para enviar la solicitud.')
+        throw createValidationError('terminos_legales', 'Debes aceptar el aviso legal para enviar la solicitud.')
       }
 
       const referidoPorNombre = referidoSelected ? getClienteLabel(referidoSelected) : ''
       const referidoExterno = String(form.referido_externo || '').trim()
 
       if (form.es_referido && !referidoPorNombre && !referidoExterno) {
-        throw new Error('Debes seleccionar un cliente activo o indicar un referido externo.')
+        throw createValidationError(
+          'referido_por',
+          'Debes seleccionar un cliente activo o indicar un referido externo.'
+        )
       }
 
       const clientePayload = {
@@ -704,7 +746,15 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
 
       solicitudPayload.append('cliente_id', String(clienteId))
       if (publicMode) {
-        solicitudPayload.append('origen_solicitud', origenSolicitud || 'EXTERNO')
+        const resolvedOrigen = origenSolicitud || 'EXTERNO'
+
+        solicitudPayload.append('origen_solicitud', resolvedOrigen)
+        solicitudPayload.append('origen', resolvedOrigen)
+        solicitudPayload.append('canal_registro', resolvedOrigen)
+        solicitudPayload.append('source', 'PUBLIC')
+        solicitudPayload.append('es_publica', 'true')
+        solicitudPayload.append('publica', 'true')
+        solicitudPayload.append('es_externa', 'true')
         solicitudPayload.append('solicitud_enviada_en', publicSubmissionTimestamp)
         solicitudPayload.append('fecha_envio_solicitud', publicSubmissionTimestamp)
       }
@@ -760,6 +810,9 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
       router.replace(`/solicitudes?${params.toString()}`)
     } catch (err) {
       setError(err.message || 'No se pudo guardar el registro integral.')
+      if (publicMode) {
+        scrollToProblemField(err.field)
+      }
     } finally {
       setSaving(false)
     }
@@ -977,7 +1030,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
 
         {error ? <Alert severity='error'>{error}</Alert> : null}
 
-        <PublicQuestionCard title='FULL NAME' subtitle='NOMBRE COMPLETO' required>
+        <PublicQuestionCard fieldKey='nombre' title='FULL NAME' subtitle='NOMBRE COMPLETO' required>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -992,7 +1045,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='LAST NAME' subtitle='APELLIDO' required>
+        <PublicQuestionCard fieldKey='apellido' title='LAST NAME' subtitle='APELLIDO' required>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1007,7 +1060,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='TELEPHONE NUMBER' subtitle='NUMERO DE TELEFONO'>
+        <PublicQuestionCard fieldKey='telefono' title='TELEPHONE NUMBER' subtitle='NUMERO DE TELEFONO'>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1019,7 +1072,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='EMAIL' subtitle='CORREO ELECTRONICO' required>
+        <PublicQuestionCard fieldKey='email' title='EMAIL' subtitle='CORREO ELECTRONICO' required>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1083,7 +1136,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           ) : null}
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='DATE OF BIRTH' subtitle='FECHA DE NACIMIENTO' required>
+        <PublicQuestionCard fieldKey='fecha_nacimiento' title='DATE OF BIRTH' subtitle='FECHA DE NACIMIENTO' required>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1100,7 +1153,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='SEX' subtitle='SEXO' required>
+        <PublicQuestionCard fieldKey='sexo' title='SEX' subtitle='SEXO' required>
           <FormControl fullWidth required error={isRequiredMissing('sexo')}>
             <RadioGroup value={form.sexo} onChange={handleSingleValue('sexo')}>
               {SEXO_OPTIONS.map(option => (
@@ -1114,7 +1167,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </FormControl>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='ADDRESS' subtitle='DIRECCION'>
+        <PublicQuestionCard fieldKey='direccion' title='ADDRESS' subtitle='DIRECCION'>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1126,7 +1179,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='ALTERNATE CONTACT NAME' subtitle='NOMBRE CONTACTO'>
+        <PublicQuestionCard fieldKey='nombre_contacto' title='ALTERNATE CONTACT NAME' subtitle='NOMBRE CONTACTO'>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1138,7 +1191,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='ALTERNATE CONTACT LAST NAME' subtitle='APELLIDO CONTACTO'>
+        <PublicQuestionCard
+          fieldKey='apellido_contacto'
+          title='ALTERNATE CONTACT LAST NAME'
+          subtitle='APELLIDO CONTACTO'
+        >
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1150,7 +1207,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='ALTERNATE CONTACT TELEPHONE' subtitle='TELEFONO CONTACTO'>
+        <PublicQuestionCard
+          fieldKey='telefono_contacto'
+          title='ALTERNATE CONTACT TELEPHONE'
+          subtitle='TELEFONO CONTACTO'
+        >
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1162,7 +1223,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='ALTERNATE CONTACT EMAIL' subtitle='EMAIL CONTACTO'>
+        <PublicQuestionCard fieldKey='email_contacto' title='ALTERNATE CONTACT EMAIL' subtitle='EMAIL CONTACTO'>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1175,7 +1236,11 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='ALTERNATE CONTACT ADDRESS' subtitle='DIRECCION CONTACTO'>
+        <PublicQuestionCard
+          fieldKey='direccion_contacto'
+          title='ALTERNATE CONTACT ADDRESS'
+          subtitle='DIRECCION CONTACTO'
+        >
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1187,7 +1252,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='OBSERVATIONS' subtitle='OBSERVACIONES'>
+        <PublicQuestionCard fieldKey='observaciones' title='OBSERVATIONS' subtitle='OBSERVACIONES'>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1201,7 +1266,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='CURRENT LEGAL STATUS' subtitle='ESTATUS LEGAL ACTUAL' required>
+        <PublicQuestionCard
+          fieldKey='status_legal'
+          title='CURRENT LEGAL STATUS'
+          subtitle='ESTATUS LEGAL ACTUAL'
+          required
+        >
           <FormControl fullWidth required error={isRequiredMissing('status_legal')}>
             <RadioGroup value={form.status_legal} onChange={handleSingleValue('status_legal')}>
               {STATUS_LEGAL_OPTIONS.map(option => (
@@ -1215,7 +1285,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </FormControl>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='YOU ARE CURRENTLY EMPLOYED' subtitle='TIENES EMPLEO ACTUALMENTE?' required>
+        <PublicQuestionCard
+          fieldKey='empleo_actual'
+          title='YOU ARE CURRENTLY EMPLOYED'
+          subtitle='TIENES EMPLEO ACTUALMENTE?'
+          required
+        >
           <FormControl fullWidth required error={isRequiredMissing('empleo_actual')}>
             <RadioGroup value={form.empleo_actual} onChange={handleSingleValue('empleo_actual')}>
               {['SI', 'NO', 'OTRO'].map(option => (
@@ -1233,7 +1308,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </FormControl>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='ANTIQUITY AT WORK' subtitle='ANTIGUEDAD EN EL TRABAJO' required>
+        <PublicQuestionCard
+          fieldKey='antiguedad_laboral_meses'
+          title='ANTIQUITY AT WORK'
+          subtitle='ANTIGUEDAD EN EL TRABAJO'
+          required
+        >
           <FormControl fullWidth required error={isRequiredMissing('antiguedad_laboral_meses')}>
             <RadioGroup value={form.antiguedad_laboral_meses} onChange={handleSingleValue('antiguedad_laboral_meses')}>
               {ANTIGUEDAD_LABORAL_OPTIONS.map(option => (
@@ -1247,7 +1327,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </FormControl>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='MONTHLY INCOME' subtitle='INGRESOS MENSUALES' required>
+        <PublicQuestionCard fieldKey='ingresos_mensuales' title='MONTHLY INCOME' subtitle='INGRESOS MENSUALES' required>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1263,7 +1343,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='HOUSE PAYMENT OR RENT' subtitle='PAGO DE CASA PROPIO O RENTA' required>
+        <PublicQuestionCard
+          fieldKey='pago_casa_renta_mensual'
+          title='HOUSE PAYMENT OR RENT'
+          subtitle='PAGO DE CASA PROPIO O RENTA'
+          required
+        >
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1280,6 +1365,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
         </PublicQuestionCard>
 
         <PublicQuestionCard
+          fieldKey='pago_carro_seguro_mensual'
           title='CAR PAYMENT AND MONTHLY INSURANCE'
           subtitle='PAGO DE CARRO Y SEGURO MENSUAL'
           required
@@ -1299,7 +1385,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='OTHER EXPENSES' subtitle='OTROS GASTOS' required>
+        <PublicQuestionCard fieldKey='otros_gastos_mensuales' title='OTHER EXPENSES' subtitle='OTROS GASTOS' required>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1315,7 +1401,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='DESTINATION OF THE REQUEST' subtitle='DESTINO DE LA SOLICITUD' required>
+        <PublicQuestionCard
+          fieldKey='destino'
+          title='DESTINATION OF THE REQUEST'
+          subtitle='DESTINO DE LA SOLICITUD'
+          required
+        >
           <FormControl fullWidth required error={isRequiredMissing('destino')}>
             <RadioGroup value={form.destino} onChange={handleSingleValue('destino')}>
               {DESTINO_OPTIONS.map(option => (
@@ -1329,7 +1420,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </FormControl>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='FORM OF PAYMENT' subtitle='FORMA DE PAGOS' required>
+        <PublicQuestionCard fieldKey='modalidad' title='FORM OF PAYMENT' subtitle='FORMA DE PAGOS' required>
           <FormControl fullWidth required error={isRequiredMissing('modalidad')}>
             <RadioGroup value={form.modalidad} onChange={handleSingleValue('modalidad')}>
               {MODALIDAD_OPTIONS.map(option => (
@@ -1343,7 +1434,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </FormControl>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='APPLICATION AMOUNT' subtitle='MONTO DE SU SOLICITUD' required>
+        <PublicQuestionCard
+          fieldKey='monto_solicitud_rango'
+          title='APPLICATION AMOUNT'
+          subtitle='MONTO DE SU SOLICITUD'
+          required
+        >
           <FormControl fullWidth required error={isRequiredMissing('monto_solicitud_rango')}>
             <RadioGroup value={form.monto_solicitud_rango} onChange={handleSingleValue('monto_solicitud_rango')}>
               {MONTO_RANGO_OPTIONS.map(option => (
@@ -1357,7 +1453,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </FormControl>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='AMOUNT REQUESTED' subtitle='MONTO SOLICITADO' required>
+        <PublicQuestionCard fieldKey='monto_solicitado' title='AMOUNT REQUESTED' subtitle='MONTO SOLICITADO' required>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1373,7 +1469,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           />
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='IMPORTANT FILE' subtitle='ARCHIVOS (IMPORTANTE)' required>
+        <PublicQuestionCard
+          fieldKey='documento_identidad'
+          title='IMPORTANT FILE'
+          subtitle='ARCHIVOS (IMPORTANTE)'
+          required
+        >
           <Stack spacing={1.25}>
             <Typography sx={{ color: isRequiredMissing('documento_identidad') ? '#d93025' : '#111111' }}>
               UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
@@ -1392,7 +1493,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </Stack>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='BANK STATEMENTS' subtitle='ESTADOS DE CUENTAS BANCARIOS' required>
+        <PublicQuestionCard
+          fieldKey='estado_cuenta'
+          title='BANK STATEMENTS'
+          subtitle='ESTADOS DE CUENTAS BANCARIOS'
+          required
+        >
           <Stack spacing={1.25}>
             <Typography sx={{ color: '#111111' }}>LAST 2 MONTHS / ULTIMOS 2 MESES</Typography>
             <Typography sx={{ color: isRequiredMissing('estado_cuenta') ? '#d93025' : '#3c4043' }}>
@@ -1411,7 +1517,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           </Stack>
         </PublicQuestionCard>
 
-        <PublicQuestionCard title='PROOF OF INCOME' subtitle='COMPROBANTES DE INGRESOS' required>
+        <PublicQuestionCard
+          fieldKey='comprobantes_ingreso'
+          title='PROOF OF INCOME'
+          subtitle='COMPROBANTES DE INGRESOS'
+          required
+        >
           <Stack spacing={1.25}>
             <Typography sx={{ color: '#111111' }}>
               Sube entre 1 y 4 comprobantes. Tamaño máximo por archivo: 10MB.
@@ -1442,6 +1553,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
         </PublicQuestionCard>
 
         <Card
+          data-field-anchor='terminos_legales'
           sx={{
             borderRadius: 2,
             border: '1px solid #dadce0',

@@ -339,6 +339,8 @@ const getSolicitudOrigen = row => {
     isTruthyFlag(row?.es_externa) ||
     isTruthyFlag(row?.es_publica) ||
     isTruthyFlag(row?.publica) ||
+    Boolean(row?.solicitud_enviada_en) ||
+    Boolean(row?.fecha_envio_solicitud) ||
     normalized.includes('extern') ||
     normalized.includes('public')
   ) {
