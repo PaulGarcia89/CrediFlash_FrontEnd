@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 
 import Alert from '@mui/material/Alert'
 import Autocomplete from '@mui/material/Autocomplete'
-import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -49,10 +48,42 @@ const initialForm = {
 const parseBoolean = value => value === true || value === 1 || String(value || '').toLowerCase() === 'true'
 
 const actionButtonSx = {
-  minHeight: 48,
-  borderRadius: 2,
+  minHeight: 44,
+  borderRadius: 2.5,
   textTransform: 'none',
-  fontWeight: 600
+  fontWeight: 500,
+  fontSize: '1rem'
+}
+const introCardSx = {
+  borderTop: theme => `10px solid ${theme.palette.primary.main}`,
+  borderRadius: 3,
+  overflow: 'hidden'
+}
+const sectionCardSx = {
+  borderRadius: 3,
+  overflow: 'hidden',
+  '& .MuiCardHeader-root': {
+    px: { xs: 2, md: 3 },
+    py: { xs: 2, md: 2.5 }
+  },
+  '& .MuiCardHeader-title': {
+    fontSize: '1.1rem',
+    fontWeight: 500
+  },
+  '& .MuiCardHeader-subheader': {
+    color: 'text.secondary',
+    fontSize: '0.95rem'
+  },
+  '& .MuiCardContent-root': {
+    px: { xs: 2, md: 3 },
+    py: { xs: 2, md: 3 }
+  }
+}
+const actionCardSx = {
+  ...sectionCardSx,
+  position: 'sticky',
+  top: 24,
+  alignSelf: 'flex-start'
 }
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -413,23 +444,36 @@ export default function ClienteFormModule({ clienteId = null }) {
 
   return (
     <Stack spacing={3} component='form' onSubmit={handleSubmit}>
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        justifyContent='space-between'
-        alignItems={{ xs: 'start', md: 'center' }}
-        spacing={2}
-      >
-        <Box>
-          <Typography variant='h4' sx={{ mb: 0.5 }}>
-            {clienteId ? 'Editar cliente' : 'Agregar un nuevo cliente'}
-          </Typography>
-          <Typography color='text.secondary'>
-            {clienteId
-              ? 'Actualiza la información del cliente y su contacto de referencia.'
-              : 'Registra un cliente para habilitar solicitudes de crédito y seguimiento.'}
-          </Typography>
-        </Box>
-      </Stack>
+      <Card sx={introCardSx}>
+        <CardContent sx={{ px: { xs: 2, md: 3 }, py: { xs: 2.5, md: 3 } }}>
+          <Stack spacing={1}>
+            <Typography
+              sx={{
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                letterSpacing: '0.18em',
+                color: 'text.secondary'
+              }}
+            >
+              FORMULARIO INTERNO
+            </Typography>
+            <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.08 }}>
+              {clienteId ? 'EDIT CUSTOMER' : 'ADD NEW CUSTOMER'}
+            </Typography>
+            <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.08 }}>
+              {clienteId ? 'EDITAR CLIENTE' : 'AGREGAR NUEVO CLIENTE'}
+            </Typography>
+            <Typography color='text.secondary'>
+              {clienteId
+                ? 'Actualiza la información del cliente y su contacto alterno en un solo lugar.'
+                : 'Registra un nuevo cliente para habilitar solicitudes, seguimiento y operación comercial.'}
+            </Typography>
+            <Typography color='error.main' sx={{ fontWeight: 700 }}>
+              * Indica que la pregunta es obligatoria
+            </Typography>
+          </Stack>
+        </CardContent>
+      </Card>
 
       {error ? <Alert severity='error'>{error}</Alert> : null}
       {loading ? <Alert severity='info'>Cargando cliente...</Alert> : null}
@@ -437,8 +481,11 @@ export default function ClienteFormModule({ clienteId = null }) {
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack spacing={3}>
-            <Card>
-              <CardHeader title='Información del cliente' />
+            <Card sx={sectionCardSx}>
+              <CardHeader
+                title='Datos personales / Personal data'
+                subheader='Completa la información principal del cliente.'
+              />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
@@ -670,8 +717,8 @@ export default function ClienteFormModule({ clienteId = null }) {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader title='Contacto alterno' />
+            <Card sx={sectionCardSx}>
+              <CardHeader title='Contacto alterno / Alternative contact' subheader='Datos de referencia del cliente.' />
               <Divider />
               <CardContent>
                 <Grid container spacing={2}>
@@ -725,8 +772,8 @@ export default function ClienteFormModule({ clienteId = null }) {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader title='Descripción (opcional)' />
+            <Card sx={sectionCardSx}>
+              <CardHeader title='Descripción / Description' subheader='Notas internas u observaciones adicionales.' />
               <Divider />
               <CardContent>
                 <TextField
@@ -746,15 +793,8 @@ export default function ClienteFormModule({ clienteId = null }) {
 
         <Grid size={{ xs: 12, lg: 4 }}>
           <Stack spacing={3}>
-            <Card
-              sx={{
-                borderRadius: 3,
-                position: 'sticky',
-                top: 24,
-                alignSelf: 'flex-start'
-              }}
-            >
-              <CardHeader title='Acciones' />
+            <Card sx={actionCardSx}>
+              <CardHeader title='Acciones' subheader='Revisa y guarda la información del cliente' />
               <Divider />
               <CardContent>
                 <Stack spacing={1.5}>

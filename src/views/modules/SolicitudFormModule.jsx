@@ -35,10 +35,42 @@ const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
 const MODELO_APROBACION_OPTIONS = ['AUTOMATICO', 'MANUAL']
 
 const actionButtonSx = {
-  minHeight: 48,
-  borderRadius: 2,
+  minHeight: 44,
+  borderRadius: 2.5,
   textTransform: 'none',
-  fontWeight: 600
+  fontWeight: 500,
+  fontSize: '1rem'
+}
+const introCardSx = {
+  borderTop: theme => `10px solid ${theme.palette.primary.main}`,
+  borderRadius: 3,
+  overflow: 'hidden'
+}
+const sectionCardSx = {
+  borderRadius: 3,
+  overflow: 'hidden',
+  '& .MuiCardHeader-root': {
+    px: { xs: 2, md: 3 },
+    py: { xs: 2, md: 2.5 }
+  },
+  '& .MuiCardHeader-title': {
+    fontSize: '1.1rem',
+    fontWeight: 500
+  },
+  '& .MuiCardHeader-subheader': {
+    color: 'text.secondary',
+    fontSize: '0.95rem'
+  },
+  '& .MuiCardContent-root': {
+    px: { xs: 2, md: 3 },
+    py: { xs: 2, md: 3 }
+  }
+}
+const actionCardSx = {
+  ...sectionCardSx,
+  position: 'sticky',
+  top: 24,
+  alignSelf: 'flex-start'
 }
 const MODALIDAD_OPTIONS = [
   { value: 'SEMANAL', label: 'WEEKLY (SEMANAL)' },
@@ -503,23 +535,29 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         }}
       >
         <Stack spacing={3}>
-          <Card
-            sx={{
-              borderTop: theme => `10px solid ${theme.palette.primary.main}`,
-              borderRadius: 3
-            }}
-          >
-            <CardContent>
+          <Card sx={introCardSx}>
+            <CardContent sx={{ px: { xs: 2, md: 3 }, py: { xs: 2.5, md: 3 } }}>
               <Stack spacing={1}>
-                <Typography variant='h3' sx={{ fontWeight: 800 }}>
-                  CUSTOMER PRE-QUALIFICATION
+                <Typography
+                  sx={{
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.18em',
+                    color: 'text.secondary'
+                  }}
+                >
+                  FORMULARIO INTERNO
                 </Typography>
-                <Typography variant='h3' sx={{ fontWeight: 800 }}>
-                  PRECALIFICACION DE CLIENTES
+                <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.08 }}>
+                  {solicitudId ? 'EDIT REQUEST' : 'ADD NEW REQUEST'}
+                </Typography>
+                <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.08 }}>
+                  {solicitudId ? 'EDITAR SOLICITUD' : 'AGREGAR NUEVA SOLICITUD'}
                 </Typography>
                 <Typography color='text.secondary'>
-                  Complete este formulario para evaluar su solicitud de préstamo. Toda la información será tratada de
-                  manera confidencial y usada únicamente para evaluación crediticia.
+                  {solicitudId
+                    ? 'Actualiza la solicitud pendiente y sus condiciones de evaluación.'
+                    : 'Completa este formulario para registrar una nueva solicitud de crédito y continuar el proceso de evaluación.'}
                 </Typography>
                 <Typography color='error.main' sx={{ fontWeight: 700 }}>
                   * Indica que la pregunta es obligatoria
@@ -528,32 +566,17 @@ export default function SolicitudFormModule({ solicitudId = null }) {
             </CardContent>
           </Card>
 
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            justifyContent='space-between'
-            alignItems={{ xs: 'start', md: 'center' }}
-            spacing={2}
-          >
-            <Box>
-              <Typography variant='h4' sx={{ mb: 0.5 }}>
-                {solicitudId ? 'Editar solicitud' : 'Agregar una nueva solicitud'}
-              </Typography>
-              <Typography color='text.secondary'>
-                {solicitudId
-                  ? 'Actualiza los datos de la solicitud pendiente.'
-                  : 'Registra una solicitud para el flujo de evaluación y aprobación.'}
-              </Typography>
-            </Box>
-          </Stack>
-
           {error ? <Alert severity='error'>{error}</Alert> : null}
           {loading ? <Alert severity='info'>Cargando solicitud...</Alert> : null}
 
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, lg: 8 }}>
               <Stack spacing={3}>
-                <Card sx={{ borderRadius: 3 }}>
-                  <CardHeader title='Información de la solicitud' />
+                <Card sx={sectionCardSx}>
+                  <CardHeader
+                    title='Datos de la solicitud / Request details'
+                    subheader='Configura el cliente, condiciones y documentos del crédito.'
+                  />
                   <Divider />
                   <CardContent>
                     <Stack spacing={2.5}>
@@ -897,15 +920,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
             <Grid size={{ xs: 12, lg: 4 }}>
               <Stack spacing={3}>
-                <Card
-                  sx={{
-                    borderRadius: 3,
-                    position: 'sticky',
-                    top: 24,
-                    alignSelf: 'flex-start'
-                  }}
-                >
-                  <CardHeader title='Acciones' />
+                <Card sx={actionCardSx}>
+                  <CardHeader title='Acciones' subheader='Revisa y envía tu solicitud' />
                   <Divider />
                   <CardContent>
                     <Stack spacing={1.5}>
