@@ -88,8 +88,11 @@ export default function ClientesModule() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { can, analista } = usePermissions()
-  const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
+  const isAdminProfile = String(analista?.rol || analista?.role || '')
+    .toUpperCase()
+    .includes('ADMIN')
   const canManageStatus = isAdminProfile || can('clientes.manage_status')
+  const canDeleteClient = isAdminProfile
 
   const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -226,9 +229,7 @@ export default function ClientesModule() {
     const estadoActual = String(row?.estado || '').toUpperCase()
     const isInactivo = estadoActual === 'INACTIVO'
     const confirmed = window.confirm(
-      isInactivo
-        ? '¿Deseas marcar este cliente como ACTIVO?'
-        : '¿Deseas marcar este cliente como INACTIVO?'
+      isInactivo ? '¿Deseas marcar este cliente como ACTIVO?' : '¿Deseas marcar este cliente como INACTIVO?'
     )
 
     if (!confirmed || !clienteId) return
@@ -294,6 +295,34 @@ export default function ClientesModule() {
     }
   }
 
+  const handleDeleteCliente = async row => {
+    const clienteId = row?.id
+    const clienteNombre = [row?.nombre, row?.apellido].filter(Boolean).join(' ').trim() || 'este cliente'
+
+    if (!clienteId) return
+
+    const confirmed = window.confirm(
+      `¿Deseas eliminar permanentemente a ${clienteNombre}? Esta acción lo quitará de la base de datos y no se puede deshacer.`
+    )
+
+    if (!confirmed) return
+
+    setUpdatingId(String(clienteId))
+    setError('')
+    setSuccess('')
+
+    try {
+      await inactivarCliente(clienteId)
+      setSuccess('Cliente eliminado permanentemente.')
+      await loadClientes()
+      await loadGlobalMetrics()
+    } catch (err) {
+      setError(err.message || 'No se pudo eliminar el cliente.')
+    } finally {
+      setUpdatingId('')
+    }
+  }
+
   const handleExportCsv = () => {
     const headers = [
       'Nombre',
@@ -353,6 +382,20 @@ export default function ClientesModule() {
               onClick={event => setEstadoMenu({ anchorEl: event.currentTarget, cliente: row })}
             >
               <i className='tabler-switch-horizontal text-3xl' />
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
+      {canDeleteClient ? (
+        <Tooltip title='Eliminar definitivamente'>
+          <span>
+            <IconButton
+              size='small'
+              color='error'
+              disabled={String(updatingId) === String(row.id)}
+              onClick={() => handleDeleteCliente(row)}
+            >
+              <i className='tabler-trash text-3xl' />
             </IconButton>
           </span>
         </Tooltip>
@@ -596,7 +639,11 @@ export default function ClientesModule() {
                           <TableCell>{row.telefono || '-'}</TableCell>
                           <TableCell>
                             <Chip
-                              label={parseBoolean(row.es_referido) ? `Sí${row.referido_por ? ` • ${row.referido_por}` : ''}` : 'No'}
+                              label={
+                                parseBoolean(row.es_referido)
+                                  ? `Sí${row.referido_por ? ` • ${row.referido_por}` : ''}`
+                                  : 'No'
+                              }
                               size='small'
                               color={parseBoolean(row.es_referido) ? 'info' : 'default'}
                               variant='tonal'
@@ -639,8 +686,15 @@ export default function ClientesModule() {
                         <CardContent sx={{ p: 2 }}>
                           <Stack spacing={1}>
                             <Stack direction='row' justifyContent='space-between' alignItems='center'>
-                              <Typography fontWeight={700}>{[row.nombre, row.apellido].filter(Boolean).join(' ') || '-'}</Typography>
-                              <Chip label={row.estado || '-'} size='small' color={getEstadoColor(row.estado)} variant='tonal' />
+                              <Typography fontWeight={700}>
+                                {[row.nombre, row.apellido].filter(Boolean).join(' ') || '-'}
+                              </Typography>
+                              <Chip
+                                label={row.estado || '-'}
+                                size='small'
+                                color={getEstadoColor(row.estado)}
+                                variant='tonal'
+                              />
                             </Stack>
                             <Typography variant='body2' color='text.secondary'>
                               Email: {row.email || '-'}
@@ -649,7 +703,10 @@ export default function ClientesModule() {
                               Teléfono: {row.telefono || '-'}
                             </Typography>
                             <Typography variant='body2' color='text.secondary'>
-                              Referido: {parseBoolean(row.es_referido) ? `Sí${row.referido_por ? ` • ${row.referido_por}` : ''}` : 'No'}
+                              Referido:{' '}
+                              {parseBoolean(row.es_referido)
+                                ? `Sí${row.referido_por ? ` • ${row.referido_por}` : ''}`
+                                : 'No'}
                             </Typography>
                             <Typography variant='body2' color='text.secondary'>
                               Monto referido:{' '}
