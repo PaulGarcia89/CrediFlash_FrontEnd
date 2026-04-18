@@ -47,7 +47,8 @@ import { formatMoney, round2, toMoneyNumber } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
 
 const formatCurrency = value => formatMoney(value)
-const formatNaturalNumber = value => new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
+const formatNaturalNumber = value =>
+  new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
 
 const normalizeText = value =>
   String(value || '')
@@ -218,7 +219,9 @@ const getEscenarioPago = (montoPago, cuotaObjetivo) => {
   return { tipo: 'ADELANTADO', diferencia }
 }
 const normalizeBackendOrigin = () => {
-  const raw = String(process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/$/, '')
+  const raw = String(process.env.NEXT_PUBLIC_API_URL || '')
+    .trim()
+    .replace(/\/$/, '')
 
   if (!raw) return ''
   if (raw.endsWith('/api')) return raw.slice(0, -4)
@@ -339,12 +342,15 @@ export default function CuotasModule() {
   const canManageCuotas = can('cuotas.manage')
   const canViewPrestamos = can('prestamos.view')
   const canViewDocumentos = can('documentos.view')
-  const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
+  const isAdminProfile = String(analista?.rol || analista?.role || '')
+    .toUpperCase()
+    .includes('ADMIN')
   const canSendNotifications = isAdminProfile || can('notifications.send')
-  const canManageWhatsappNotifications = isAdminProfile || can('notifications.whatsapp.manage') || can('notifications.send')
+  const canManageWhatsappNotifications =
+    isAdminProfile || can('notifications.whatsapp.manage') || can('notifications.send')
 
   const montoEsperadoPago = useMemo(() => {
-  const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
+    const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
     const penalizacion = parseDecimalInput(montoPenalizacion || 0)
     const fee = parseDecimalInput(montoFee || 0)
 
@@ -364,7 +370,10 @@ export default function CuotasModule() {
     return getEscenarioPago(parsedMonto, montoEsperadoPago)
   }, [montoEsperadoPago, montoPago])
 
-  const normalizeSearchInput = value => String(value ?? '').replace(/\s+/g, ' ').trim()
+  const normalizeSearchInput = value =>
+    String(value ?? '')
+      .replace(/\s+/g, ' ')
+      .trim()
 
   const loadPrestamos = useCallback(async () => {
     setLoading(true)
@@ -504,7 +513,9 @@ export default function CuotasModule() {
 
     try {
       await enviarNotificacionCuotaWhatsapp(selectedWhatsappPrestamo.id)
-      setWhatsappDialogInfo(`Notificación de WhatsApp enviada a ${selectedWhatsappPrestamo.nombre_completo || 'cliente'}.`)
+      setWhatsappDialogInfo(
+        `Notificación de WhatsApp enviada a ${selectedWhatsappPrestamo.nombre_completo || 'cliente'}.`
+      )
     } catch (err) {
       setWhatsappDialogError(err.message || 'No se pudo enviar la notificación por WhatsApp.')
     } finally {
@@ -687,11 +698,10 @@ export default function CuotasModule() {
       })
 
       if (!response.ok) {
-        const opened = window.open(url, '_blank', 'noopener,noreferrer')
+        const backendPayload = await response.json().catch(() => ({}))
+        const backendMessage = backendPayload?.message || backendPayload?.error || ''
 
-        if (!opened) {
-          setDetalleDialogError('No se pudo abrir el contrato PDF.')
-        }
+        setDetalleDialogError(backendMessage || 'No se pudo abrir el contrato PDF.')
 
         return
       }
@@ -701,12 +711,8 @@ export default function CuotasModule() {
 
       window.open(objectUrl, '_blank', 'noopener,noreferrer')
       window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 5000)
-    } catch {
-      const opened = window.open(url, '_blank', 'noopener,noreferrer')
-
-      if (!opened) {
-        setDetalleDialogError('No se pudo abrir el contrato PDF.')
-      }
+    } catch (err) {
+      setDetalleDialogError(err?.message || 'No se pudo abrir el contrato PDF.')
     }
   }
 
@@ -1061,10 +1067,10 @@ export default function CuotasModule() {
                   Exportar
                 </Button>
               </Stack>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-              <TextField
-                size='small'
-                label='Buscar cliente'
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                <TextField
+                  size='small'
+                  label='Buscar cliente'
                   placeholder='Buscar por nombre y apellido'
                   value={searchCliente}
                   onChange={event => setSearchCliente(event.target.value)}
@@ -1221,20 +1227,28 @@ export default function CuotasModule() {
                             return (
                               <>
                                 Saldo pendiente: {formatCurrency(saldoInfo.value)}{' '}
-                                {saldoInfo.estimated ? <Chip size='small' variant='outlined' color='warning' label='Estimado' /> : null}
+                                {saldoInfo.estimated ? (
+                                  <Chip size='small' variant='outlined' color='warning' label='Estimado' />
+                                ) : null}
                               </>
                             )
                           })()}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
-                          Semanas: {row.num_semanas ?? '-'} • Pagos hechos: {formatNaturalNumber(row.pagos_hechos)} • Cuotas restantes:{' '}
-                          {row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}
+                          Semanas: {row.num_semanas ?? '-'} • Pagos hechos: {formatNaturalNumber(row.pagos_hechos)} •
+                          Cuotas restantes: {row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Fecha inicio: {formatDateMMDDYYYY(row.fecha_inicio)}
                         </Typography>
                         {hasDescuentoReferidoObservacion(row) ? (
-                          <Chip size='small' variant='tonal' color='success' label='Descuento referido' sx={{ width: 'fit-content' }} />
+                          <Chip
+                            size='small'
+                            variant='tonal'
+                            color='success'
+                            label='Descuento referido'
+                            sx={{ width: 'fit-content' }}
+                          />
                         ) : null}
                         <Divider sx={{ my: 0.5 }} />
                         {renderAccionesPrestamo(row)}
@@ -1367,7 +1381,11 @@ export default function CuotasModule() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button variant='text' onClick={closeWhatsappDialog} disabled={whatsappDialogLoading || whatsappManualSending}>
+          <Button
+            variant='text'
+            onClick={closeWhatsappDialog}
+            disabled={whatsappDialogLoading || whatsappManualSending}
+          >
             Cerrar
           </Button>
           <Button
@@ -1397,7 +1415,12 @@ export default function CuotasModule() {
           <Button variant='text' onClick={closeEmailConfirmDialog} disabled={Boolean(notifyingPrestamoId)}>
             Cancelar
           </Button>
-          <Button variant='contained' color='info' onClick={confirmEmailNotification} disabled={Boolean(notifyingPrestamoId)}>
+          <Button
+            variant='contained'
+            color='info'
+            onClick={confirmEmailNotification}
+            disabled={Boolean(notifyingPrestamoId)}
+          >
             {notifyingPrestamoId ? 'Enviando...' : 'Confirmar envío'}
           </Button>
         </DialogActions>
@@ -1441,7 +1464,9 @@ export default function CuotasModule() {
                 return (
                   <>
                     Saldo pendiente: <strong>{formatCurrency(saldoInfo.value)}</strong>{' '}
-                    {saldoInfo.estimated ? <Chip size='small' variant='outlined' color='warning' label='Estimado' /> : null}
+                    {saldoInfo.estimated ? (
+                      <Chip size='small' variant='outlined' color='warning' label='Estimado' />
+                    ) : null}
                   </>
                 )
               })()}
@@ -1471,13 +1496,18 @@ export default function CuotasModule() {
             ) : null}
             <Typography>
               Contrato PDF:{' '}
-              <strong>{getContractOpenUrl(selectedPrestamo) ? 'Disponible para visualización' : 'No disponible'}</strong>
+              <strong>
+                {getContractOpenUrl(selectedPrestamo) ? 'Disponible para visualización' : 'No disponible'}
+              </strong>
             </Typography>
             <Button
               variant='tonal'
               color='info'
               onClick={() => handleOpenContratoPdf(selectedPrestamo)}
-              disabled={!canViewDocumentos || !getContractOpenUrl(selectedPrestamo)}
+              disabled={
+                !canViewDocumentos ||
+                (!getContractOpenUrl(selectedPrestamo) && !getContractDocumentId(selectedPrestamo))
+              }
               sx={{ alignSelf: 'flex-start', textTransform: 'none' }}
             >
               Visualizar contrato PDF
