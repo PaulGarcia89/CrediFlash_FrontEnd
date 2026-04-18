@@ -53,7 +53,7 @@ const deduplicarDocumentos = documentos => {
     if (!key || seen.has(key)) return false
     seen.add(key)
 
-  return true
+    return true
   })
 }
 
@@ -80,7 +80,8 @@ const buildDocumentoIdentidadCliente = cliente => {
 }
 
 const formatCurrency = value => formatUSD(value)
-const formatNaturalNumber = value => new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
+const formatNaturalNumber = value =>
+  new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
 const normalizeStatus = value =>
   String(value || '')
     .normalize('NFD')
@@ -121,8 +122,22 @@ const isAfterDate = (leftDate, rightDate) => {
   return leftDate.getTime() > rightDate.getTime()
 }
 
+const getNextWeekday = (baseDateInput, targetWeekday) => {
+  const baseDate = new Date(baseDateInput)
+  const currentWeekday = baseDate.getDay()
+  let diff = (targetWeekday - currentWeekday + 7) % 7
+
+  if (diff === 0) diff = 7
+
+  baseDate.setDate(baseDate.getDate() + diff)
+
+  return baseDate
+}
+
 const normalizeBackendOrigin = () => {
-  const raw = String(process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/$/, '')
+  const raw = String(process.env.NEXT_PUBLIC_API_URL || '')
+    .trim()
+    .replace(/\/$/, '')
 
   if (!raw) return ''
   if (raw.endsWith('/api')) return raw.slice(0, -4)
@@ -231,7 +246,9 @@ export default function ClienteDashboardModule({ clienteId }) {
 
       if (documentosResponse.status === 'fulfilled') {
         const docs = extractRows(documentosResponse.value)
-        const identityDoc = buildDocumentoIdentidadCliente(clienteResponse.status === 'fulfilled' ? clienteResponse.value?.data || clienteResponse.value : null)
+        const identityDoc = buildDocumentoIdentidadCliente(
+          clienteResponse.status === 'fulfilled' ? clienteResponse.value?.data || clienteResponse.value : null
+        )
         const merged = identityDoc ? [identityDoc, ...docs] : docs
 
         setDocumentos(deduplicarDocumentos(merged))
@@ -324,7 +341,13 @@ export default function ClienteDashboardModule({ clienteId }) {
           label: `Cuota #${Number(cuota?.numero || cuota?.numero_cuota || index + 1)}`,
           fecha: formatDateMMDDYYYY(dueDate || cuota?.fecha_vencimiento || cuota?.vencimiento || cuota?.fecha),
           monto:
-            Number(cuota?.monto_total ?? cuota?.monto_cuota ?? cuota?.monto ?? cuota?.valor ?? prestamoPrincipal?.pagos_semanales) || 0,
+            Number(
+              cuota?.monto_total ??
+                cuota?.monto_cuota ??
+                cuota?.monto ??
+                cuota?.valor ??
+                prestamoPrincipal?.pagos_semanales
+            ) || 0,
           estado,
           morosa
         }
@@ -333,7 +356,13 @@ export default function ClienteDashboardModule({ clienteId }) {
 
     const totalCuotas = Math.max(Number(prestamoPrincipal?.num_semanas || 0), 0)
     const cuotasPagadas = Math.max(Number(prestamoPrincipal?.pagos_hechos || 0), 0)
-    const baseDate = prestamoPrincipal?.fecha_inicio ? new Date(prestamoPrincipal.fecha_inicio) : new Date()
+    const modalidad = normalizeStatus(prestamoPrincipal?.modalidad)
+    const baseDate =
+      modalidad === 'SEMANAL'
+        ? getNextWeekday(prestamoPrincipal?.fecha_inicio ? new Date(prestamoPrincipal.fecha_inicio) : new Date(), 5)
+        : prestamoPrincipal?.fecha_inicio
+          ? new Date(prestamoPrincipal.fecha_inicio)
+          : new Date()
     const amount = Number(prestamoPrincipal?.pagos_semanales || 0)
 
     if (!totalCuotas) return []
@@ -383,7 +412,9 @@ export default function ClienteDashboardModule({ clienteId }) {
       scoreComportamiento?.categoria ||
       ''
 
-    return String(rating || '').trim().toUpperCase()
+    return String(rating || '')
+      .trim()
+      .toUpperCase()
   }, [scoreComportamiento])
 
   const pagosTotalesComportamiento = useMemo(() => {
@@ -539,7 +570,9 @@ export default function ClienteDashboardModule({ clienteId }) {
       window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 0)
     } catch (err) {
       if (err?.code === 'FETCH_FAILED') {
-        setDocumentActionError('No se pudo descargar el archivo por CORS/red. Intenta visualizarlo o solicita ajuste CORS al backend.')
+        setDocumentActionError(
+          'No se pudo descargar el archivo por CORS/red. Intenta visualizarlo o solicita ajuste CORS al backend.'
+        )
         setSnackbar({
           open: true,
           message: 'Descarga bloqueada por CORS/red. Requiere ajuste backend.',
@@ -682,7 +715,11 @@ export default function ClienteDashboardModule({ clienteId }) {
                         <Chip
                           size='small'
                           variant='tonal'
-                          color={scoreComportamientoRating === 'A' || scoreComportamientoRating === 'B' ? 'success' : 'warning'}
+                          color={
+                            scoreComportamientoRating === 'A' || scoreComportamientoRating === 'B'
+                              ? 'success'
+                              : 'warning'
+                          }
                           label={scoreComportamientoRating}
                         />
                       ) : null}
@@ -690,7 +727,8 @@ export default function ClienteDashboardModule({ clienteId }) {
                     <Typography variant='h3'>{scoreComportamientoValor.toFixed(0)}</Typography>
                     <Typography color='text.secondary'>
                       Puntuales: {formatNaturalNumber(pagosPuntualesComportamiento)} • Tarde:{' '}
-                      {formatNaturalNumber(pagosTardeComportamiento)} • Total: {formatNaturalNumber(pagosTotalesComportamiento)}
+                      {formatNaturalNumber(pagosTardeComportamiento)} • Total:{' '}
+                      {formatNaturalNumber(pagosTotalesComportamiento)}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -705,7 +743,9 @@ export default function ClienteDashboardModule({ clienteId }) {
                   <Typography variant='h5'>Resumen de préstamo</Typography>
                   <Chip
                     size='small'
-                    color={isActiveStatus(prestamoPrincipal?.status || prestamoPrincipal?.estado) ? 'success' : 'warning'}
+                    color={
+                      isActiveStatus(prestamoPrincipal?.status || prestamoPrincipal?.estado) ? 'success' : 'warning'
+                    }
                     label={prestamoPrincipal?.status || prestamoPrincipal?.estado || 'Sin préstamo'}
                     variant='tonal'
                   />
@@ -768,7 +808,10 @@ export default function ClienteDashboardModule({ clienteId }) {
                       Estado: {item.status || '-'} • Inicio: {formatDateMMDDYYYY(item.fecha_inicio)}
                     </Typography>
                   </Box>
-                  <Typography variant='h6' color={isActiveStatus(item.status || item?.estado) ? 'primary.main' : 'success.main'}>
+                  <Typography
+                    variant='h6'
+                    color={isActiveStatus(item.status || item?.estado) ? 'primary.main' : 'success.main'}
+                  >
                     {isActiveStatus(item.status || item?.estado)
                       ? formatCurrency(item.pendiente || item.pagos_pendientes)
                       : 'Completado'}
@@ -790,7 +833,9 @@ export default function ClienteDashboardModule({ clienteId }) {
               {prestamoPrincipalEnMora ? (
                 <Chip size='small' color='error' variant='tonal' label='Préstamo en mora' sx={{ mb: 1.5 }} />
               ) : null}
-              {!proximosPagos.length ? <Typography color='text.secondary'>No hay cuotas disponibles.</Typography> : null}
+              {!proximosPagos.length ? (
+                <Typography color='text.secondary'>No hay cuotas disponibles.</Typography>
+              ) : null}
               {proximosPagos.map(item => (
                 <Stack key={item.id} direction='row' justifyContent='space-between' sx={{ py: 1.5 }}>
                   <Box>
@@ -846,7 +891,9 @@ export default function ClienteDashboardModule({ clienteId }) {
                 <Stack key={`doc-active-${item.id}`} direction='row' justifyContent='space-between' sx={{ py: 1.5 }}>
                   <Box>
                     <Typography>Contrato de préstamo</Typography>
-                    <Typography color='text.secondary'>Firmado: {formatDateMMDDYYYY(item.fecha_inicio)} • PDF</Typography>
+                    <Typography color='text.secondary'>
+                      Firmado: {formatDateMMDDYYYY(item.fecha_inicio)} • PDF
+                    </Typography>
                   </Box>
                   <i className='tabler-download text-2xl' />
                 </Stack>
@@ -869,7 +916,9 @@ export default function ClienteDashboardModule({ clienteId }) {
                   {documentActionError}
                 </Alert>
               ) : null}
-              {!documentos.length ? <Typography color='text.secondary'>No hay documentos PDF cargados.</Typography> : null}
+              {!documentos.length ? (
+                <Typography color='text.secondary'>No hay documentos PDF cargados.</Typography>
+              ) : null}
               {documentos.map((item, index) => (
                 <Stack
                   key={`${item.id || item.url}-${index}`}
@@ -881,7 +930,8 @@ export default function ClienteDashboardModule({ clienteId }) {
                   <Box>
                     <Typography>{item.nombre || `Documento ${index + 1}`}</Typography>
                     <Typography color='text.secondary' variant='body2'>
-                      Archivo PDF {item?.size_bytes ? `• ${(Number(item.size_bytes) / (1024 * 1024)).toFixed(2)} MB` : ''}
+                      Archivo PDF{' '}
+                      {item?.size_bytes ? `• ${(Number(item.size_bytes) / (1024 * 1024)).toFixed(2)} MB` : ''}
                     </Typography>
                   </Box>
                   <Stack direction='row' spacing={1}>

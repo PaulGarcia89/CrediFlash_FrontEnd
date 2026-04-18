@@ -110,6 +110,26 @@ const EXCLUDED_RESULT_FIELDS = new Set([
 
 const EXCLUDED_RESULT_VALUES = new Set(['#10b981'])
 
+const toDateOnlyString = date => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const getNextWeekday = (baseDateInput, targetWeekday) => {
+  const baseDate = new Date(baseDateInput)
+  const currentWeekday = baseDate.getDay()
+  let diff = (targetWeekday - currentWeekday + 7) % 7
+
+  if (diff === 0) diff = 7
+
+  baseDate.setDate(baseDate.getDate() + diff)
+
+  return baseDate
+}
+
 const isPlainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value)
 
 const normalizeText = value =>
@@ -328,10 +348,18 @@ const isTruthyFlag = value => {
 }
 
 const getSolicitudOrigen = row => {
-  const origenSolicitud = String(row?.origen_solicitud || '').trim().toUpperCase()
-  const origen = String(row?.origen || '').trim().toUpperCase()
-  const canalRegistro = String(row?.canal_registro || '').trim().toUpperCase()
-  const source = String(row?.source || '').trim().toUpperCase()
+  const origenSolicitud = String(row?.origen_solicitud || '')
+    .trim()
+    .toUpperCase()
+  const origen = String(row?.origen || '')
+    .trim()
+    .toUpperCase()
+  const canalRegistro = String(row?.canal_registro || '')
+    .trim()
+    .toUpperCase()
+  const source = String(row?.source || '')
+    .trim()
+    .toUpperCase()
 
   if (
     origenSolicitud === 'EXTERNO' ||
@@ -345,12 +373,7 @@ const getSolicitudOrigen = row => {
     return 'EXTERNO'
   }
 
-  if (
-    origenSolicitud === 'INTERNO' ||
-    origen === 'INTERNO' ||
-    canalRegistro === 'INTERNO' ||
-    source === 'INTERNAL'
-  ) {
+  if (origenSolicitud === 'INTERNO' || origen === 'INTERNO' || canalRegistro === 'INTERNO' || source === 'INTERNAL') {
     return 'INTERNO'
   }
 
@@ -593,15 +616,25 @@ export default function SolicitudesModule() {
 
     try {
       const numSemanas = Number(row?.plazo_semanas || row?.num_semanas || 0) || undefined
+      const modalidad = String(row?.modalidad || '').toUpperCase()
+      const primerVencimientoSemanal = modalidad === 'SEMANAL' ? toDateOnlyString(getNextWeekday(new Date(), 5)) : ''
       let approvalRequestBody
 
       if (contratoFile) {
         approvalRequestBody = new FormData()
         if (numSemanas) approvalRequestBody.append('num_semanas', String(numSemanas))
+        if (primerVencimientoSemanal) {
+          approvalRequestBody.append('fecha_primer_pago', primerVencimientoSemanal)
+          approvalRequestBody.append('fecha_primer_vencimiento', primerVencimientoSemanal)
+        }
         approvalRequestBody.append('contrato_credito', contratoFile)
         approvalRequestBody.append('documentos', contratoFile)
       } else {
         approvalRequestBody = { num_semanas: numSemanas }
+        if (primerVencimientoSemanal) {
+          approvalRequestBody.fecha_primer_pago = primerVencimientoSemanal
+          approvalRequestBody.fecha_primer_vencimiento = primerVencimientoSemanal
+        }
       }
 
       const response = await aprobarSolicitudComoPrestamo(row.id, approvalRequestBody)
