@@ -37,7 +37,7 @@ export const actualizarCliente = (clienteId, payload) =>
     body: payload
   })
 
-export const inactivarCliente = clienteId =>
+export const eliminarClientePermanente = clienteId =>
   apiRequest(`/clientes/${clienteId}`, {
     method: 'DELETE'
   })

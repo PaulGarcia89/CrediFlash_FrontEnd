@@ -34,7 +34,7 @@ import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 
-import { actualizarCliente, actualizarEstadoCliente, inactivarCliente, listarClientes } from '@/api/clientes'
+import { actualizarCliente, actualizarEstadoCliente, eliminarClientePermanente, listarClientes } from '@/api/clientes'
 import usePermissions from '@/hooks/usePermissions'
 
 const extractRows = payload => {
@@ -243,7 +243,7 @@ export default function ClientesModule() {
         await actualizarCliente(clienteId, { estado: 'ACTIVO' })
         setSuccess('Cliente marcado como ACTIVO.')
       } else {
-        await inactivarCliente(clienteId)
+        await actualizarEstadoCliente(clienteId, 'INACTIVO')
         setSuccess('Cliente marcado como INACTIVO.')
       }
 
@@ -312,7 +312,7 @@ export default function ClientesModule() {
     setSuccess('')
 
     try {
-      await inactivarCliente(clienteId)
+      await eliminarClientePermanente(clienteId)
       setSuccess('Cliente eliminado permanentemente.')
       await loadClientes()
       await loadGlobalMetrics()
