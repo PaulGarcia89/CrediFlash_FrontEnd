@@ -43,7 +43,8 @@ const actionCardSx = {
   borderRadius: 3,
   position: 'sticky',
   top: 24,
-  alignSelf: 'flex-start'
+  alignSelf: 'flex-start',
+  width: '100%'
 }
 const MODALIDAD_OPTIONS = [
   { value: 'SEMANAL', label: 'WEEKLY (SEMANAL)' },

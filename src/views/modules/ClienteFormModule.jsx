@@ -56,7 +56,8 @@ const actionCardSx = {
   borderRadius: 3,
   position: 'sticky',
   top: 24,
-  alignSelf: 'flex-start'
+  alignSelf: 'flex-start',
+  width: '100%'
 }
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
