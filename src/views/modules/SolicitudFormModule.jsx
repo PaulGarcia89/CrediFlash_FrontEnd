@@ -34,40 +34,13 @@ import { actualizarSolicitud, crearSolicitud, obtenerSolicitud } from '@/api/sol
 const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
 const MODELO_APROBACION_OPTIONS = ['AUTOMATICO', 'MANUAL']
 
-const actionButtonSx = {
-  minHeight: 44,
-  borderRadius: 2.5,
-  textTransform: 'none',
-  fontWeight: 500,
-  fontSize: '1rem'
-}
 const introCardSx = {
   borderTop: theme => `10px solid ${theme.palette.primary.main}`,
-  borderRadius: 3,
-  overflow: 'hidden'
+  borderRadius: 3
 }
-const sectionCardSx = {
-  borderRadius: 3,
-  overflow: 'hidden',
-  '& .MuiCardHeader-root': {
-    px: { xs: 2, md: 3 },
-    py: { xs: 2, md: 2.5 }
-  },
-  '& .MuiCardHeader-title': {
-    fontSize: '1.1rem',
-    fontWeight: 500
-  },
-  '& .MuiCardHeader-subheader': {
-    color: 'text.secondary',
-    fontSize: '0.95rem'
-  },
-  '& .MuiCardContent-root': {
-    px: { xs: 2, md: 3 },
-    py: { xs: 2, md: 3 }
-  }
-}
+const sectionCardSx = { borderRadius: 3 }
 const actionCardSx = {
-  ...sectionCardSx,
+  borderRadius: 3,
   position: 'sticky',
   top: 24,
   alignSelf: 'flex-start'
@@ -536,30 +509,48 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       >
         <Stack spacing={3}>
           <Card sx={introCardSx}>
-            <CardContent sx={{ px: { xs: 2, md: 3 }, py: { xs: 2.5, md: 3 } }}>
-              <Stack spacing={1}>
+            <CardContent>
+              <Stack spacing={0.75}>
                 <Typography
                   sx={{
-                    fontSize: '0.82rem',
-                    fontWeight: 800,
-                    letterSpacing: '0.18em',
-                    color: 'text.secondary'
+                    letterSpacing: '0.14em',
+                    color: 'text.secondary',
+                    fontWeight: 700,
+                    fontSize: '0.68rem'
                   }}
                 >
                   FORMULARIO INTERNO
                 </Typography>
-                <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.08 }}>
+                <Typography
+                  variant='h4'
+                  sx={{
+                    fontWeight: 700,
+                    lineHeight: 1.06,
+                    letterSpacing: '-0.02em',
+                    color: '#202124',
+                    fontSize: '2.05rem'
+                  }}
+                >
                   {solicitudId ? 'EDIT REQUEST' : 'ADD NEW REQUEST'}
                 </Typography>
-                <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.08 }}>
+                <Typography
+                  variant='h4'
+                  sx={{
+                    fontWeight: 700,
+                    lineHeight: 1.06,
+                    letterSpacing: '-0.02em',
+                    color: '#202124',
+                    fontSize: '2.05rem'
+                  }}
+                >
                   {solicitudId ? 'EDITAR SOLICITUD' : 'AGREGAR NUEVA SOLICITUD'}
                 </Typography>
-                <Typography color='text.secondary'>
+                <Typography color='text.secondary' sx={{ fontSize: 14.5, lineHeight: 1.45 }}>
                   {solicitudId
                     ? 'Actualiza la solicitud pendiente y sus condiciones de evaluación.'
                     : 'Completa este formulario para registrar una nueva solicitud de crédito y continuar el proceso de evaluación.'}
                 </Typography>
-                <Typography color='error.main' sx={{ fontWeight: 700 }}>
+                <Typography sx={{ color: '#d93025', fontWeight: 700, fontSize: 12.5 }}>
                   * Indica que la pregunta es obligatoria
                 </Typography>
               </Stack>
@@ -930,7 +921,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                         onClick={handleBackStep}
                         disabled={saving || loading || activeStep === 0}
                         fullWidth
-                        sx={actionButtonSx}
                       >
                         Anterior
                       </Button>
@@ -941,7 +931,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                           onClick={handleSubmit}
                           disabled={saving || loading}
                           fullWidth
-                          sx={actionButtonSx}
                         >
                           {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
                         </Button>
@@ -952,7 +941,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                           onClick={handleNextStep}
                           disabled={saving || loading}
                           fullWidth
-                          sx={actionButtonSx}
                         >
                           Siguiente
                         </Button>
@@ -962,7 +950,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                         onClick={() => router.push('/solicitudes')}
                         disabled={saving}
                         fullWidth
-                        sx={actionButtonSx}
                       >
                         Cancelar
                       </Button>
