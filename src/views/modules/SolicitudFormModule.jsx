@@ -33,6 +33,13 @@ import { actualizarSolicitud, crearSolicitud, obtenerSolicitud } from '@/api/sol
 
 const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
 const MODELO_APROBACION_OPTIONS = ['AUTOMATICO', 'MANUAL']
+
+const actionButtonSx = {
+  minHeight: 48,
+  borderRadius: 2,
+  textTransform: 'none',
+  fontWeight: 600
+}
 const MODALIDAD_OPTIONS = [
   { value: 'SEMANAL', label: 'WEEKLY (SEMANAL)' },
   { value: 'QUINCENAL', label: 'FORTNIGHTLY (QUINCENAL)' },
@@ -51,13 +58,7 @@ const MONTO_RANGOS = [
   { min: 1000, max: 1500, label: '1000 - 1500' },
   { min: 1500, max: 2000, label: '1500 - 2000' }
 ]
-const STEP_LABELS = [
-  'Cliente',
-  'Condiciones del crédito',
-  'Modelos',
-  'Documento de identidad',
-  'Estado de cuenta'
-]
+const STEP_LABELS = ['Cliente', 'Condiciones del crédito', 'Modelos', 'Documento de identidad', 'Estado de cuenta']
 const STEP_DESCRIPTIONS = [
   'Selecciona el cliente activo al que pertenece esta solicitud.',
   'Define monto, modalidad, plazo, tasa y destino del crédito.',
@@ -441,7 +442,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         payload.append('destino', form.destino)
         payload.append('tipo_documento_identidad', 'ID')
         payload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
-
         ;[documentoIdentidad, ...documentosEstadoCuenta].forEach(file => {
           if (file) payload.append('documentos', file)
         })
@@ -509,411 +509,453 @@ export default function SolicitudFormModule({ solicitudId = null }) {
               borderRadius: 3
             }}
           >
-          <CardContent>
-            <Stack spacing={1}>
-              <Typography variant='h3' sx={{ fontWeight: 800 }}>
-                CUSTOMER PRE-QUALIFICATION
-              </Typography>
-              <Typography variant='h3' sx={{ fontWeight: 800 }}>
-                PRECALIFICACION DE CLIENTES
+            <CardContent>
+              <Stack spacing={1}>
+                <Typography variant='h3' sx={{ fontWeight: 800 }}>
+                  CUSTOMER PRE-QUALIFICATION
+                </Typography>
+                <Typography variant='h3' sx={{ fontWeight: 800 }}>
+                  PRECALIFICACION DE CLIENTES
+                </Typography>
+                <Typography color='text.secondary'>
+                  Complete este formulario para evaluar su solicitud de préstamo. Toda la información será tratada de
+                  manera confidencial y usada únicamente para evaluación crediticia.
+                </Typography>
+                <Typography color='error.main' sx={{ fontWeight: 700 }}>
+                  * Indica que la pregunta es obligatoria
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            justifyContent='space-between'
+            alignItems={{ xs: 'start', md: 'center' }}
+            spacing={2}
+          >
+            <Box>
+              <Typography variant='h4' sx={{ mb: 0.5 }}>
+                {solicitudId ? 'Editar solicitud' : 'Agregar una nueva solicitud'}
               </Typography>
               <Typography color='text.secondary'>
-                Complete este formulario para evaluar su solicitud de préstamo. Toda la información será tratada de manera
-                confidencial y usada únicamente para evaluación crediticia.
+                {solicitudId
+                  ? 'Actualiza los datos de la solicitud pendiente.'
+                  : 'Registra una solicitud para el flujo de evaluación y aprobación.'}
               </Typography>
-              <Typography color='error.main' sx={{ fontWeight: 700 }}>
-                * Indica que la pregunta es obligatoria
-              </Typography>
-            </Stack>
-          </CardContent>
-        </Card>
+            </Box>
+          </Stack>
 
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          justifyContent='space-between'
-          alignItems={{ xs: 'start', md: 'center' }}
-          spacing={2}
-        >
-          <Box>
-            <Typography variant='h4' sx={{ mb: 0.5 }}>
-              {solicitudId ? 'Editar solicitud' : 'Agregar una nueva solicitud'}
-            </Typography>
-            <Typography color='text.secondary'>
-              {solicitudId
-                ? 'Actualiza los datos de la solicitud pendiente.'
-                : 'Registra una solicitud para el flujo de evaluación y aprobación.'}
-            </Typography>
-          </Box>
-        </Stack>
+          {error ? <Alert severity='error'>{error}</Alert> : null}
+          {loading ? <Alert severity='info'>Cargando solicitud...</Alert> : null}
 
-        {error ? <Alert severity='error'>{error}</Alert> : null}
-        {loading ? <Alert severity='info'>Cargando solicitud...</Alert> : null}
-
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, lg: 8 }}>
-            <Stack spacing={3}>
-              <Card sx={{ borderRadius: 3 }}>
-                <CardHeader title='Información de la solicitud' />
-                <Divider />
-                <CardContent>
-                  <Stack spacing={2.5}>
-                    <Stack spacing={1}>
-                      <Typography variant='h6'>
-                        Sección {activeStep + 1} de {flowSteps.length}: {flowSteps[activeStep]}
-                      </Typography>
-                      <Typography color='text.secondary'>{STEP_DESCRIPTIONS[activeStep]}</Typography>
-                      <LinearProgress
-                        variant='determinate'
-                        value={((activeStep + 1) / flowSteps.length) * 100}
-                        sx={{ borderRadius: 999, height: 8 }}
-                      />
-                    </Stack>
-
-                    <Stepper activeStep={activeStep} alternativeLabel>
-                      {flowSteps.map(label => (
-                        <Step key={label}>
-                          <StepLabel>{label}</StepLabel>
-                        </Step>
-                      ))}
-                    </Stepper>
-
-                    {activeStep === 0 ? (
-                      <Grid container spacing={2}>
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant='h5' sx={{ fontWeight: 700, mb: 0.5 }}>
-                            FULL NAME * / NOMBRE COMPLETO
-                          </Typography>
-                          <Typography color='text.secondary' sx={{ mb: 1.5 }}>
-                            Selecciona el cliente activo en el listado.
-                          </Typography>
-                          <Autocomplete
-                            options={clientesOptions}
-                            value={clienteValue}
-                            loading={clientesLoading}
-                            disabled={Boolean(solicitudId)}
-                            onChange={(_, value) => {
-                              setClienteValue(value)
-                              setForm(previous => ({ ...previous, cliente_id: value?.id || '' }))
-                            }}
-                            onInputChange={(_, value) => {
-                              setClienteSearch(value)
-                            }}
-                            getOptionLabel={option => clienteOptionLabel(option)}
-                            isOptionEqualToValue={(option, value) => option.id === value.id}
-                            renderInput={params => (
-                              <TextField
-                                {...params}
-                                label='Cliente activo'
-                                placeholder='Buscar por teléfono o email'
-                                required
-                                error={isStepFieldMissing('cliente_id')}
-                                helperText={
-                                  isStepFieldMissing('cliente_id')
-                                    ? 'Campo obligatorio'
-                                    : 'Ejemplo: Juan Pérez — 8090000000 — cliente@correo.com'
-                                }
-                              />
-                            )}
-                          />
-                          {canLoadMoreClientes ? (
-                            <Box mt={1}>
-                              <Button
-                                variant='text'
-                                size='small'
-                                onClick={handleLoadMoreClientes}
-                                disabled={clientesLoading}
-                              >
-                                Cargar más clientes
-                              </Button>
-                            </Box>
-                          ) : null}
-                        </Grid>
-                      </Grid>
-                    ) : null}
-
-                    {activeStep === 1 ? (
-                      <Grid container spacing={2}>
-                        <Grid size={{ xs: 12 }}>
-                          <FormControl
-                            fullWidth
-                            required
-                            error={isStepFieldMissing('destino')}
-                            sx={{
-                              p: 2,
-                              border: theme => `1px solid ${theme.palette.divider}`,
-                              borderRadius: 2
-                            }}
-                          >
-                            <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
-                              DESTINATION OF THE REQUEST * / DESTINO DE LA SOLICITUD
-                            </FormLabel>
-                            <RadioGroup name='destino' value={form.destino} onChange={handleChange}>
-                              {DESTINO_OPTIONS.map(option => (
-                                <FormControlLabel
-                                  key={option.value}
-                                  value={option.value}
-                                  control={<Radio />}
-                                  label={option.label}
-                                />
-                              ))}
-                            </RadioGroup>
-                            <Typography variant='caption' color={isStepFieldMissing('destino') ? 'error.main' : 'text.secondary'}>
-                              {isStepFieldMissing('destino')
-                                ? 'Campo obligatorio'
-                                : 'Selecciona una opción de destino de crédito.'}
-                            </Typography>
-                          </FormControl>
-                        </Grid>
-
-                        <Grid size={{ xs: 12 }}>
-                          <FormControl
-                            fullWidth
-                            required
-                            error={isStepFieldMissing('modalidad')}
-                            sx={{
-                              p: 2,
-                              border: theme => `1px solid ${theme.palette.divider}`,
-                              borderRadius: 2
-                            }}
-                          >
-                            <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
-                              TYPE OF PAYMENT * / TIPO DE PAGO
-                            </FormLabel>
-                            <RadioGroup name='modalidad' value={form.modalidad} onChange={handleChange}>
-                              {MODALIDAD_OPTIONS.map(option => (
-                                <FormControlLabel
-                                  key={option.value}
-                                  value={option.value}
-                                  control={<Radio />}
-                                  label={option.label}
-                                />
-                              ))}
-                            </RadioGroup>
-                            <Typography variant='caption' color={isStepFieldMissing('modalidad') ? 'error.main' : 'text.secondary'}>
-                              {isStepFieldMissing('modalidad')
-                                ? 'Campo obligatorio'
-                                : 'Semanal, quincenal o mensual.'}
-                            </Typography>
-                          </FormControl>
-                        </Grid>
-
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <TextField
-                            label='APPLICATION AMOUNT * / MONTO DE SU SOLICITUD'
-                            name='monto_solicitado'
-                            type='number'
-                            value={form.monto_solicitado}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            error={isStepFieldMissing('monto_solicitado')}
-                            helperText={
-                              isStepFieldMissing('monto_solicitado') ? 'Campo obligatorio' : 'Ejemplo: 2000'
-                            }
-                          />
-                          <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap' mt={1}>
-                            {MONTO_RANGOS.map(rango => (
-                              <Button
-                                key={rango.label}
-                                size='small'
-                                variant='tonal'
-                                onClick={() =>
-                                  setForm(previous => ({
-                                    ...previous,
-                                    monto_solicitado: String(rango.max)
-                                  }))
-                                }
-                              >
-                                {rango.label}
-                              </Button>
-                            ))}
-                          </Stack>
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <TextField
-                            label='TERM IN WEEKS * / PLAZO (SEMANAS)'
-                            name='plazo_semanas'
-                            type='number'
-                            value={form.plazo_semanas}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            error={isStepFieldMissing('plazo_semanas')}
-                            helperText={
-                              isStepFieldMissing('plazo_semanas') ? 'Campo obligatorio' : 'Ejemplo: 8'
-                            }
-                          />
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <TextField
-                            label='VARIABLE RATE (%) * / TASA VARIABLE (%)'
-                            name='tasa_variable_pct'
-                            type='number'
-                            value={form.tasa_variable_pct}
-                            onChange={handleChange}
-                            inputProps={{ min: 1, max: 100 }}
-                            fullWidth
-                            required
-                            error={isStepFieldMissing('tasa_variable_pct')}
-                            helperText={
-                              isStepFieldMissing('tasa_variable_pct') ? 'Campo obligatorio' : 'Ejemplo: 23'
-                            }
-                          />
-                        </Grid>
-                      </Grid>
-                    ) : null}
-
-                    {activeStep === 2 ? (
-                      <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <TextField
-                            select
-                            label='Modelo de calificación *'
-                            name='modelo_calificacion'
-                            value={form.modelo_calificacion}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            error={isStepFieldMissing('modelo_calificacion')}
-                            helperText={
-                              isStepFieldMissing('modelo_calificacion')
-                                ? 'Campo obligatorio'
-                                : 'Ejemplo: CLIENTE_NUEVO'
-                            }
-                          >
-                            {MODELO_OPTIONS.map(model => (
-                              <MenuItem key={model} value={model}>
-                                {model}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 6 }}>
-                          <TextField
-                            select
-                            label='Modelo de aprobación *'
-                            name='modelo_aprobacion'
-                            value={form.modelo_aprobacion}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            error={isStepFieldMissing('modelo_aprobacion')}
-                            helperText={
-                              isStepFieldMissing('modelo_aprobacion')
-                                ? 'Campo obligatorio'
-                                : 'Ejemplo: AUTOMATICO'
-                            }
-                          >
-                            {MODELO_APROBACION_OPTIONS.map(model => (
-                              <MenuItem key={model} value={model}>
-                                {model}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        </Grid>
-                      </Grid>
-                    ) : null}
-
-                    {activeStep === 3 && !solicitudId ? (
-                      <Stack
-                        spacing={1.5}
-                        sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          border: theme => `1px solid ${theme.palette.divider}`,
-                          bgcolor: 'background.default'
-                        }}
-                      >
-                        <Typography variant='h5' sx={{ fontWeight: 700 }}>
-                          IMPORTANT (FILE) * / ARCHIVOS (IMPORTANTE)
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, lg: 8 }}>
+              <Stack spacing={3}>
+                <Card sx={{ borderRadius: 3 }}>
+                  <CardHeader title='Información de la solicitud' />
+                  <Divider />
+                  <CardContent>
+                    <Stack spacing={2.5}>
+                      <Stack spacing={1}>
+                        <Typography variant='h6'>
+                          Sección {activeStep + 1} de {flowSteps.length}: {flowSteps[activeStep]}
                         </Typography>
-                        <Typography color={isStepFieldMissing('documento_identidad') ? 'error.main' : 'text.secondary'}>
-                          UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
-                        </Typography>
-                        <Button variant='outlined' component='label'>
-                          Cargar documento ID (obligatorio)
-                          <input hidden type='file' accept='application/pdf,.pdf' onChange={handleDocumentoIdentidad} />
-                        </Button>
-                        <Typography
-                          variant='caption'
-                          color={isStepFieldMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
+                        <Typography color='text.secondary'>{STEP_DESCRIPTIONS[activeStep]}</Typography>
+                        <LinearProgress
+                          variant='determinate'
+                          value={((activeStep + 1) / flowSteps.length) * 100}
+                          sx={{ borderRadius: 999, height: 8 }}
+                        />
+                      </Stack>
+
+                      <Stepper activeStep={activeStep} alternativeLabel>
+                        {flowSteps.map(label => (
+                          <Step key={label}>
+                            <StepLabel>{label}</StepLabel>
+                          </Step>
+                        ))}
+                      </Stepper>
+
+                      {activeStep === 0 ? (
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 12 }}>
+                            <Typography variant='h5' sx={{ fontWeight: 700, mb: 0.5 }}>
+                              FULL NAME * / NOMBRE COMPLETO
+                            </Typography>
+                            <Typography color='text.secondary' sx={{ mb: 1.5 }}>
+                              Selecciona el cliente activo en el listado.
+                            </Typography>
+                            <Autocomplete
+                              options={clientesOptions}
+                              value={clienteValue}
+                              loading={clientesLoading}
+                              disabled={Boolean(solicitudId)}
+                              onChange={(_, value) => {
+                                setClienteValue(value)
+                                setForm(previous => ({ ...previous, cliente_id: value?.id || '' }))
+                              }}
+                              onInputChange={(_, value) => {
+                                setClienteSearch(value)
+                              }}
+                              getOptionLabel={option => clienteOptionLabel(option)}
+                              isOptionEqualToValue={(option, value) => option.id === value.id}
+                              renderInput={params => (
+                                <TextField
+                                  {...params}
+                                  label='Cliente activo'
+                                  placeholder='Buscar por teléfono o email'
+                                  required
+                                  error={isStepFieldMissing('cliente_id')}
+                                  helperText={
+                                    isStepFieldMissing('cliente_id')
+                                      ? 'Campo obligatorio'
+                                      : 'Ejemplo: Juan Pérez — 8090000000 — cliente@correo.com'
+                                  }
+                                />
+                              )}
+                            />
+                            {canLoadMoreClientes ? (
+                              <Box mt={1}>
+                                <Button
+                                  variant='text'
+                                  size='small'
+                                  onClick={handleLoadMoreClientes}
+                                  disabled={clientesLoading}
+                                >
+                                  Cargar más clientes
+                                </Button>
+                              </Box>
+                            ) : null}
+                          </Grid>
+                        </Grid>
+                      ) : null}
+
+                      {activeStep === 1 ? (
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 12 }}>
+                            <FormControl
+                              fullWidth
+                              required
+                              error={isStepFieldMissing('destino')}
+                              sx={{
+                                p: 2,
+                                border: theme => `1px solid ${theme.palette.divider}`,
+                                borderRadius: 2
+                              }}
+                            >
+                              <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
+                                DESTINATION OF THE REQUEST * / DESTINO DE LA SOLICITUD
+                              </FormLabel>
+                              <RadioGroup name='destino' value={form.destino} onChange={handleChange}>
+                                {DESTINO_OPTIONS.map(option => (
+                                  <FormControlLabel
+                                    key={option.value}
+                                    value={option.value}
+                                    control={<Radio />}
+                                    label={option.label}
+                                  />
+                                ))}
+                              </RadioGroup>
+                              <Typography
+                                variant='caption'
+                                color={isStepFieldMissing('destino') ? 'error.main' : 'text.secondary'}
+                              >
+                                {isStepFieldMissing('destino')
+                                  ? 'Campo obligatorio'
+                                  : 'Selecciona una opción de destino de crédito.'}
+                              </Typography>
+                            </FormControl>
+                          </Grid>
+
+                          <Grid size={{ xs: 12 }}>
+                            <FormControl
+                              fullWidth
+                              required
+                              error={isStepFieldMissing('modalidad')}
+                              sx={{
+                                p: 2,
+                                border: theme => `1px solid ${theme.palette.divider}`,
+                                borderRadius: 2
+                              }}
+                            >
+                              <FormLabel sx={{ color: 'text.primary', mb: 1.5, fontSize: '1.05rem', fontWeight: 700 }}>
+                                TYPE OF PAYMENT * / TIPO DE PAGO
+                              </FormLabel>
+                              <RadioGroup name='modalidad' value={form.modalidad} onChange={handleChange}>
+                                {MODALIDAD_OPTIONS.map(option => (
+                                  <FormControlLabel
+                                    key={option.value}
+                                    value={option.value}
+                                    control={<Radio />}
+                                    label={option.label}
+                                  />
+                                ))}
+                              </RadioGroup>
+                              <Typography
+                                variant='caption'
+                                color={isStepFieldMissing('modalidad') ? 'error.main' : 'text.secondary'}
+                              >
+                                {isStepFieldMissing('modalidad')
+                                  ? 'Campo obligatorio'
+                                  : 'Semanal, quincenal o mensual.'}
+                              </Typography>
+                            </FormControl>
+                          </Grid>
+
+                          <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                              label='APPLICATION AMOUNT * / MONTO DE SU SOLICITUD'
+                              name='monto_solicitado'
+                              type='number'
+                              value={form.monto_solicitado}
+                              onChange={handleChange}
+                              fullWidth
+                              required
+                              error={isStepFieldMissing('monto_solicitado')}
+                              helperText={
+                                isStepFieldMissing('monto_solicitado') ? 'Campo obligatorio' : 'Ejemplo: 2000'
+                              }
+                            />
+                            <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap' mt={1}>
+                              {MONTO_RANGOS.map(rango => (
+                                <Button
+                                  key={rango.label}
+                                  size='small'
+                                  variant='tonal'
+                                  onClick={() =>
+                                    setForm(previous => ({
+                                      ...previous,
+                                      monto_solicitado: String(rango.max)
+                                    }))
+                                  }
+                                >
+                                  {rango.label}
+                                </Button>
+                              ))}
+                            </Stack>
+                          </Grid>
+                          <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                              label='TERM IN WEEKS * / PLAZO (SEMANAS)'
+                              name='plazo_semanas'
+                              type='number'
+                              value={form.plazo_semanas}
+                              onChange={handleChange}
+                              fullWidth
+                              required
+                              error={isStepFieldMissing('plazo_semanas')}
+                              helperText={isStepFieldMissing('plazo_semanas') ? 'Campo obligatorio' : 'Ejemplo: 8'}
+                            />
+                          </Grid>
+                          <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                              label='VARIABLE RATE (%) * / TASA VARIABLE (%)'
+                              name='tasa_variable_pct'
+                              type='number'
+                              value={form.tasa_variable_pct}
+                              onChange={handleChange}
+                              inputProps={{ min: 1, max: 100 }}
+                              fullWidth
+                              required
+                              error={isStepFieldMissing('tasa_variable_pct')}
+                              helperText={isStepFieldMissing('tasa_variable_pct') ? 'Campo obligatorio' : 'Ejemplo: 23'}
+                            />
+                          </Grid>
+                        </Grid>
+                      ) : null}
+
+                      {activeStep === 2 ? (
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                              select
+                              label='Modelo de calificación *'
+                              name='modelo_calificacion'
+                              value={form.modelo_calificacion}
+                              onChange={handleChange}
+                              fullWidth
+                              required
+                              error={isStepFieldMissing('modelo_calificacion')}
+                              helperText={
+                                isStepFieldMissing('modelo_calificacion')
+                                  ? 'Campo obligatorio'
+                                  : 'Ejemplo: CLIENTE_NUEVO'
+                              }
+                            >
+                              {MODELO_OPTIONS.map(model => (
+                                <MenuItem key={model} value={model}>
+                                  {model}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          </Grid>
+                          <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                              select
+                              label='Modelo de aprobación *'
+                              name='modelo_aprobacion'
+                              value={form.modelo_aprobacion}
+                              onChange={handleChange}
+                              fullWidth
+                              required
+                              error={isStepFieldMissing('modelo_aprobacion')}
+                              helperText={
+                                isStepFieldMissing('modelo_aprobacion') ? 'Campo obligatorio' : 'Ejemplo: AUTOMATICO'
+                              }
+                            >
+                              {MODELO_APROBACION_OPTIONS.map(model => (
+                                <MenuItem key={model} value={model}>
+                                  {model}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          </Grid>
+                        </Grid>
+                      ) : null}
+
+                      {activeStep === 3 && !solicitudId ? (
+                        <Stack
+                          spacing={1.5}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            border: theme => `1px solid ${theme.palette.divider}`,
+                            bgcolor: 'background.default'
+                          }}
                         >
-                          {documentoIdentidad ? `Archivo seleccionado: ${documentoIdentidad.name}` : 'Aún no has cargado el documento ID.'}
-                        </Typography>
-                      </Stack>
-                    ) : null}
+                          <Typography variant='h5' sx={{ fontWeight: 700 }}>
+                            IMPORTANT (FILE) * / ARCHIVOS (IMPORTANTE)
+                          </Typography>
+                          <Typography
+                            color={isStepFieldMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
+                          >
+                            UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
+                          </Typography>
+                          <Button variant='outlined' component='label'>
+                            Cargar documento ID (obligatorio)
+                            <input
+                              hidden
+                              type='file'
+                              accept='application/pdf,.pdf'
+                              onChange={handleDocumentoIdentidad}
+                            />
+                          </Button>
+                          <Typography
+                            variant='caption'
+                            color={isStepFieldMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
+                          >
+                            {documentoIdentidad
+                              ? `Archivo seleccionado: ${documentoIdentidad.name}`
+                              : 'Aún no has cargado el documento ID.'}
+                          </Typography>
+                        </Stack>
+                      ) : null}
 
-                    {activeStep === 4 && !solicitudId ? (
-                      <Stack
-                        spacing={1.5}
-                        sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          border: theme => `1px solid ${theme.palette.divider}`,
-                          bgcolor: 'background.default'
-                        }}
+                      {activeStep === 4 && !solicitudId ? (
+                        <Stack
+                          spacing={1.5}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            border: theme => `1px solid ${theme.palette.divider}`,
+                            bgcolor: 'background.default'
+                          }}
+                        >
+                          <Typography variant='h5' sx={{ fontWeight: 700 }}>
+                            HOW MANY BANK STATEMENTS * / ESTADOS DE CUENTAS BANCARIOS
+                          </Typography>
+                          <Typography color='text.secondary'>LAST 2 MONTHS / ULTIMOS 2 MESES</Typography>
+                          <Typography color={isStepFieldMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
+                            Sube hasta 2 archivos compatibles. Tamaño máximo por archivo: 10MB.
+                          </Typography>
+                          <Button variant='outlined' component='label'>
+                            Cargar estados de cuenta (1 o 2)
+                            <input
+                              hidden
+                              type='file'
+                              accept='application/pdf,.pdf'
+                              multiple
+                              onChange={handleEstadoCuentaFiles}
+                            />
+                          </Button>
+                          <Typography
+                            variant='caption'
+                            color={isStepFieldMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}
+                          >
+                            {documentosEstadoCuenta.length
+                              ? `${documentosEstadoCuenta.length} archivo(s) seleccionado(s)`
+                              : 'No hay estados de cuenta cargados'}
+                          </Typography>
+                        </Stack>
+                      ) : null}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Stack>
+            </Grid>
+
+            <Grid size={{ xs: 12, lg: 4 }}>
+              <Stack spacing={3}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    position: 'sticky',
+                    top: 24,
+                    alignSelf: 'flex-start'
+                  }}
+                >
+                  <CardHeader title='Acciones' />
+                  <Divider />
+                  <CardContent>
+                    <Stack spacing={1.5}>
+                      <Button
+                        variant='outlined'
+                        onClick={handleBackStep}
+                        disabled={saving || loading || activeStep === 0}
+                        fullWidth
+                        sx={actionButtonSx}
                       >
-                        <Typography variant='h5' sx={{ fontWeight: 700 }}>
-                          HOW MANY BANK STATEMENTS * / ESTADOS DE CUENTAS BANCARIOS
-                        </Typography>
-                        <Typography color='text.secondary'>
-                          LAST 2 MONTHS / ULTIMOS 2 MESES
-                        </Typography>
-                        <Typography color={isStepFieldMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
-                          Sube hasta 2 archivos compatibles. Tamaño máximo por archivo: 10MB.
-                        </Typography>
-                        <Button variant='outlined' component='label'>
-                          Cargar estados de cuenta (1 o 2)
-                          <input hidden type='file' accept='application/pdf,.pdf' multiple onChange={handleEstadoCuentaFiles} />
+                        Anterior
+                      </Button>
+                      {activeStep === flowSteps.length - 1 ? (
+                        <Button
+                          variant='contained'
+                          type='button'
+                          onClick={handleSubmit}
+                          disabled={saving || loading}
+                          fullWidth
+                          sx={actionButtonSx}
+                        >
+                          {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
                         </Button>
-                        <Typography variant='caption' color={isStepFieldMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
-                          {documentosEstadoCuenta.length
-                            ? `${documentosEstadoCuenta.length} archivo(s) seleccionado(s)`
-                            : 'No hay estados de cuenta cargados'}
-                        </Typography>
-                      </Stack>
-                    ) : null}
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Stack>
-          </Grid>
-
-          <Grid size={{ xs: 12, lg: 4 }}>
-            <Stack spacing={3}>
-              <Card
-                sx={{
-                  borderRadius: 3,
-                  position: 'sticky',
-                  top: 24,
-                  alignSelf: 'flex-start'
-                }}
-              >
-                <CardHeader title='Acciones' />
-                <Divider />
-                <CardContent>
-                  <Stack spacing={1.5}>
-                    <Button variant='outlined' onClick={handleBackStep} disabled={saving || loading || activeStep === 0} fullWidth>
-                      Anterior
-                    </Button>
-                    {activeStep === flowSteps.length - 1 ? (
-                      <Button variant='contained' type='button' onClick={handleSubmit} disabled={saving || loading} fullWidth>
-                        {saving ? 'Guardando...' : solicitudId ? 'Actualizar solicitud' : 'Publicar solicitud'}
+                      ) : (
+                        <Button
+                          variant='contained'
+                          type='button'
+                          onClick={handleNextStep}
+                          disabled={saving || loading}
+                          fullWidth
+                          sx={actionButtonSx}
+                        >
+                          Siguiente
+                        </Button>
+                      )}
+                      <Button
+                        variant='outlined'
+                        onClick={() => router.push('/solicitudes')}
+                        disabled={saving}
+                        fullWidth
+                        sx={actionButtonSx}
+                      >
+                        Cancelar
                       </Button>
-                    ) : (
-                      <Button variant='contained' type='button' onClick={handleNextStep} disabled={saving || loading} fullWidth>
-                        Siguiente
-                      </Button>
-                    )}
-                    <Button variant='outlined' onClick={() => router.push('/solicitudes')} disabled={saving} fullWidth>
-                      Cancelar
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Stack>
+            </Grid>
           </Grid>
-        </Grid>
         </Stack>
       </Box>
 

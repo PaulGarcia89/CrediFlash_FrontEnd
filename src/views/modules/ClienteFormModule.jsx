@@ -47,6 +47,13 @@ const initialForm = {
 }
 
 const parseBoolean = value => value === true || value === 1 || String(value || '').toLowerCase() === 'true'
+
+const actionButtonSx = {
+  minHeight: 48,
+  borderRadius: 2,
+  textTransform: 'none',
+  fontWeight: 600
+}
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.data)) return payload.data
@@ -126,7 +133,9 @@ export default function ClienteFormModule({ clienteId = null }) {
 
     if (alreadyId) return
 
-    const byLabel = clientesActivos.find(item => normalizeText(getClienteLabel(item)) === normalizeText(form.referido_por))
+    const byLabel = clientesActivos.find(
+      item => normalizeText(getClienteLabel(item)) === normalizeText(form.referido_por)
+    )
 
     if (getClienteId(byLabel)) {
       setForm(previous => ({ ...previous, referido_por: getClienteId(byLabel) }))
@@ -211,7 +220,11 @@ export default function ClienteFormModule({ clienteId = null }) {
       return
     }
 
-    const isPdf = file.type === 'application/pdf' || String(file.name || '').toLowerCase().endsWith('.pdf')
+    const isPdf =
+      file.type === 'application/pdf' ||
+      String(file.name || '')
+        .toLowerCase()
+        .endsWith('.pdf')
 
     if (!isPdf) {
       setDocumentoIdentidadFile(null)
@@ -230,7 +243,9 @@ export default function ClienteFormModule({ clienteId = null }) {
     setError('')
 
     try {
-      const email = String(form.email || '').trim().toLowerCase()
+      const email = String(form.email || '')
+        .trim()
+        .toLowerCase()
 
       if (!clienteId) {
         if (!email) {
@@ -310,7 +325,9 @@ export default function ClienteFormModule({ clienteId = null }) {
   const handleSendVerificationCode = async () => {
     if (clienteId) return
 
-    const email = String(form.email || '').trim().toLowerCase()
+    const email = String(form.email || '')
+      .trim()
+      .toLowerCase()
 
     setError('')
     setEmailVerificationMessage('')
@@ -343,7 +360,9 @@ export default function ClienteFormModule({ clienteId = null }) {
   const handleVerifyCode = async () => {
     if (clienteId) return
 
-    const email = String(form.email || '').trim().toLowerCase()
+    const email = String(form.email || '')
+      .trim()
+      .toLowerCase()
     const codigo = String(emailVerificationCode || '').trim()
 
     setError('')
@@ -470,14 +489,10 @@ export default function ClienteFormModule({ clienteId = null }) {
                       fullWidth
                       required={!clienteId}
                       error={isRequiredMissing('email')}
-                      helperText={
-                        isRequiredMissing('email') ? 'Campo obligatorio' : 'Ejemplo: cliente@correo.com'
-                      }
+                      helperText={isRequiredMissing('email') ? 'Campo obligatorio' : 'Ejemplo: cliente@correo.com'}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12 }}>
-                    {null}
-                  </Grid>
+                  <Grid size={{ xs: 12 }}>{null}</Grid>
                   {!clienteId ? (
                     <Grid size={{ xs: 12 }}>
                       <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
@@ -743,10 +758,16 @@ export default function ClienteFormModule({ clienteId = null }) {
               <Divider />
               <CardContent>
                 <Stack spacing={1.5}>
-                  <Button variant='contained' type='submit' disabled={saving || loading} fullWidth>
+                  <Button variant='contained' type='submit' disabled={saving || loading} fullWidth sx={actionButtonSx}>
                     {saving ? 'Guardando...' : clienteId ? 'Actualizar cliente' : 'Publicar cliente'}
                   </Button>
-                  <Button variant='outlined' onClick={() => router.push('/clientes')} disabled={saving} fullWidth>
+                  <Button
+                    variant='outlined'
+                    onClick={() => router.push('/clientes')}
+                    disabled={saving}
+                    fullWidth
+                    sx={actionButtonSx}
+                  >
                     Cancelar
                   </Button>
                 </Stack>
