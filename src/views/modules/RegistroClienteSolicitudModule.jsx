@@ -2228,7 +2228,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
                             {...params}
                             label='Referido por'
                             placeholder='Seleccionar cliente activo'
-                            required={Boolean(form.es_referido)}
+                            required={Boolean(form.es_referido) && !String(form.referido_externo || '').trim()}
                             error={isRequiredMissing('referido_por')}
                             helperText={
                               isRequiredMissing('referido_por')
