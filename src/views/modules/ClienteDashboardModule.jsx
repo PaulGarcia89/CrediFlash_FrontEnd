@@ -57,6 +57,11 @@ const deduplicarDocumentos = documentos => {
   })
 }
 
+const isSyntheticClienteDocumentId = value => String(value || '').trim() === 'doc-id-cliente'
+
+const getDocumentIdentityKey = item =>
+  String(item?.id || item?.url_descarga || item?.download_url || item?.url || item?.nombre || '').trim()
+
 const buildDocumentoIdentidadCliente = cliente => {
   if (!cliente) return null
 
@@ -594,9 +599,35 @@ export default function ClienteDashboardModule({ clienteId }) {
   const handleDeleteDocument = async item => {
     setDocumentActionError('')
 
-    if (!item?.id) {
-      setDocumentActionError('No se puede eliminar este documento porque el backend no envía su ID.')
-      setSnackbar({ open: true, message: 'No se puede eliminar: falta ID del documento.', severity: 'error' })
+    const removeDocumentLocally = () => {
+      const targetKey = getDocumentIdentityKey(item)
+
+      setDocumentos(previous => previous.filter(doc => getDocumentIdentityKey(doc) !== targetKey))
+      setCliente(previous =>
+        previous
+          ? {
+              ...previous,
+              documento_identidad_id: null,
+              documento_identidad_url: '',
+              documento_identidad: '',
+              documento_identidad_path: '',
+              documento_identidad_file: '',
+              documento_identidad_nombre: '',
+              documento_identidad_size_bytes: null,
+              documento_identidad_size: null
+            }
+          : previous
+      )
+    }
+
+    if (!item?.id || isSyntheticClienteDocumentId(item.id)) {
+      removeDocumentLocally()
+      setSnackbar({
+        open: true,
+        message:
+          'Documento removido de la vista actual. Si reaparece al recargar, hay que limpiar el registro en backend.',
+        severity: 'warning'
+      })
 
       return
     }
@@ -615,6 +646,23 @@ export default function ClienteDashboardModule({ clienteId }) {
       setDocumentos(deduplicarDocumentos(extractRows(refreshed)))
       setSnackbar({ open: true, message: 'Documento eliminado correctamente.', severity: 'success' })
     } catch (err) {
+      const normalizedMessage = String(err?.message || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+
+      if (normalizedMessage.includes('no encontrado') || normalizedMessage.includes('not found')) {
+        removeDocumentLocally()
+        setDocumentActionError('')
+        setSnackbar({
+          open: true,
+          message: 'El documento ya no existia en el servidor y fue removido de la lista actual.',
+          severity: 'warning'
+        })
+
+        return
+      }
+
       setDocumentActionError(err.message || 'No se pudo eliminar el documento.')
       setSnackbar({ open: true, message: err.message || 'No se pudo eliminar el documento.', severity: 'error' })
     } finally {
