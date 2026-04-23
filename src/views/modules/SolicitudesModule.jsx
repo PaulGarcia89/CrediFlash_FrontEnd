@@ -552,6 +552,9 @@ export default function SolicitudesModule() {
   const [solicitudAprobacion, setSolicitudAprobacion] = useState(null)
   const [contratoAprobacionFile, setContratoAprobacionFile] = useState(null)
   const [aprobacionDialogError, setAprobacionDialogError] = useState('')
+  const [confirmActionDialogOpen, setConfirmActionDialogOpen] = useState(false)
+  const [confirmActionType, setConfirmActionType] = useState('')
+  const [confirmActionSolicitud, setConfirmActionSolicitud] = useState(null)
   const canViewSolicitudes = can('solicitudes.view')
   const canCreateSolicitud = can('solicitudes.create')
   const canApproveSolicitud = can('solicitudes.approve')
@@ -690,6 +693,38 @@ export default function SolicitudesModule() {
     setAprobacionDialogError('')
     setSolicitudAprobacion(null)
     setContratoAprobacionFile(null)
+  }
+
+  const openConfirmActionDialog = (row, actionType) => {
+    setConfirmActionSolicitud(row)
+    setConfirmActionType(actionType)
+    setConfirmActionDialogOpen(true)
+  }
+
+  const closeConfirmActionDialog = () => {
+    if (processingId && processingId === confirmActionSolicitud?.id) return
+
+    setConfirmActionDialogOpen(false)
+    setConfirmActionType('')
+    setConfirmActionSolicitud(null)
+  }
+
+  const confirmSolicitudAction = async () => {
+    if (!confirmActionSolicitud || !confirmActionType) return
+
+    if (confirmActionType === 'APROBAR') {
+      closeConfirmActionDialog()
+      openAprobacionDialog(confirmActionSolicitud)
+
+      return
+    }
+
+    if (confirmActionType === 'RECHAZAR') {
+      const target = confirmActionSolicitud
+
+      closeConfirmActionDialog()
+      await runRechazo(target)
+    }
   }
 
   const handleContratoAprobacionFile = event => {
@@ -1094,7 +1129,7 @@ export default function SolicitudesModule() {
                 size='small'
                 color='success'
                 disabled={!isPendiente || isBusy}
-                onClick={() => openAprobacionDialog(row)}
+                onClick={() => openConfirmActionDialog(row, 'APROBAR')}
               >
                 <i className='tabler-check text-3xl' />
               </IconButton>
@@ -1104,7 +1139,12 @@ export default function SolicitudesModule() {
         {canRejectSolicitud ? (
           <Tooltip title='Rechazar'>
             <span>
-              <IconButton size='small' color='error' disabled={!isPendiente || isBusy} onClick={() => runRechazo(row)}>
+              <IconButton
+                size='small'
+                color='error'
+                disabled={!isPendiente || isBusy}
+                onClick={() => openConfirmActionDialog(row, 'RECHAZAR')}
+              >
                 <i className='tabler-x text-3xl' />
               </IconButton>
             </span>
@@ -1692,6 +1732,36 @@ export default function SolicitudesModule() {
             disabled={!solicitudAprobacion || !contratoAprobacionFile || processingId === solicitudAprobacion?.id}
           >
             {processingId === solicitudAprobacion?.id ? 'Aprobando...' : 'Aprobar solicitud'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={confirmActionDialogOpen} onClose={closeConfirmActionDialog} fullWidth maxWidth='xs'>
+        <DialogTitle>{confirmActionType === 'APROBAR' ? 'Confirmar aprobación' : 'Confirmar rechazo'}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <Typography color='text.secondary'>
+              {confirmActionType === 'APROBAR'
+                ? '¿Está seguro que desea aprobar esta solicitud?'
+                : '¿Está seguro que desea rechazar esta solicitud?'}
+            </Typography>
+            {confirmActionSolicitud ? (
+              <Typography variant='body2' color='text.secondary'>
+                Cliente: {getClienteNombre(confirmActionSolicitud) || '-'}
+              </Typography>
+            ) : null}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button variant='text' onClick={closeConfirmActionDialog}>
+            Cancelar
+          </Button>
+          <Button
+            variant='contained'
+            color={confirmActionType === 'APROBAR' ? 'success' : 'error'}
+            onClick={confirmSolicitudAction}
+          >
+            {confirmActionType === 'APROBAR' ? 'Sí, aprobar' : 'Sí, rechazar'}
           </Button>
         </DialogActions>
       </Dialog>
