@@ -103,15 +103,39 @@ const extractPagination = payload => {
   }
 }
 
+const getRawPagosPendientes = row => toMoneyNumber(row?.pagos_pendientes ?? row?.cuotas_restantes)
+
+const getConfiguredWeeks = row => toMoneyNumber(row?.num_semanas ?? row?.plazo_semanas)
+
+const looksLikePendingCount = row => {
+  const raw = getRawPagosPendientes(row)
+  const configuredWeeks = getConfiguredWeeks(row)
+
+  if (!Number.isFinite(raw) || raw < 0) return false
+  if (!Number.isInteger(raw)) return false
+  if (configuredWeeks > 0) return raw <= configuredWeeks
+
+  return raw <= 60
+}
+
 const getCuotasRestantes = row => {
   if (!row) return 0
 
-  if (
-    Number.isFinite(Number(row?.pagos_pendientes)) &&
-    Number.isFinite(Number(row?.pagos_semanales)) &&
-    Number(row?.pagos_semanales) > 0
-  ) {
-    return Math.ceil(Number(row?.pagos_pendientes) / Number(row?.pagos_semanales))
+  const cuotasRestantes = toMoneyNumber(row?.cuotas_restantes)
+
+  if (Number.isFinite(cuotasRestantes) && cuotasRestantes >= 0) {
+    return Math.round(cuotasRestantes)
+  }
+
+  const pagosPendientes = getRawPagosPendientes(row)
+  const pagoSemanal = toMoneyNumber(row?.pagos_semanales)
+
+  if (looksLikePendingCount(row)) {
+    return Math.round(pagosPendientes)
+  }
+
+  if (Number.isFinite(pagosPendientes) && Number.isFinite(pagoSemanal) && pagoSemanal > 0) {
+    return Math.ceil(pagosPendientes / pagoSemanal)
   }
 
   if (Number.isFinite(Number(row?.num_semanas)) && Number.isFinite(Number(row?.pagos_hechos))) {
@@ -128,8 +152,12 @@ const getSaldoPendienteInfo = row => {
     return { value: pendienteOficial, estimated: false }
   }
 
-  const pagosPendientes = toMoneyNumber(row?.pagos_pendientes ?? row?.cuotas_restantes)
+  const pagosPendientes = getRawPagosPendientes(row)
   const pagoSemanal = toMoneyNumber(row?.pagos_semanales)
+
+  if (Number.isFinite(pagosPendientes) && pagosPendientes >= 0 && !looksLikePendingCount(row)) {
+    return { value: round2(pagosPendientes), estimated: false }
+  }
 
   if (Number.isFinite(pagosPendientes) && Number.isFinite(pagoSemanal) && pagoSemanal > 0) {
     return { value: round2(pagosPendientes * pagoSemanal), estimated: true }
@@ -1164,7 +1192,7 @@ export default function CuotasModule() {
                           )
                         })()}
                       </TableCell>
-                      <TableCell>{row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}</TableCell>
+                      <TableCell>{formatNaturalNumber(getCuotasRestantes(row))}</TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.75} flexWrap='wrap' alignItems='center'>
                           <Chip
@@ -1236,7 +1264,7 @@ export default function CuotasModule() {
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Semanas: {row.num_semanas ?? '-'} • Pagos hechos: {formatNaturalNumber(row.pagos_hechos)} •
-                          Cuotas restantes: {row.cuotas_restantes ?? row.pagos_pendientes ?? getCuotasRestantes(row)}
+                          Cuotas restantes: {formatNaturalNumber(getCuotasRestantes(row))}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Fecha inicio: {formatDateMMDDYYYY(row.fecha_inicio)}
@@ -1475,7 +1503,7 @@ export default function CuotasModule() {
               Pagos hechos: <strong>{formatNaturalNumber(selectedPrestamo?.pagos_hechos)}</strong>
             </Typography>
             <Typography>
-              Pagos pendientes: <strong>{formatNaturalNumber(selectedPrestamo?.pagos_pendientes)}</strong>
+              Cuotas restantes: <strong>{formatNaturalNumber(getCuotasRestantes(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
               Fecha inicio: <strong>{formatDateMMDDYYYY(selectedPrestamo?.fecha_inicio)}</strong>
