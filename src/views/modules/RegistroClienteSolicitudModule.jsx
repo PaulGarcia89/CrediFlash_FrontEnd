@@ -48,8 +48,7 @@ const MODALIDAD_OPTIONS = [
 ]
 const SEXO_OPTIONS = [
   { value: 'M', label: 'Masculino (Male)' },
-  { value: 'F', label: 'Femenino (Female)' },
-  { value: 'O', label: 'Otro (Other)' }
+  { value: 'F', label: 'Femenino (Female)' }
 ]
 const STATUS_LEGAL_OPTIONS = [
   { value: 'RESIDENTE', label: 'RESIDENTE AMERICANO (AMERICAN RESIDENT)' },
