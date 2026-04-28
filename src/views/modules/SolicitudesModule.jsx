@@ -118,14 +118,9 @@ const toDateOnlyString = date => {
   return `${year}-${month}-${day}`
 }
 
-const getNextWeekday = (baseDateInput, targetWeekday) => {
+const addDays = (baseDateInput, daysToAdd) => {
   const baseDate = new Date(baseDateInput)
-  const currentWeekday = baseDate.getDay()
-  let diff = (targetWeekday - currentWeekday + 7) % 7
-
-  if (diff === 0) diff = 7
-
-  baseDate.setDate(baseDate.getDate() + diff)
+  baseDate.setDate(baseDate.getDate() + daysToAdd)
 
   return baseDate
 }
@@ -620,7 +615,7 @@ export default function SolicitudesModule() {
     try {
       const numSemanas = Number(row?.plazo_semanas || row?.num_semanas || 0) || undefined
       const modalidad = String(row?.modalidad || '').toUpperCase()
-      const primerVencimientoSemanal = modalidad === 'SEMANAL' ? toDateOnlyString(getNextWeekday(new Date(), 5)) : ''
+      const primerVencimientoSemanal = modalidad === 'SEMANAL' ? toDateOnlyString(addDays(new Date(), 7)) : ''
       let approvalRequestBody
 
       if (contratoFile) {

@@ -87,6 +87,8 @@ const buildDocumentoIdentidadCliente = cliente => {
 const formatCurrency = value => formatUSD(value)
 const formatNaturalNumber = value =>
   new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
+const getDisplayTotalPagar = prestamo => Number(prestamo?.total_pagar_bruto ?? prestamo?.total_pagar ?? 0)
+const getDisplayPagosSemanales = prestamo => Number(prestamo?.pagos_semanales_bruto ?? prestamo?.pagos_semanales ?? 0)
 const normalizeStatus = value =>
   String(value || '')
     .normalize('NFD')
@@ -127,14 +129,9 @@ const isAfterDate = (leftDate, rightDate) => {
   return leftDate.getTime() > rightDate.getTime()
 }
 
-const getNextWeekday = (baseDateInput, targetWeekday) => {
+const addDays = (baseDateInput, daysToAdd) => {
   const baseDate = new Date(baseDateInput)
-  const currentWeekday = baseDate.getDay()
-  let diff = (targetWeekday - currentWeekday + 7) % 7
-
-  if (diff === 0) diff = 7
-
-  baseDate.setDate(baseDate.getDate() + diff)
+  baseDate.setDate(baseDate.getDate() + daysToAdd)
 
   return baseDate
 }
@@ -364,7 +361,7 @@ export default function ClienteDashboardModule({ clienteId }) {
     const modalidad = normalizeStatus(prestamoPrincipal?.modalidad)
     const baseDate =
       modalidad === 'SEMANAL'
-        ? getNextWeekday(prestamoPrincipal?.fecha_inicio ? new Date(prestamoPrincipal.fecha_inicio) : new Date(), 5)
+        ? addDays(prestamoPrincipal?.fecha_inicio ? new Date(prestamoPrincipal.fecha_inicio) : new Date(), 7)
         : prestamoPrincipal?.fecha_inicio
           ? new Date(prestamoPrincipal.fecha_inicio)
           : new Date()
@@ -739,7 +736,7 @@ export default function ClienteDashboardModule({ clienteId }) {
               <Card>
                 <CardContent>
                   <Typography color='text.secondary'>Préstamo activo</Typography>
-                  <Typography variant='h3'>{formatCurrency(prestamoPrincipal?.total_pagar)}</Typography>
+                  <Typography variant='h3'>{formatCurrency(getDisplayTotalPagar(prestamoPrincipal))}</Typography>
                   <Typography color='text.secondary'>Total a pagar del préstamo principal</Typography>
                 </CardContent>
               </Card>
@@ -748,7 +745,7 @@ export default function ClienteDashboardModule({ clienteId }) {
               <Card>
                 <CardContent>
                   <Typography color='text.secondary'>Próximo pago</Typography>
-                  <Typography variant='h3'>{formatCurrency(prestamoPrincipal?.pagos_semanales)}</Typography>
+                  <Typography variant='h3'>{formatCurrency(getDisplayPagosSemanales(prestamoPrincipal))}</Typography>
                   <Typography color='text.secondary'>Pago semanal estimado</Typography>
                 </CardContent>
               </Card>
@@ -808,7 +805,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                 </Box>
                 <Stack direction='row' justifyContent='space-between'>
                   <Typography>Pagos hechos: {formatNaturalNumber(prestamoPrincipal?.pagos_hechos)}</Typography>
-                  <Typography>Total: {formatCurrency(prestamoPrincipal?.total_pagar)}</Typography>
+                  <Typography>Total: {formatCurrency(getDisplayTotalPagar(prestamoPrincipal))}</Typography>
                 </Stack>
               </Stack>
             </CardContent>
@@ -834,7 +831,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                       Solicitado: {formatDateMMDDYYYY(item.fecha_inicio)} • Tasa: {item.interes ?? '-'}%
                     </Typography>
                   </Box>
-                  <Typography variant='h5'>{formatCurrency(item.total_pagar)}</Typography>
+                  <Typography variant='h5'>{formatCurrency(getDisplayTotalPagar(item))}</Typography>
                 </Stack>
               ))}
             </CardContent>
