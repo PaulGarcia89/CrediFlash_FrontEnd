@@ -168,6 +168,14 @@ const getSaldoPendienteInfo = row => {
 
 const getSaldoPendiente = row => getSaldoPendienteInfo(row).value
 
+const getInteresDisplay = row => {
+  const value = row?.interes ?? row?.tasa_variable
+
+  if (value === null || value === undefined || value === '') return '-'
+
+  return String(value)
+}
+
 const getOperationalStatus = row => {
   const normalized = String(row?.status_normalizado || '').trim()
 
@@ -1148,6 +1156,7 @@ export default function CuotasModule() {
                     <TableCell>Cliente</TableCell>
                     <TableCell>Monto total</TableCell>
                     <TableCell>Pago semanal</TableCell>
+                    <TableCell>Tasa de interés</TableCell>
                     <TableCell>Semanas</TableCell>
                     <TableCell>Pagos hechos</TableCell>
                     <TableCell>Fecha inicio</TableCell>
@@ -1175,6 +1184,7 @@ export default function CuotasModule() {
                       <TableCell>{row.nombre_completo || '-'}</TableCell>
                       <TableCell>{formatCurrency(row.total_pagar ?? row.monto_solicitado)}</TableCell>
                       <TableCell>{formatCurrency(row.pagos_semanales)}</TableCell>
+                      <TableCell>{getInteresDisplay(row)}</TableCell>
                       <TableCell>{row.num_semanas ?? '-'}</TableCell>
                       <TableCell>{formatNaturalNumber(row.pagos_hechos)}</TableCell>
                       <TableCell>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
@@ -1211,7 +1221,7 @@ export default function CuotasModule() {
                   ))}
                   {tableRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} align='center'>
+                      <TableCell colSpan={12} align='center'>
                         Sin resultados
                       </TableCell>
                     </TableRow>
@@ -1247,6 +1257,9 @@ export default function CuotasModule() {
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Pago semanal: {formatCurrency(row.pagos_semanales)}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Tasa de interés: {getInteresDisplay(row)}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           {(() => {
