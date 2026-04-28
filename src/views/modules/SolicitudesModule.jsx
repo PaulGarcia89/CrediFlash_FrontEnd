@@ -44,6 +44,7 @@ import {
   listarSolicitudes,
   rechazarSolicitud
 } from '@/api/solicitudes'
+import { buildScopedUploadFilename } from '@/utils/uploads'
 import { aprobarSolicitudComoPrestamo } from '@/api/prestamos'
 import usePermissions from '@/hooks/usePermissions'
 import { appendAuditLog } from '@/lib/audit/logs'
@@ -625,8 +626,10 @@ export default function SolicitudesModule() {
           approvalRequestBody.append('fecha_primer_pago', primerVencimientoSemanal)
           approvalRequestBody.append('fecha_primer_vencimiento', primerVencimientoSemanal)
         }
-        approvalRequestBody.append('contrato_credito', contratoFile)
-        approvalRequestBody.append('documentos', contratoFile)
+        const contratoFileName = buildScopedUploadFilename(contratoFile, 'contract')
+
+        approvalRequestBody.append('contrato_credito', contratoFile, contratoFileName)
+        approvalRequestBody.append('documentos', contratoFile, contratoFileName)
       } else {
         approvalRequestBody = { num_semanas: numSemanas }
         if (primerVencimientoSemanal) {

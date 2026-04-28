@@ -30,6 +30,7 @@ import Typography from '@mui/material/Typography'
 
 import { listarClientes } from '@/api/clientes'
 import { actualizarSolicitud, crearSolicitud, obtenerSolicitud } from '@/api/solicitudes'
+import { buildScopedUploadFilename } from '@/utils/uploads'
 
 const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
 const MODELO_APROBACION_OPTIONS = ['AUTOMATICO', 'MANUAL']
@@ -448,8 +449,15 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         payload.append('destino', form.destino)
         payload.append('tipo_documento_identidad', 'ID')
         payload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
-        ;[documentoIdentidad, ...documentosEstadoCuenta].forEach(file => {
-          if (file) payload.append('documentos', file)
+        if (documentoIdentidad) {
+          payload.append(
+            'documentos',
+            documentoIdentidad,
+            buildScopedUploadFilename(documentoIdentidad, 'identification')
+          )
+        }
+        documentosEstadoCuenta.forEach(file => {
+          if (file) payload.append('documentos', file, buildScopedUploadFilename(file, 'account_statement'))
         })
 
         created = await crearSolicitud(payload)

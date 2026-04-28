@@ -38,6 +38,7 @@ import {
   verificarCodigoEmailClientePublico
 } from '@/api/clientes'
 import { crearSolicitud, crearSolicitudPublica } from '@/api/solicitudes'
+import { buildScopedUploadFilename } from '@/utils/uploads'
 
 const MODELO_OPTIONS = ['CLIENTE_NUEVO', 'CLIENTE_ANTIGUO']
 const MODELO_APROBACION_OPTIONS = ['AUTOMATICO', 'MANUAL']
@@ -775,8 +776,18 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
       solicitudPayload.append('tipo_documento_identidad', 'ID')
       solicitudPayload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
       solicitudPayload.append('tipo_documentos_comprobantes', 'COMPROBANTES_INGRESO')
-      ;[documentoIdentidad, ...documentosEstadoCuenta, ...documentosComprobantesIngreso].forEach(file => {
-        if (file) solicitudPayload.append('documentos', file)
+      if (documentoIdentidad) {
+        solicitudPayload.append(
+          'documentos',
+          documentoIdentidad,
+          buildScopedUploadFilename(documentoIdentidad, 'identification')
+        )
+      }
+      documentosEstadoCuenta.forEach(file => {
+        if (file) solicitudPayload.append('documentos', file, buildScopedUploadFilename(file, 'account_statement'))
+      })
+      documentosComprobantesIngreso.forEach(file => {
+        if (file) solicitudPayload.append('documentos', file, buildScopedUploadFilename(file, 'income_proof'))
       })
 
       const solicitudCreated = publicMode

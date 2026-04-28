@@ -26,6 +26,7 @@ import {
   obtenerCliente,
   verificarCodigoEmailCliente
 } from '@/api/clientes'
+import { buildScopedUploadFilename } from '@/utils/uploads'
 
 const initialForm = {
   nombre: '',
@@ -305,7 +306,11 @@ export default function ClienteFormModule({ clienteId = null }) {
         })
 
         if (documentoIdentidadFile) {
-          formData.append('documento_identidad', documentoIdentidadFile)
+          formData.append(
+            'documento_identidad',
+            documentoIdentidadFile,
+            buildScopedUploadFilename(documentoIdentidadFile, 'identification')
+          )
         }
 
         return formData
