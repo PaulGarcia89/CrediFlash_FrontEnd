@@ -409,6 +409,7 @@ export default function CuotasModule() {
   const [whatsappManualSending, setWhatsappManualSending] = useState(false)
   const [detalleDialogError, setDetalleDialogError] = useState('')
   const [detalleOpen, setDetalleOpen] = useState(false)
+  const [detalleLoading, setDetalleLoading] = useState(false)
   const [historialOpen, setHistorialOpen] = useState(false)
   const [historialLoading, setHistorialLoading] = useState(false)
   const [historialError, setHistorialError] = useState('')
@@ -679,10 +680,31 @@ export default function CuotasModule() {
     </Stack>
   )
 
-  const openDetalleDialog = row => {
+  const openDetalleDialog = async row => {
     setSelectedPrestamo(row)
     setDetalleDialogError('')
     setDetalleOpen(true)
+    setDetalleLoading(true)
+
+    try {
+      const clienteId = row?.cliente_id || row?.cliente?.id || ''
+
+      if (!clienteId) return
+
+      const response = await verHistorialPrestamosCliente(clienteId, { page: 1, limit: 200 })
+      const matchingPrestamo = extractRows(response).find(item => String(item?.id || '') === String(row?.id || ''))
+
+      if (matchingPrestamo) {
+        setSelectedPrestamo(previous => ({
+          ...(previous || {}),
+          ...matchingPrestamo
+        }))
+      }
+    } catch {
+      // Keep the lightweight row data if the richer lookup fails.
+    } finally {
+      setDetalleLoading(false)
+    }
   }
 
   const closePagoDialog = () => {
@@ -1558,6 +1580,14 @@ export default function CuotasModule() {
         <DialogTitle>Detalle del préstamo</DialogTitle>
         <DialogContent>
           <Stack spacing={1.2} mt={1}>
+            {detalleLoading ? (
+              <Stack direction='row' spacing={1} alignItems='center'>
+                <CircularProgress size={18} />
+                <Typography variant='body2' color='text.secondary'>
+                  Cargando detalle actualizado del préstamo...
+                </Typography>
+              </Stack>
+            ) : null}
             {detalleDialogError ? <Alert severity='error'>{detalleDialogError}</Alert> : null}
             <Typography>
               Cliente: <strong>{selectedPrestamo?.nombre_completo || '-'}</strong>
