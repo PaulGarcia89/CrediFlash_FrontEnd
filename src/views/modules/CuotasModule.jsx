@@ -348,10 +348,11 @@ const getContractOpenUrl = row => {
   const raw =
     row?.contrato_credito_url ||
     row?.contrato_url ||
-    row?.url_contrato ||
+    row?.contrato?.url ||
     row?.contrato?.url_descarga ||
     row?.contrato?.download_url ||
-    row?.contrato?.url ||
+    row?.url_contrato ||
+    row?.contrato_storage_path ||
     ''
   const urls = buildCandidateUrls(raw)
 
@@ -1616,7 +1617,9 @@ export default function CuotasModule() {
             <Typography>
               Contrato PDF:{' '}
               <strong>
-                {getContractOpenUrl(selectedPrestamo) ? 'Disponible para visualización' : 'No disponible'}
+                {getContractOpenUrl(selectedPrestamo) || getContractDocumentId(selectedPrestamo)
+                  ? 'Disponible para visualización'
+                  : 'No disponible'}
               </strong>
             </Typography>
             <Button

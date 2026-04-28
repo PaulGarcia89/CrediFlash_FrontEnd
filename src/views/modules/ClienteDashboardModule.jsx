@@ -28,7 +28,7 @@ import {
   obtenerScoreComportamientoCliente,
   verHistorialPrestamosCliente
 } from '@/api/clientes'
-import { eliminarDocumento } from '@/api/solicitudes'
+import { eliminarDocumento, obtenerDocumentoUrl } from '@/api/solicitudes'
 import usePermissions from '@/hooks/usePermissions'
 import { getToken } from '@/lib/auth/session'
 import { formatUSD } from '@/utils/currency'
@@ -60,7 +60,16 @@ const deduplicarDocumentos = documentos => {
 const isSyntheticClienteDocumentId = value => String(value || '').trim() === 'doc-id-cliente'
 
 const getDocumentIdentityKey = item =>
-  String(item?.id || item?.url_descarga || item?.download_url || item?.url || item?.nombre || '').trim()
+  String(
+    item?.dedupeKey ||
+      item?.id ||
+      item?.url_descarga ||
+      item?.download_url ||
+      item?.url ||
+      item?.storage_path ||
+      item?.nombre ||
+      ''
+  ).trim()
 
 const buildDocumentoIdentidadCliente = cliente => {
   if (!cliente) return null
@@ -86,26 +95,36 @@ const buildDocumentoIdentidadCliente = cliente => {
 
 const buildContratoActivoDocumento = prestamo => {
   if (!prestamo) return null
+  if (prestamo?.contrato_disponible === false) return null
 
   const rawUrl =
     prestamo?.contrato_credito_url ||
     prestamo?.contrato_url ||
-    prestamo?.url_contrato ||
+    prestamo?.contrato?.url ||
     prestamo?.contrato?.url_descarga ||
     prestamo?.contrato?.download_url ||
-    prestamo?.contrato?.url ||
+    prestamo?.url_contrato ||
+    prestamo?.contrato_storage_path ||
     ''
+  const documentId = String(
+    prestamo?.contrato_credito_id || prestamo?.contrato_id || prestamo?.documento_id || prestamo?.contrato?.id || ''
+  ).trim()
+  const storagePath = String(prestamo?.contrato_storage_path || prestamo?.contrato?.storage_path || '').trim()
 
-  if (!rawUrl) return null
+  if (!rawUrl && !documentId) return null
+
+  const dedupeKey = String(documentId || rawUrl || storagePath || prestamo?.id || '').trim()
 
   return {
-    id:
-      prestamo?.contrato_credito_id || prestamo?.contrato_id || prestamo?.documento_id || prestamo?.contrato?.id || '',
+    id: documentId,
     nombre: prestamo?.contrato_credito_nombre || prestamo?.contrato?.nombre || 'Contrato de prestamo',
     url: rawUrl,
     url_descarga: rawUrl,
     url_ver: rawUrl,
-    size_bytes: prestamo?.contrato_credito_size_bytes || prestamo?.contrato?.size_bytes || null
+    size_bytes: prestamo?.contrato_credito_size_bytes || prestamo?.contrato?.size_bytes || null,
+    storage_path: storagePath,
+    contrato_disponible: prestamo?.contrato_disponible,
+    dedupeKey
   }
 }
 
@@ -316,7 +335,7 @@ export default function ClienteDashboardModule({ clienteId }) {
     [prestamos]
   )
   const contratosActivos = useMemo(
-    () => prestamosActivos.map(buildContratoActivoDocumento).filter(Boolean),
+    () => deduplicarDocumentos(prestamosActivos.map(buildContratoActivoDocumento).filter(Boolean)),
     [prestamosActivos]
   )
 
@@ -501,7 +520,22 @@ export default function ClienteDashboardModule({ clienteId }) {
   }
 
   const fetchDocumentBlobWithAuth = async item => {
-    const url = getDocumentDownloadUrl(item)
+    let url = getDocumentDownloadUrl(item)
+
+    if (!url && item?.id && !isSyntheticClienteDocumentId(item.id)) {
+      const response = await obtenerDocumentoUrl(item.id)
+      const resolvedUrl =
+        response?.data?.url ||
+        response?.data?.url_descarga ||
+        response?.data?.download_url ||
+        response?.url ||
+        response?.url_descarga ||
+        response?.download_url ||
+        ''
+      const urls = buildCandidateUrls(resolvedUrl)
+
+      url = urls[0] || resolvedUrl || ''
+    }
 
     if (!url) {
       throw new Error('No se encontró una URL válida para el documento.')
@@ -990,17 +1024,6 @@ export default function ClienteDashboardModule({ clienteId }) {
                     {canViewDocumentos ? (
                       <Button size='small' variant='tonal' color='info' onClick={() => handleDownloadDocument(item)}>
                         Descargar
-                      </Button>
-                    ) : null}
-                    {canDeleteDocumentos ? (
-                      <Button
-                        size='small'
-                        variant='tonal'
-                        color='error'
-                        onClick={() => handleDeleteDocument(item)}
-                        disabled={Boolean(item?.id) && documentActionLoading === String(item.id)}
-                      >
-                        Eliminar
                       </Button>
                     ) : null}
                   </Stack>
