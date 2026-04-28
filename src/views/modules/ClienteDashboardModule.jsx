@@ -84,6 +84,31 @@ const buildDocumentoIdentidadCliente = cliente => {
   }
 }
 
+const buildContratoActivoDocumento = prestamo => {
+  if (!prestamo) return null
+
+  const rawUrl =
+    prestamo?.contrato_credito_url ||
+    prestamo?.contrato_url ||
+    prestamo?.url_contrato ||
+    prestamo?.contrato?.url_descarga ||
+    prestamo?.contrato?.download_url ||
+    prestamo?.contrato?.url ||
+    ''
+
+  if (!rawUrl) return null
+
+  return {
+    id:
+      prestamo?.contrato_credito_id || prestamo?.contrato_id || prestamo?.documento_id || prestamo?.contrato?.id || '',
+    nombre: prestamo?.contrato_credito_nombre || prestamo?.contrato?.nombre || 'Contrato de prestamo',
+    url: rawUrl,
+    url_descarga: rawUrl,
+    url_ver: rawUrl,
+    size_bytes: prestamo?.contrato_credito_size_bytes || prestamo?.contrato?.size_bytes || null
+  }
+}
+
 const formatCurrency = value => formatUSD(value)
 const formatNaturalNumber = value =>
   new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
@@ -289,6 +314,10 @@ export default function ClienteDashboardModule({ clienteId }) {
   const prestamosActivos = useMemo(
     () => prestamos.filter(item => isActiveStatus(item?.status || item?.estado)),
     [prestamos]
+  )
+  const contratosActivos = useMemo(
+    () => prestamosActivos.map(buildContratoActivoDocumento).filter(Boolean),
+    [prestamosActivos]
   )
 
   const prestamoPrincipal = useMemo(() => prestamosActivos[0] || prestamos[0] || null, [prestamos, prestamosActivos])
@@ -929,18 +958,52 @@ export default function ClienteDashboardModule({ clienteId }) {
               <Typography variant='h5' sx={{ mb: 1.5 }}>
                 Contratos activos
               </Typography>
-              {prestamosActivos.length === 0 ? (
+              {contratosActivos.length === 0 ? (
                 <Typography color='text.secondary'>Sin contratos activos.</Typography>
               ) : null}
-              {prestamosActivos.map(item => (
-                <Stack key={`doc-active-${item.id}`} direction='row' justifyContent='space-between' sx={{ py: 1.5 }}>
+              {contratosActivos.map((item, index) => (
+                <Stack
+                  key={`doc-active-${item.id || item.url || index}`}
+                  direction='row'
+                  justifyContent='space-between'
+                  alignItems='center'
+                  sx={{ py: 1.25 }}
+                >
                   <Box>
-                    <Typography>Contrato de préstamo</Typography>
-                    <Typography color='text.secondary'>
-                      Firmado: {formatDateMMDDYYYY(item.fecha_inicio)} • PDF
+                    <Typography>{item.nombre || 'Contrato de prestamo'}</Typography>
+                    <Typography color='text.secondary' variant='body2'>
+                      Archivo PDF{' '}
+                      {item?.size_bytes ? `• ${(Number(item.size_bytes) / (1024 * 1024)).toFixed(2)} MB` : ''}
                     </Typography>
                   </Box>
-                  <i className='tabler-download text-2xl' />
+                  <Stack direction='row' spacing={1}>
+                    {canViewDocumentos ? (
+                      <Button
+                        size='small'
+                        variant='tonal'
+                        color='primary'
+                        onClick={event => handleOpenDocument(item, event.currentTarget)}
+                      >
+                        Visualizar
+                      </Button>
+                    ) : null}
+                    {canViewDocumentos ? (
+                      <Button size='small' variant='tonal' color='info' onClick={() => handleDownloadDocument(item)}>
+                        Descargar
+                      </Button>
+                    ) : null}
+                    {canDeleteDocumentos ? (
+                      <Button
+                        size='small'
+                        variant='tonal'
+                        color='error'
+                        onClick={() => handleDeleteDocument(item)}
+                        disabled={Boolean(item?.id) && documentActionLoading === String(item.id)}
+                      >
+                        Eliminar
+                      </Button>
+                    ) : null}
+                  </Stack>
                 </Stack>
               ))}
             </CardContent>
