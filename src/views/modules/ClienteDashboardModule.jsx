@@ -95,7 +95,14 @@ const buildDocumentoIdentidadCliente = cliente => {
 
 const buildContratoActivoDocumento = prestamo => {
   if (!prestamo) return null
+  if (prestamo?.contrato_activo === false) return null
   if (prestamo?.contrato_disponible === false) return null
+
+  const saldoPendiente = Number(prestamo?.saldo_pendiente ?? prestamo?.pendiente ?? prestamo?.monto_pendiente ?? 0)
+  const estadoNormalizado = normalizeStatus(prestamo?.status || prestamo?.estado)
+  const prestamoLiquidado = saldoPendiente <= 0 || ['PAGADO', 'LIQUIDADO', 'CANCELADO', 'NO DEBE NADA'].includes(estadoNormalizado)
+
+  if (prestamoLiquidado) return null
 
   const rawUrl =
     prestamo?.contrato_credito_url ||
@@ -126,6 +133,17 @@ const buildContratoActivoDocumento = prestamo => {
     contrato_disponible: prestamo?.contrato_disponible,
     dedupeKey
   }
+}
+
+const isContratoActivoPrestamo = prestamo => {
+  if (!prestamo) return false
+  if (prestamo?.contrato_activo === true) return true
+  if (prestamo?.contrato_activo === false) return false
+
+  const saldoPendiente = Number(prestamo?.saldo_pendiente ?? prestamo?.pendiente ?? prestamo?.monto_pendiente ?? 0)
+  const estadoNormalizado = normalizeStatus(prestamo?.status || prestamo?.estado)
+
+  return saldoPendiente > 0 && !['PAGADO', 'LIQUIDADO', 'CANCELADO', 'NO DEBE NADA'].includes(estadoNormalizado)
 }
 
 const formatCurrency = value => formatUSD(value)
@@ -335,8 +353,8 @@ export default function ClienteDashboardModule({ clienteId }) {
     [prestamos]
   )
   const contratosActivos = useMemo(
-    () => deduplicarDocumentos(prestamosActivos.map(buildContratoActivoDocumento).filter(Boolean)),
-    [prestamosActivos]
+    () => deduplicarDocumentos(prestamos.filter(isContratoActivoPrestamo).map(buildContratoActivoDocumento).filter(Boolean)),
+    [prestamos]
   )
 
   const prestamoPrincipal = useMemo(() => prestamosActivos[0] || prestamos[0] || null, [prestamos, prestamosActivos])
