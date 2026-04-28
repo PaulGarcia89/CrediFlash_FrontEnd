@@ -104,6 +104,8 @@ const extractPagination = payload => {
 }
 
 const getRawPagosPendientes = row => toMoneyNumber(row?.pagos_pendientes ?? row?.cuotas_restantes)
+const getDisplayTotalPagar = row => toMoneyNumber(row?.total_pagar_bruto ?? row?.total_pagar ?? row?.monto_solicitado)
+const getDisplayPagosSemanales = row => toMoneyNumber(row?.pagos_semanales_bruto ?? row?.pagos_semanales)
 
 const getConfiguredWeeks = row => toMoneyNumber(row?.num_semanas ?? row?.plazo_semanas)
 
@@ -174,6 +176,42 @@ const getInteresDisplay = row => {
   if (value === null || value === undefined || value === '') return '-'
 
   return String(value)
+}
+
+const desktopHeadCellSx = {
+  py: 1.6,
+  px: 1.5,
+  fontSize: '0.95rem',
+  fontWeight: 700,
+  color: 'text.secondary',
+  whiteSpace: 'nowrap'
+}
+
+const desktopBodyCellSx = {
+  py: 1.75,
+  px: 1.5,
+  fontSize: '1rem',
+  verticalAlign: 'middle',
+  borderBottomColor: 'divider'
+}
+
+const desktopNumericCellSx = {
+  ...desktopBodyCellSx,
+  whiteSpace: 'nowrap'
+}
+
+const desktopClientCellSx = {
+  ...desktopBodyCellSx,
+  minWidth: 190,
+  maxWidth: 220,
+  fontWeight: 500,
+  lineHeight: 1.35,
+  wordBreak: 'break-word'
+}
+
+const desktopActionsCellSx = {
+  ...desktopBodyCellSx,
+  minWidth: 170
 }
 
 const getOperationalStatus = row => {
@@ -305,6 +343,8 @@ const buildCandidateUrls = value => {
   return [forceHttpsIfNeeded(`${backendOrigin}/${raw}`)]
 }
 const getContractOpenUrl = row => {
+  if (row?.contrato_disponible === false) return ''
+
   const raw =
     row?.contrato_credito_url ||
     row?.contrato_url ||
@@ -318,14 +358,16 @@ const getContractOpenUrl = row => {
   return urls[0] || ''
 }
 const getContractDocumentId = row =>
-  String(
-    row?.contrato_credito_id ||
-      row?.contrato_id ||
-      row?.documento_id ||
-      row?.contrato?.id ||
-      row?.contrato?.documento_id ||
-      ''
-  ).trim()
+  row?.contrato_disponible === false
+    ? ''
+    : String(
+        row?.contrato_credito_id ||
+          row?.contrato_id ||
+          row?.documento_id ||
+          row?.contrato?.id ||
+          row?.contrato?.documento_id ||
+          ''
+      ).trim()
 
 export default function CuotasModule() {
   const theme = useTheme()
@@ -386,7 +428,7 @@ export default function CuotasModule() {
     isAdminProfile || can('notifications.whatsapp.manage') || can('notifications.send')
 
   const montoEsperadoPago = useMemo(() => {
-    const cuotaSemanal = parseDecimalInput(selectedPrestamo?.pagos_semanales || 0)
+    const cuotaSemanal = parseDecimalInput(getDisplayPagosSemanales(selectedPrestamo) || 0)
     const penalizacion = parseDecimalInput(montoPenalizacion || 0)
     const fee = parseDecimalInput(montoFee || 0)
 
@@ -470,7 +512,7 @@ export default function CuotasModule() {
     setPagoDialogError('')
     setPagoDialogInfo('')
     setSelectedPrestamo(row)
-    setMontoPago(String(row.pagos_semanales || ''))
+    setMontoPago(String(getDisplayPagosSemanales(row) || ''))
     setMontoPenalizacion('0')
     setMontoFee('0')
     setMotivoFee('')
@@ -560,7 +602,14 @@ export default function CuotasModule() {
   }
 
   const renderAccionesPrestamo = row => (
-    <Stack direction='row' spacing={0.5} flexWrap='wrap'>
+    <Stack
+      direction='row'
+      spacing={0.35}
+      flexWrap={isMobile ? 'wrap' : 'nowrap'}
+      alignItems='center'
+      justifyContent={isMobile ? 'flex-start' : 'center'}
+      sx={{ minWidth: isMobile ? 'auto' : 156 }}
+    >
       {canRegistrarPago ? (
         <Tooltip title={canRegisterPaymentForRow(row) ? 'Registrar pago' : 'Sin cuotas pendientes'}>
           <span>
@@ -569,23 +618,24 @@ export default function CuotasModule() {
               color='error'
               onClick={() => openPagoDialog(row)}
               disabled={!canRegisterPaymentForRow(row)}
+              sx={{ width: 34, height: 34 }}
             >
-              <i className='tabler-cash text-3xl' />
+              <i className='tabler-cash text-[1.45rem]' />
             </IconButton>
           </span>
         </Tooltip>
       ) : null}
       {canViewPrestamos ? (
         <Tooltip title='Historial'>
-          <IconButton size='small' color='secondary' onClick={() => openHistorial(row)}>
-            <i className='tabler-history text-3xl' />
+          <IconButton size='small' color='secondary' onClick={() => openHistorial(row)} sx={{ width: 34, height: 34 }}>
+            <i className='tabler-history text-[1.45rem]' />
           </IconButton>
         </Tooltip>
       ) : null}
       {canViewPrestamos ? (
         <Tooltip title='Ver detalle'>
-          <IconButton size='small' onClick={() => openDetalleDialog(row)}>
-            <i className='tabler-eye text-3xl' />
+          <IconButton size='small' onClick={() => openDetalleDialog(row)} sx={{ width: 34, height: 34 }}>
+            <i className='tabler-eye text-[1.45rem]' />
           </IconButton>
         </Tooltip>
       ) : null}
@@ -597,11 +647,12 @@ export default function CuotasModule() {
               color='info'
               onClick={() => openEmailConfirmDialog(row)}
               disabled={notifyingPrestamoId === String(row.id)}
+              sx={{ width: 34, height: 34 }}
             >
               {notifyingPrestamoId === String(row.id) ? (
                 <CircularProgress size={18} color='inherit' />
               ) : (
-                <i className='tabler-mail text-3xl' />
+                <i className='tabler-mail text-[1.45rem]' />
               )}
             </IconButton>
           </span>
@@ -609,8 +660,13 @@ export default function CuotasModule() {
       ) : null}
       {canManageWhatsappNotifications ? (
         <Tooltip title='Configurar recordatorio por WhatsApp'>
-          <IconButton size='small' color='success' onClick={() => openWhatsappDialog(row)}>
-            <i className='tabler-brand-whatsapp-filled text-3xl' />
+          <IconButton
+            size='small'
+            color='success'
+            onClick={() => openWhatsappDialog(row)}
+            sx={{ width: 34, height: 34 }}
+          >
+            <i className='tabler-brand-whatsapp-filled text-[1.45rem]' />
           </IconButton>
         </Tooltip>
       ) : null}
@@ -701,6 +757,11 @@ export default function CuotasModule() {
 
   const handleOpenContratoPdf = async row => {
     setDetalleDialogError('')
+    if (row?.contrato_disponible === false) {
+      setDetalleDialogError('El contrato no está disponible en almacenamiento.')
+
+      return
+    }
     let url = getContractOpenUrl(row)
 
     try {
@@ -799,13 +860,13 @@ export default function CuotasModule() {
     const output = [...rows]
 
     if (orden === 'monto_desc') {
-      output.sort((a, b) => Number(b?.total_pagar || 0) - Number(a?.total_pagar || 0))
+      output.sort((a, b) => Number(getDisplayTotalPagar(b) || 0) - Number(getDisplayTotalPagar(a) || 0))
 
       return output
     }
 
     if (orden === 'monto_asc') {
-      output.sort((a, b) => Number(a?.total_pagar || 0) - Number(b?.total_pagar || 0))
+      output.sort((a, b) => Number(getDisplayTotalPagar(a) || 0) - Number(getDisplayTotalPagar(b) || 0))
 
       return output
     }
@@ -1147,23 +1208,34 @@ export default function CuotasModule() {
                 <CircularProgress size={28} />
               </Stack>
             ) : !isMobile ? (
-              <Table size='small'>
+              <Table
+                size='small'
+                sx={{
+                  tableLayout: 'fixed',
+                  '& .MuiTableCell-root': {
+                    borderBottomColor: 'rgba(115, 103, 240, 0.08)'
+                  },
+                  '& .MuiTableRow-hover:hover': {
+                    backgroundColor: 'rgba(115, 103, 240, 0.03)'
+                  }
+                }}
+              >
                 <TableHead>
                   <TableRow>
-                    <TableCell padding='checkbox'>
+                    <TableCell padding='checkbox' sx={{ ...desktopHeadCellSx, width: 40 }}>
                       <Checkbox size='small' />
                     </TableCell>
-                    <TableCell>Cliente</TableCell>
-                    <TableCell>Monto total</TableCell>
-                    <TableCell>Pago semanal</TableCell>
-                    <TableCell>Tasa de interés</TableCell>
-                    <TableCell>Semanas</TableCell>
-                    <TableCell>Pagos hechos</TableCell>
-                    <TableCell>Fecha inicio</TableCell>
-                    <TableCell>Saldo pendiente</TableCell>
-                    <TableCell>Cuotas restantes</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell>Acciones</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '16%' }}>Cliente</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Monto total</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Pago semanal</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Tasa de interés</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '7%' }}>Semanas</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Pagos hechos</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Fecha inicio</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '12%' }}>Saldo pendiente</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Cuotas restantes</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Estado</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: 176, textAlign: 'center' }}>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1178,17 +1250,17 @@ export default function CuotasModule() {
                       }}
                       sx={{ cursor: canViewPrestamos ? 'pointer' : 'default' }}
                     >
-                      <TableCell padding='checkbox'>
+                      <TableCell padding='checkbox' sx={desktopBodyCellSx}>
                         <Checkbox size='small' />
                       </TableCell>
-                      <TableCell>{row.nombre_completo || '-'}</TableCell>
-                      <TableCell>{formatCurrency(row.total_pagar ?? row.monto_solicitado)}</TableCell>
-                      <TableCell>{formatCurrency(row.pagos_semanales)}</TableCell>
-                      <TableCell>{getInteresDisplay(row)}</TableCell>
-                      <TableCell>{row.num_semanas ?? '-'}</TableCell>
-                      <TableCell>{formatNaturalNumber(row.pagos_hechos)}</TableCell>
-                      <TableCell>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
-                      <TableCell>
+                      <TableCell sx={desktopClientCellSx}>{row.nombre_completo || '-'}</TableCell>
+                      <TableCell sx={desktopNumericCellSx}>{formatCurrency(getDisplayTotalPagar(row))}</TableCell>
+                      <TableCell sx={desktopNumericCellSx}>{formatCurrency(getDisplayPagosSemanales(row))}</TableCell>
+                      <TableCell sx={desktopNumericCellSx}>{getInteresDisplay(row)}</TableCell>
+                      <TableCell sx={desktopNumericCellSx}>{row.num_semanas ?? '-'}</TableCell>
+                      <TableCell sx={desktopNumericCellSx}>{formatNaturalNumber(row.pagos_hechos)}</TableCell>
+                      <TableCell sx={desktopNumericCellSx}>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
+                      <TableCell sx={desktopNumericCellSx}>
                         {(() => {
                           const saldoInfo = getSaldoPendienteInfo(row)
 
@@ -1202,9 +1274,15 @@ export default function CuotasModule() {
                           )
                         })()}
                       </TableCell>
-                      <TableCell>{formatNaturalNumber(getCuotasRestantes(row))}</TableCell>
-                      <TableCell>
-                        <Stack direction='row' spacing={0.75} flexWrap='wrap' alignItems='center'>
+                      <TableCell sx={desktopNumericCellSx}>{formatNaturalNumber(getCuotasRestantes(row))}</TableCell>
+                      <TableCell sx={desktopBodyCellSx}>
+                        <Stack
+                          direction='row'
+                          spacing={0.75}
+                          flexWrap='wrap'
+                          alignItems='center'
+                          sx={{ minHeight: 34 }}
+                        >
                           <Chip
                             size='small'
                             variant='tonal'
@@ -1216,7 +1294,7 @@ export default function CuotasModule() {
                           ) : null}
                         </Stack>
                       </TableCell>
-                      <TableCell>{renderAccionesPrestamo(row)}</TableCell>
+                      <TableCell sx={desktopActionsCellSx}>{renderAccionesPrestamo(row)}</TableCell>
                     </TableRow>
                   ))}
                   {tableRows.length === 0 ? (
@@ -1253,10 +1331,10 @@ export default function CuotasModule() {
                           />
                         </Stack>
                         <Typography variant='body2' color='text.secondary'>
-                          Monto total: {formatCurrency(row.total_pagar ?? row.monto_solicitado)}
+                          Monto total: {formatCurrency(getDisplayTotalPagar(row))}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
-                          Pago semanal: {formatCurrency(row.pagos_semanales)}
+                          Pago semanal: {formatCurrency(getDisplayPagosSemanales(row))}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Tasa de interés: {getInteresDisplay(row)}
@@ -1324,7 +1402,7 @@ export default function CuotasModule() {
               Cliente: <strong>{selectedPrestamo?.nombre_completo || '-'}</strong>
             </Typography>
             <Typography>
-              Monto total: <strong>{formatCurrency(selectedPrestamo?.total_pagar)}</strong>
+              Monto total: <strong>{formatCurrency(getDisplayTotalPagar(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
               Número de semanas: <strong>{selectedPrestamo?.num_semanas ?? '-'}</strong>
@@ -1487,7 +1565,7 @@ export default function CuotasModule() {
               Monto solicitado: <strong>{formatCurrency(selectedPrestamo?.monto_solicitado)}</strong>
             </Typography>
             <Typography>
-              Total pagar: <strong>{formatCurrency(selectedPrestamo?.total_pagar)}</strong>
+              Total pagar: <strong>{formatCurrency(getDisplayTotalPagar(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
               Interés: <strong>{selectedPrestamo?.interes ?? '-'}</strong>
@@ -1547,6 +1625,7 @@ export default function CuotasModule() {
               onClick={() => handleOpenContratoPdf(selectedPrestamo)}
               disabled={
                 !canViewDocumentos ||
+                selectedPrestamo?.contrato_disponible === false ||
                 (!getContractOpenUrl(selectedPrestamo) && !getContractDocumentId(selectedPrestamo))
               }
               sx={{ alignSelf: 'flex-start', textTransform: 'none' }}
@@ -1605,7 +1684,7 @@ export default function CuotasModule() {
                       <TableCell>{row.interes ?? '-'}</TableCell>
                       <TableCell>{row.modalidad || '-'}</TableCell>
                       <TableCell>{row.num_semanas ?? '-'}</TableCell>
-                      <TableCell>{formatCurrency(row.total_pagar)}</TableCell>
+                      <TableCell>{formatCurrency(getDisplayTotalPagar(row))}</TableCell>
                       <TableCell>{formatCurrency(row.pendiente)}</TableCell>
                       <TableCell>{row.status || '-'}</TableCell>
                       <TableCell>
