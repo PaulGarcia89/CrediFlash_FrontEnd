@@ -93,6 +93,8 @@ const buildDocumentoIdentidadCliente = cliente => {
   }
 }
 
+const isContractDocumentName = value => normalizeStatus(value).startsWith('CONTRATO')
+
 const buildContratoActivoDocumento = prestamo => {
   if (!prestamo) return null
   if (prestamo?.contrato_activo === false) return null
@@ -100,7 +102,8 @@ const buildContratoActivoDocumento = prestamo => {
 
   const saldoPendiente = Number(prestamo?.saldo_pendiente ?? prestamo?.pendiente ?? prestamo?.monto_pendiente ?? 0)
   const estadoNormalizado = normalizeStatus(prestamo?.status || prestamo?.estado)
-  const prestamoLiquidado = saldoPendiente <= 0 || ['PAGADO', 'LIQUIDADO', 'CANCELADO', 'NO DEBE NADA'].includes(estadoNormalizado)
+  const prestamoLiquidado =
+    saldoPendiente <= 0 || ['PAGADO', 'LIQUIDADO', 'CANCELADO', 'NO DEBE NADA'].includes(estadoNormalizado)
 
   if (prestamoLiquidado) return null
 
@@ -352,10 +355,28 @@ export default function ClienteDashboardModule({ clienteId }) {
     () => prestamos.filter(item => isActiveStatus(item?.status || item?.estado)),
     [prestamos]
   )
-  const contratosActivos = useMemo(
-    () => deduplicarDocumentos(prestamos.filter(isContratoActivoPrestamo).map(buildContratoActivoDocumento).filter(Boolean)),
-    [prestamos]
-  )
+  const contratosActivos = useMemo(() => {
+    const contractsFromPrestamos = prestamos
+      .filter(isContratoActivoPrestamo)
+      .map(buildContratoActivoDocumento)
+      .filter(Boolean)
+    const hasOpenLoan = prestamos.some(isContratoActivoPrestamo)
+    const fallbackContractDocs = hasOpenLoan ? documentos.filter(item => isContractDocumentName(item?.nombre)) : []
+
+    return deduplicarDocumentos([...contractsFromPrestamos, ...fallbackContractDocs])
+  }, [documentos, prestamos])
+  const documentosSubidos = useMemo(() => {
+    const activeContractKeys = new Set(contratosActivos.map(item => getDocumentIdentityKey(item)).filter(Boolean))
+
+    return documentos.filter(item => {
+      const identityKey = getDocumentIdentityKey(item)
+
+      if (identityKey && activeContractKeys.has(identityKey)) return false
+      if (contratosActivos.length > 0 && isContractDocumentName(item?.nombre)) return false
+
+      return true
+    })
+  }, [contratosActivos, documentos])
 
   const prestamoPrincipal = useMemo(() => prestamosActivos[0] || prestamos[0] || null, [prestamos, prestamosActivos])
 
@@ -1076,10 +1097,10 @@ export default function ClienteDashboardModule({ clienteId }) {
                   {documentActionError}
                 </Alert>
               ) : null}
-              {!documentos.length ? (
+              {!documentosSubidos.length ? (
                 <Typography color='text.secondary'>No hay documentos PDF cargados.</Typography>
               ) : null}
-              {documentos.map((item, index) => (
+              {documentosSubidos.map((item, index) => (
                 <Stack
                   key={`${item.id || item.url}-${index}`}
                   direction='row'
