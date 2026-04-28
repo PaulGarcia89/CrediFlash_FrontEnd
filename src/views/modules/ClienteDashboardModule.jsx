@@ -1026,6 +1026,17 @@ export default function ClienteDashboardModule({ clienteId }) {
                         Descargar
                       </Button>
                     ) : null}
+                    {canDeleteDocumentos ? (
+                      <Button
+                        size='small'
+                        variant='tonal'
+                        color='error'
+                        onClick={() => handleDeleteDocument(item)}
+                        disabled={Boolean(item?.id) && documentActionLoading === String(item.id)}
+                      >
+                        Eliminar
+                      </Button>
+                    ) : null}
                   </Stack>
                 </Stack>
               ))}
