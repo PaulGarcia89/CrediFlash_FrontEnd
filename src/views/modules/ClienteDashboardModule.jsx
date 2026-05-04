@@ -174,6 +174,16 @@ const isMoraStatus = value => {
 
 const parseDateSafe = value => {
   if (!value) return null
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
+
+    if (match) {
+      const [, year, month, day] = match
+
+      return new Date(Number(year), Number(month) - 1, Number(day))
+    }
+  }
   const date = new Date(value)
 
   return Number.isNaN(date.getTime()) ? null : date
@@ -446,12 +456,9 @@ export default function ClienteDashboardModule({ clienteId }) {
     const totalCuotas = Math.max(Number(prestamoPrincipal?.num_semanas || 0), 0)
     const cuotasPagadas = Math.max(Number(prestamoPrincipal?.pagos_hechos || 0), 0)
     const modalidad = normalizeStatus(prestamoPrincipal?.modalidad)
+    const fechaInicioPrestamo = parseDateSafe(prestamoPrincipal?.fecha_inicio)
     const baseDate =
-      modalidad === 'SEMANAL'
-        ? addDays(prestamoPrincipal?.fecha_inicio ? new Date(prestamoPrincipal.fecha_inicio) : new Date(), 7)
-        : prestamoPrincipal?.fecha_inicio
-          ? new Date(prestamoPrincipal.fecha_inicio)
-          : new Date()
+      modalidad === 'SEMANAL' ? addDays(fechaInicioPrestamo || new Date(), 7) : fechaInicioPrestamo || new Date()
     const amount = Number(prestamoPrincipal?.pagos_semanales || 0)
 
     if (!totalCuotas) return []
