@@ -373,6 +373,7 @@ const getContractDocumentId = row =>
 export default function CuotasModule() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const useCardLayout = useMediaQuery(theme.breakpoints.down('lg'))
   const { can, canAny, analista } = usePermissions()
   const debugCuotas = String(process.env.NEXT_PUBLIC_DEBUG_CUOTAS || '').toLowerCase() === 'true'
   const [prestamos, setPrestamos] = useState([])
@@ -1230,7 +1231,7 @@ export default function CuotasModule() {
               <Stack alignItems='center' py={8}>
                 <CircularProgress size={28} />
               </Stack>
-            ) : !isMobile ? (
+            ) : !useCardLayout ? (
               <Table
                 size='small'
                 sx={{
