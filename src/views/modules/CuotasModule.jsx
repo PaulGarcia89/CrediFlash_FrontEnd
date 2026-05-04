@@ -373,7 +373,7 @@ const getContractDocumentId = row =>
 export default function CuotasModule() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const useCardLayout = useMediaQuery(theme.breakpoints.down('lg'))
+  const useCardLayout = useMediaQuery('(max-width:1400px)')
   const { can, canAny, analista } = usePermissions()
   const debugCuotas = String(process.env.NEXT_PUBLIC_DEBUG_CUOTAS || '').toLowerCase() === 'true'
   const [prestamos, setPrestamos] = useState([])
