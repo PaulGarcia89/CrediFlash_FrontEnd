@@ -29,36 +29,11 @@ export const parseDateLocalSafe = value => {
 export const getLoanOriginalAmount = row => toMoneyNumber(row?.monto_original ?? row?.monto_solicitado)
 
 export const getLoanInterestPercentage = row => {
-  const directRaw = row?.interes_porcentaje ?? row?.interes ?? row?.tasa_variable_pct
-  const directParsed = Number(directRaw)
-
-  if (Number.isFinite(directParsed)) {
-    if (Math.abs(directParsed) <= 1) return round2(directParsed * 100)
-
-    return round2(directParsed)
-  }
-
-  const raw = row?.tasa_variable
+  const raw = row?.interes_porcentaje ?? row?.interes ?? row?.tasa_variable_pct ?? row?.tasa_base ?? row?.tasa_variable
   const parsed = Number(raw)
 
   if (!Number.isFinite(parsed)) return null
-
-  if (Math.abs(parsed) <= 1) {
-    const normalizedModalidad = String(row?.modalidad || 'SEMANAL').toUpperCase()
-    const cuotas = Number(row?.numero_cuotas ?? row?.num_semanas ?? row?.plazo_semanas ?? 0)
-
-    if (normalizedModalidad === 'QUINCENAL') {
-      return round2((parsed * 100) / 2)
-    }
-
-    if (normalizedModalidad === 'MENSUAL') {
-      const meses = Math.max(Math.ceil(cuotas / 4), 1)
-
-      return round2(parsed * 100 * meses)
-    }
-
-    return round2(parsed * 100)
-  }
+  if (Math.abs(parsed) <= 1) return round2(parsed * 100)
 
   return round2(parsed)
 }
