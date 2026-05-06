@@ -135,21 +135,7 @@ const extractRows = payload => {
   return []
 }
 
-const calculateTasaVariable = (tasaPct, modalidad, plazoSemanas) => {
-  const baseRate = Number(tasaPct || 0) / 100
-  const normalizedModalidad = String(modalidad || 'SEMANAL').toUpperCase()
-  const semanas = Number(plazoSemanas || 0)
-
-  if (normalizedModalidad === 'QUINCENAL') return baseRate * 2
-
-  if (normalizedModalidad === 'MENSUAL') {
-    const meses = Math.max(Math.ceil(semanas / 4), 1)
-
-    return baseRate / meses
-  }
-
-  return baseRate
-}
+const calculateTasaVariable = tasaPct => Number(tasaPct || 0) / 100
 
 const extractClienteIdFromPayload = payload =>
   payload?.data?.id || payload?.id || payload?.data?.cliente_id || payload?.cliente_id || ''
@@ -734,8 +720,8 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
       }
 
       const tasaVariable = publicMode
-        ? Number(form.tasa_variable_pct || 1)
-        : calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
+        ? Number(form.tasa_variable_pct || 1) / 100
+        : calculateTasaVariable(form.tasa_variable_pct)
 
       if (!publicMode && (!Number.isFinite(tasaVariable) || tasaVariable <= 0)) {
         throw new Error('No se pudo calcular una tasa válida para la modalidad seleccionada.')

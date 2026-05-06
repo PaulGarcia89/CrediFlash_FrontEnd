@@ -114,23 +114,7 @@ const clienteOptionLabel = cliente => {
   return `${nombre || 'Sin nombre'} — ${cliente?.telefono || 'Sin teléfono'} — ${cliente?.email || 'Sin email'}`
 }
 
-const calculateTasaVariable = (tasaPct, modalidad, plazoSemanas) => {
-  const baseRate = Number(tasaPct || 0) / 100
-  const normalizedModalidad = String(modalidad || 'SEMANAL').toUpperCase()
-  const semanas = Number(plazoSemanas || 0)
-
-  if (normalizedModalidad === 'QUINCENAL') {
-    return baseRate * 2
-  }
-
-  if (normalizedModalidad === 'MENSUAL') {
-    const meses = Math.max(Math.ceil(semanas / 4), 1)
-
-    return baseRate / meses
-  }
-
-  return baseRate
-}
+const calculateTasaVariable = tasaPct => Number(tasaPct || 0) / 100
 
 export default function SolicitudFormModule({ solicitudId = null }) {
   const router = useRouter()
@@ -431,9 +415,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       }
 
       const tasaVariableBase = tasaVariablePct / 100
-      const tasaVariable = solicitudId
-        ? tasaVariableBase
-        : calculateTasaVariable(form.interes_porcentaje, form.modalidad, form.numero_cuotas)
+      const tasaVariable = solicitudId ? tasaVariableBase : calculateTasaVariable(form.interes_porcentaje)
 
       if (!Number.isFinite(tasaVariable) || tasaVariable <= 0) {
         throw new Error('No se pudo calcular una tasa válida para la modalidad seleccionada.')
