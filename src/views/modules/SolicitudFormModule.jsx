@@ -302,14 +302,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       const cuotas = Number(form.numero_cuotas || 0)
       const tasa = Number(form.interes_porcentaje || 0)
 
-      return Boolean(
-        monto > 0 &&
-          cuotas > 0 &&
-          tasa > 0 &&
-          form.modalidad &&
-          String(form.destino || '').trim() &&
-          String(form.fecha_inicio || '').trim()
-      )
+      return Boolean(monto > 0 && cuotas > 0 && tasa > 0 && form.modalidad && String(form.destino || '').trim())
     }
 
     if (activeStep === 2) {
@@ -331,14 +324,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       const cuotas = Number(form.numero_cuotas || 0)
       const tasa = Number(form.interes_porcentaje || 0)
 
-      return Boolean(
-        monto > 0 &&
-          cuotas > 0 &&
-          tasa > 0 &&
-          form.modalidad &&
-          String(form.destino || '').trim() &&
-          String(form.fecha_inicio || '').trim()
-      )
+      return Boolean(monto > 0 && cuotas > 0 && tasa > 0 && form.modalidad && String(form.destino || '').trim())
     }
 
     if (stepIndex === 2) {
@@ -437,7 +423,9 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         payload.append('plazo_semanas', String(Number(form.numero_cuotas || 0)))
         payload.append('interes_porcentaje', String(Number(form.interes_porcentaje || 0)))
         payload.append('tasa_variable', String(tasaVariable))
-        payload.append('fecha_inicio', form.fecha_inicio)
+        if (String(form.fecha_inicio || '').trim()) {
+          payload.append('fecha_inicio', form.fecha_inicio)
+        }
         payload.append('modelo_calificacion', form.modelo_calificacion)
         payload.append('modelo_aprobacion', form.modelo_aprobacion)
         payload.append('destino', form.destino)
@@ -490,7 +478,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       if (field === 'monto_original') return !(Number(form.monto_original || 0) > 0)
       if (field === 'numero_cuotas') return !(Number(form.numero_cuotas || 0) > 0)
       if (field === 'interes_porcentaje') return !(Number(form.interes_porcentaje || 0) > 0)
-      if (field === 'fecha_inicio') return !String(form.fecha_inicio || '').trim()
       if (field === 'destino') return !String(form.destino || '').trim()
       if (field === 'modalidad') return !String(form.modalidad || '').trim()
     }
@@ -781,22 +768,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                               error={isStepFieldMissing('interes_porcentaje')}
                               helperText={
                                 isStepFieldMissing('interes_porcentaje') ? 'Campo obligatorio' : 'Ejemplo: 23'
-                              }
-                            />
-                          </Grid>
-                          <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                              label='START DATE * / FECHA DE INICIO'
-                              name='fecha_inicio'
-                              type='date'
-                              value={form.fecha_inicio}
-                              onChange={handleChange}
-                              fullWidth
-                              required
-                              InputLabelProps={{ shrink: true }}
-                              error={isStepFieldMissing('fecha_inicio')}
-                              helperText={
-                                isStepFieldMissing('fecha_inicio') ? 'Campo obligatorio' : 'Fecha de desembolso'
                               }
                             />
                           </Grid>
