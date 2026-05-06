@@ -76,10 +76,11 @@ const STEP_DESCRIPTIONS = [
 
 const initialForm = {
   cliente_id: '',
-  monto_solicitado: '',
+  monto_original: '',
   modalidad: 'SEMANAL',
-  plazo_semanas: '',
-  tasa_variable_pct: '',
+  numero_cuotas: '',
+  interes_porcentaje: '',
+  fecha_inicio: '',
   modelo_calificacion: 'CLIENTE_NUEVO',
   modelo_aprobacion: 'AUTOMATICO',
   destino: ''
@@ -169,14 +170,15 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         const response = await obtenerSolicitud(solicitudId)
         const solicitud = response?.data || response
         const cliente = solicitud?.cliente || null
-        const tasaPct = Number(solicitud?.tasa_variable || 0) * 100
+        const tasaPct = Number(solicitud?.interes_porcentaje ?? (Number(solicitud?.tasa_variable || 0) * 100 || 0))
 
         setForm({
           cliente_id: solicitud?.cliente_id || '',
-          monto_solicitado: solicitud?.monto_solicitado || '',
+          monto_original: solicitud?.monto_original || solicitud?.monto_solicitado || '',
           modalidad: String(solicitud?.modalidad || 'SEMANAL').toUpperCase(),
-          plazo_semanas: solicitud?.plazo_semanas || '',
-          tasa_variable_pct: Number.isFinite(tasaPct) ? String(tasaPct) : '',
+          numero_cuotas: solicitud?.numero_cuotas || solicitud?.num_semanas || solicitud?.plazo_semanas || '',
+          interes_porcentaje: Number.isFinite(tasaPct) ? String(tasaPct) : '',
+          fecha_inicio: solicitud?.fecha_inicio || '',
           modelo_calificacion: solicitud?.modelo_calificacion || 'CLIENTE_NUEVO',
           modelo_aprobacion: solicitud?.modelo_aprobacion || 'AUTOMATICO',
           destino: solicitud?.destino || ''
@@ -312,11 +314,18 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     if (activeStep === 0) return Boolean(form.cliente_id)
 
     if (activeStep === 1) {
-      const monto = Number(form.monto_solicitado || 0)
-      const plazo = Number(form.plazo_semanas || 0)
-      const tasa = Number(form.tasa_variable_pct || 0)
+      const monto = Number(form.monto_original || 0)
+      const cuotas = Number(form.numero_cuotas || 0)
+      const tasa = Number(form.interes_porcentaje || 0)
 
-      return Boolean(monto > 0 && plazo > 0 && tasa > 0 && form.modalidad && String(form.destino || '').trim())
+      return Boolean(
+        monto > 0 &&
+          cuotas > 0 &&
+          tasa > 0 &&
+          form.modalidad &&
+          String(form.destino || '').trim() &&
+          String(form.fecha_inicio || '').trim()
+      )
     }
 
     if (activeStep === 2) {
@@ -338,11 +347,18 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     if (stepIndex === 0) return Boolean(form.cliente_id)
 
     if (stepIndex === 1) {
-      const monto = Number(form.monto_solicitado || 0)
-      const plazo = Number(form.plazo_semanas || 0)
-      const tasa = Number(form.tasa_variable_pct || 0)
+      const monto = Number(form.monto_original || 0)
+      const cuotas = Number(form.numero_cuotas || 0)
+      const tasa = Number(form.interes_porcentaje || 0)
 
-      return Boolean(monto > 0 && plazo > 0 && tasa > 0 && form.modalidad && String(form.destino || '').trim())
+      return Boolean(
+        monto > 0 &&
+          cuotas > 0 &&
+          tasa > 0 &&
+          form.modalidad &&
+          String(form.destino || '').trim() &&
+          String(form.fecha_inicio || '').trim()
+      )
     }
 
     if (stepIndex === 2) {
@@ -408,7 +424,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         }
       }
 
-      const tasaVariablePct = Number(form.tasa_variable_pct || 0)
+      const tasaVariablePct = Number(form.interes_porcentaje || 0)
 
       if (!Number.isFinite(tasaVariablePct) || tasaVariablePct < 1 || tasaVariablePct > 100) {
         throw new Error('La tasa variable (%) debe estar entre 1 y 100.')
@@ -417,7 +433,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       const tasaVariableBase = tasaVariablePct / 100
       const tasaVariable = solicitudId
         ? tasaVariableBase
-        : calculateTasaVariable(form.tasa_variable_pct, form.modalidad, form.plazo_semanas)
+        : calculateTasaVariable(form.interes_porcentaje, form.modalidad, form.numero_cuotas)
 
       if (!Number.isFinite(tasaVariable) || tasaVariable <= 0) {
         throw new Error('No se pudo calcular una tasa válida para la modalidad seleccionada.')
@@ -426,10 +442,15 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       if (solicitudId) {
         await actualizarSolicitud(solicitudId, {
           cliente_id: form.cliente_id,
-          monto_solicitado: Number(form.monto_solicitado || 0),
+          monto_original: Number(form.monto_original || 0),
+          monto_solicitado: Number(form.monto_original || 0),
           modalidad: form.modalidad,
-          plazo_semanas: Number(form.plazo_semanas || 0),
+          numero_cuotas: Number(form.numero_cuotas || 0),
+          num_semanas: Number(form.numero_cuotas || 0),
+          plazo_semanas: Number(form.numero_cuotas || 0),
+          interes_porcentaje: Number(form.interes_porcentaje || 0),
           tasa_variable: tasaVariable,
+          fecha_inicio: form.fecha_inicio,
           modelo_calificacion: form.modelo_calificacion,
           modelo_aprobacion: form.modelo_aprobacion,
           destino: form.destino
@@ -440,10 +461,15 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         const payload = new FormData()
 
         payload.append('cliente_id', form.cliente_id)
-        payload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
+        payload.append('monto_original', String(Number(form.monto_original || 0)))
+        payload.append('monto_solicitado', String(Number(form.monto_original || 0)))
         payload.append('modalidad', form.modalidad)
-        payload.append('plazo_semanas', String(Number(form.plazo_semanas || 0)))
+        payload.append('numero_cuotas', String(Number(form.numero_cuotas || 0)))
+        payload.append('num_semanas', String(Number(form.numero_cuotas || 0)))
+        payload.append('plazo_semanas', String(Number(form.numero_cuotas || 0)))
+        payload.append('interes_porcentaje', String(Number(form.interes_porcentaje || 0)))
         payload.append('tasa_variable', String(tasaVariable))
+        payload.append('fecha_inicio', form.fecha_inicio)
         payload.append('modelo_calificacion', form.modelo_calificacion)
         payload.append('modelo_aprobacion', form.modelo_aprobacion)
         payload.append('destino', form.destino)
@@ -489,9 +515,10 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     if (activeStep === 0) return field === 'cliente_id' && !String(form.cliente_id || '').trim()
 
     if (activeStep === 1) {
-      if (field === 'monto_solicitado') return !(Number(form.monto_solicitado || 0) > 0)
-      if (field === 'plazo_semanas') return !(Number(form.plazo_semanas || 0) > 0)
-      if (field === 'tasa_variable_pct') return !(Number(form.tasa_variable_pct || 0) > 0)
+      if (field === 'monto_original') return !(Number(form.monto_original || 0) > 0)
+      if (field === 'numero_cuotas') return !(Number(form.numero_cuotas || 0) > 0)
+      if (field === 'interes_porcentaje') return !(Number(form.interes_porcentaje || 0) > 0)
+      if (field === 'fecha_inicio') return !String(form.fecha_inicio || '').trim()
       if (field === 'destino') return !String(form.destino || '').trim()
       if (field === 'modalidad') return !String(form.modalidad || '').trim()
     }
@@ -728,17 +755,15 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
                           <Grid size={{ xs: 12, md: 6 }}>
                             <TextField
-                              label='APPLICATION AMOUNT * / MONTO DE SU SOLICITUD'
-                              name='monto_solicitado'
+                              label='ORIGINAL AMOUNT * / MONTO ORIGINAL'
+                              name='monto_original'
                               type='number'
-                              value={form.monto_solicitado}
+                              value={form.monto_original}
                               onChange={handleChange}
                               fullWidth
                               required
-                              error={isStepFieldMissing('monto_solicitado')}
-                              helperText={
-                                isStepFieldMissing('monto_solicitado') ? 'Campo obligatorio' : 'Ejemplo: 2000'
-                              }
+                              error={isStepFieldMissing('monto_original')}
+                              helperText={isStepFieldMissing('monto_original') ? 'Campo obligatorio' : 'Ejemplo: 2000'}
                             />
                             <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap' mt={1}>
                               {MONTO_RANGOS.map(rango => (
@@ -749,7 +774,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                                   onClick={() =>
                                     setForm(previous => ({
                                       ...previous,
-                                      monto_solicitado: String(rango.max)
+                                      monto_original: String(rango.max)
                                     }))
                                   }
                                 >
@@ -760,29 +785,47 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                           </Grid>
                           <Grid size={{ xs: 12, md: 6 }}>
                             <TextField
-                              label='TERM IN WEEKS * / PLAZO (SEMANAS)'
-                              name='plazo_semanas'
+                              label='NUMBER OF INSTALLMENTS * / NUMERO DE CUOTAS'
+                              name='numero_cuotas'
                               type='number'
-                              value={form.plazo_semanas}
+                              value={form.numero_cuotas}
                               onChange={handleChange}
                               fullWidth
                               required
-                              error={isStepFieldMissing('plazo_semanas')}
-                              helperText={isStepFieldMissing('plazo_semanas') ? 'Campo obligatorio' : 'Ejemplo: 8'}
+                              error={isStepFieldMissing('numero_cuotas')}
+                              helperText={isStepFieldMissing('numero_cuotas') ? 'Campo obligatorio' : 'Ejemplo: 8'}
                             />
                           </Grid>
                           <Grid size={{ xs: 12, md: 6 }}>
                             <TextField
-                              label='VARIABLE RATE (%) * / TASA VARIABLE (%)'
-                              name='tasa_variable_pct'
+                              label='INTEREST RATE (%) * / TASA DE INTERES (%)'
+                              name='interes_porcentaje'
                               type='number'
-                              value={form.tasa_variable_pct}
+                              value={form.interes_porcentaje}
                               onChange={handleChange}
                               inputProps={{ min: 1, max: 100 }}
                               fullWidth
                               required
-                              error={isStepFieldMissing('tasa_variable_pct')}
-                              helperText={isStepFieldMissing('tasa_variable_pct') ? 'Campo obligatorio' : 'Ejemplo: 23'}
+                              error={isStepFieldMissing('interes_porcentaje')}
+                              helperText={
+                                isStepFieldMissing('interes_porcentaje') ? 'Campo obligatorio' : 'Ejemplo: 23'
+                              }
+                            />
+                          </Grid>
+                          <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                              label='START DATE * / FECHA DE INICIO'
+                              name='fecha_inicio'
+                              type='date'
+                              value={form.fecha_inicio}
+                              onChange={handleChange}
+                              fullWidth
+                              required
+                              InputLabelProps={{ shrink: true }}
+                              error={isStepFieldMissing('fecha_inicio')}
+                              helperText={
+                                isStepFieldMissing('fecha_inicio') ? 'Campo obligatorio' : 'Fecha de desembolso'
+                              }
                             />
                           </Grid>
                         </Grid>

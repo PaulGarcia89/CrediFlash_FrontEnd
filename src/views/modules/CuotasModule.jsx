@@ -45,6 +45,22 @@ import { obtenerDocumentoUrl } from '@/api/solicitudes'
 import { getToken } from '@/lib/auth/session'
 import { formatMoney, round2, toMoneyNumber } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
+import {
+  extractLoanSchedule,
+  getLoanContractDocumentId,
+  getLoanContractRawUrl,
+  getLoanEndDateValue,
+  getLoanInstallmentValue,
+  getLoanInstallmentsCount,
+  getLoanInterestPercentage,
+  getLoanOriginalAmount,
+  getLoanPeriodicityLabel,
+  getLoanRemainingBalance,
+  getLoanTotalToPay,
+  hasActiveLoanContract,
+  isLoanActive,
+  isLoanSettled
+} from '@/utils/loanFinance'
 
 const formatCurrency = value => formatMoney(value)
 const formatNaturalNumber = value =>
@@ -104,10 +120,10 @@ const extractPagination = payload => {
 }
 
 const getRawPagosPendientes = row => toMoneyNumber(row?.pagos_pendientes ?? row?.cuotas_restantes)
-const getDisplayTotalPagar = row => toMoneyNumber(row?.total_pagar_bruto ?? row?.total_pagar ?? row?.monto_solicitado)
-const getDisplayPagosSemanales = row => toMoneyNumber(row?.pagos_semanales_bruto ?? row?.pagos_semanales)
+const getDisplayTotalPagar = row => getLoanTotalToPay(row)
+const getDisplayPagosSemanales = row => getLoanInstallmentValue(row)
 
-const getConfiguredWeeks = row => toMoneyNumber(row?.num_semanas ?? row?.plazo_semanas)
+const getConfiguredWeeks = row => toMoneyNumber(getLoanInstallmentsCount(row))
 
 const looksLikePendingCount = row => {
   const raw = getRawPagosPendientes(row)
@@ -148,7 +164,7 @@ const getCuotasRestantes = row => {
 }
 
 const getSaldoPendienteInfo = row => {
-  const pendienteOficial = toMoneyNumber(row?.saldo_pendiente ?? row?.pendiente ?? row?.monto_pendiente)
+  const pendienteOficial = toMoneyNumber(getLoanRemainingBalance(row))
 
   if (Number.isFinite(pendienteOficial) && pendienteOficial >= 0) {
     return { value: pendienteOficial, estimated: false }
@@ -171,7 +187,7 @@ const getSaldoPendienteInfo = row => {
 const getSaldoPendiente = row => getSaldoPendienteInfo(row).value
 
 const getInteresDisplay = row => {
-  const value = row?.interes ?? row?.tasa_variable
+  const value = getLoanInterestPercentage(row)
 
   if (value === null || value === undefined || value === '') return '-'
 
@@ -236,13 +252,7 @@ const getStatusColor = status => {
 const isPrestamoActivoOperativo = row => {
   if (row?.es_activo_operativo === true) return true
 
-  const pagosPendientes = toMoneyNumber(row?.pagos_pendientes ?? row?.cuotas_restantes)
-  const pendiente = toMoneyNumber(row?.saldo_pendiente ?? row?.pendiente ?? row?.monto_pendiente)
-
-  if (Number.isFinite(pagosPendientes) && pagosPendientes > 0) return true
-  if (Number.isFinite(pendiente) && pendiente > 0) return true
-
-  return false
+  return isLoanActive(row) && !isLoanSettled(row)
 }
 const canRegisterPaymentForRow = row => {
   return isPrestamoActivoOperativo(row)
@@ -343,32 +353,11 @@ const buildCandidateUrls = value => {
   return [forceHttpsIfNeeded(`${backendOrigin}/${raw}`)]
 }
 const getContractOpenUrl = row => {
-  if (row?.contrato_disponible === false) return ''
-
-  const raw =
-    row?.contrato_credito_url ||
-    row?.contrato_url ||
-    row?.contrato?.url ||
-    row?.contrato?.url_descarga ||
-    row?.contrato?.download_url ||
-    row?.url_contrato ||
-    row?.contrato_storage_path ||
-    ''
-  const urls = buildCandidateUrls(raw)
+  const urls = buildCandidateUrls(getLoanContractRawUrl(row))
 
   return urls[0] || ''
 }
-const getContractDocumentId = row =>
-  row?.contrato_disponible === false
-    ? ''
-    : String(
-        row?.contrato_credito_id ||
-          row?.contrato_id ||
-          row?.documento_id ||
-          row?.contrato?.id ||
-          row?.contrato?.documento_id ||
-          ''
-      ).trim()
+const getContractDocumentId = row => getLoanContractDocumentId(row)
 
 export default function CuotasModule() {
   const theme = useTheme()
@@ -1251,9 +1240,9 @@ export default function CuotasModule() {
                     </TableCell>
                     <TableCell sx={{ ...desktopHeadCellSx, width: '16%' }}>Cliente</TableCell>
                     <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Monto total</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Pago semanal</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Valor cuota</TableCell>
                     <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Tasa de interés</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '7%' }}>Semanas</TableCell>
+                    <TableCell sx={{ ...desktopHeadCellSx, width: '7%' }}>Núm. cuotas</TableCell>
                     <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Pagos hechos</TableCell>
                     <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Fecha inicio</TableCell>
                     <TableCell sx={{ ...desktopHeadCellSx, width: '12%' }}>Saldo pendiente</TableCell>
@@ -1281,7 +1270,7 @@ export default function CuotasModule() {
                       <TableCell sx={desktopNumericCellSx}>{formatCurrency(getDisplayTotalPagar(row))}</TableCell>
                       <TableCell sx={desktopNumericCellSx}>{formatCurrency(getDisplayPagosSemanales(row))}</TableCell>
                       <TableCell sx={desktopNumericCellSx}>{getInteresDisplay(row)}</TableCell>
-                      <TableCell sx={desktopNumericCellSx}>{row.num_semanas ?? '-'}</TableCell>
+                      <TableCell sx={desktopNumericCellSx}>{getLoanInstallmentsCount(row) || '-'}</TableCell>
                       <TableCell sx={desktopNumericCellSx}>{formatNaturalNumber(row.pagos_hechos)}</TableCell>
                       <TableCell sx={desktopNumericCellSx}>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
                       <TableCell sx={desktopNumericCellSx}>
@@ -1378,8 +1367,9 @@ export default function CuotasModule() {
                           })()}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
-                          Semanas: {row.num_semanas ?? '-'} • Pagos hechos: {formatNaturalNumber(row.pagos_hechos)} •
-                          Cuotas restantes: {formatNaturalNumber(getCuotasRestantes(row))}
+                          Cuotas: {getLoanInstallmentsCount(row) || '-'} • Pagos hechos:{' '}
+                          {formatNaturalNumber(row.pagos_hechos)} • Cuotas restantes:{' '}
+                          {formatNaturalNumber(getCuotasRestantes(row))}
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
                           Fecha inicio: {formatDateMMDDYYYY(row.fecha_inicio)}
@@ -1429,7 +1419,10 @@ export default function CuotasModule() {
               Monto total: <strong>{formatCurrency(getDisplayTotalPagar(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
-              Número de semanas: <strong>{selectedPrestamo?.num_semanas ?? '-'}</strong>
+              Número de cuotas: <strong>{getLoanInstallmentsCount(selectedPrestamo) || '-'}</strong>
+            </Typography>
+            <Typography>
+              Periodicidad: <strong>{getLoanPeriodicityLabel(selectedPrestamo?.modalidad)}</strong>
             </Typography>
             <Typography>
               Cuotas restantes: <strong>{selectedPrestamo ? getCuotasRestantes(selectedPrestamo) : 0}</strong>
@@ -1594,19 +1587,25 @@ export default function CuotasModule() {
               Cliente: <strong>{selectedPrestamo?.nombre_completo || '-'}</strong>
             </Typography>
             <Typography>
-              Monto solicitado: <strong>{formatCurrency(selectedPrestamo?.monto_solicitado)}</strong>
+              Monto original: <strong>{formatCurrency(getLoanOriginalAmount(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
               Total pagar: <strong>{formatCurrency(getDisplayTotalPagar(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
-              Interés: <strong>{selectedPrestamo?.interes ?? '-'}</strong>
+              Interés (%): <strong>{getInteresDisplay(selectedPrestamo)}</strong>
+            </Typography>
+            <Typography>
+              Interés total: <strong>{formatCurrency(toMoneyNumber(selectedPrestamo?.interes_total ?? 0))}</strong>
             </Typography>
             <Typography>
               Modalidad: <strong>{selectedPrestamo?.modalidad || '-'}</strong>
             </Typography>
             <Typography>
-              Semanas: <strong>{selectedPrestamo?.num_semanas ?? '-'}</strong>
+              Número de cuotas: <strong>{getLoanInstallmentsCount(selectedPrestamo) || '-'}</strong>
+            </Typography>
+            <Typography>
+              Valor cuota: <strong>{formatCurrency(getDisplayPagosSemanales(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
               {(() => {
@@ -1632,7 +1631,7 @@ export default function CuotasModule() {
               Fecha inicio: <strong>{formatDateMMDDYYYY(selectedPrestamo?.fecha_inicio)}</strong>
             </Typography>
             <Typography>
-              Fecha vencimiento: <strong>{formatDateMMDDYYYY(selectedPrestamo?.fecha_vencimiento)}</strong>
+              Fecha vencimiento final: <strong>{formatDateMMDDYYYY(getLoanEndDateValue(selectedPrestamo))}</strong>
             </Typography>
             <Typography>
               Estado: <strong>{selectedPrestamo ? getOperationalStatus(selectedPrestamo) : '-'}</strong>
@@ -1648,7 +1647,8 @@ export default function CuotasModule() {
             <Typography>
               Contrato PDF:{' '}
               <strong>
-                {getContractOpenUrl(selectedPrestamo) || getContractDocumentId(selectedPrestamo)
+                {hasActiveLoanContract(selectedPrestamo) &&
+                (getContractOpenUrl(selectedPrestamo) || getContractDocumentId(selectedPrestamo))
                   ? 'Disponible para visualización'
                   : 'No disponible'}
               </strong>
@@ -1666,6 +1666,37 @@ export default function CuotasModule() {
             >
               Visualizar contrato PDF
             </Button>
+            {extractLoanSchedule(selectedPrestamo).length ? (
+              <Stack spacing={1} sx={{ pt: 1 }}>
+                <Typography variant='h6'>Cronograma canónico</Typography>
+                <Table size='small'>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Cuota</TableCell>
+                      <TableCell>Vencimiento</TableCell>
+                      <TableCell>Capital</TableCell>
+                      <TableCell>Interés</TableCell>
+                      <TableCell>Total</TableCell>
+                      <TableCell>Saldo restante</TableCell>
+                      <TableCell>Estado</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {extractLoanSchedule(selectedPrestamo).map(cuota => (
+                      <TableRow key={cuota.id}>
+                        <TableCell>{cuota.numero}</TableCell>
+                        <TableCell>{formatDateMMDDYYYY(cuota.fecha_vencimiento)}</TableCell>
+                        <TableCell>{formatCurrency(cuota.capital_programado)}</TableCell>
+                        <TableCell>{formatCurrency(cuota.interes_programado)}</TableCell>
+                        <TableCell>{formatCurrency(cuota.total_programado)}</TableCell>
+                        <TableCell>{formatCurrency(cuota.saldo_restante)}</TableCell>
+                        <TableCell>{cuota.estado}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Stack>
+            ) : null}
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -1690,10 +1721,12 @@ export default function CuotasModule() {
               <Table size='small'>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Monto</TableCell>
-                    <TableCell>Interés</TableCell>
+                    <TableCell>Monto original</TableCell>
+                    <TableCell>Interés %</TableCell>
+                    <TableCell>Interés total</TableCell>
                     <TableCell>Modalidad</TableCell>
-                    <TableCell>Semanas</TableCell>
+                    <TableCell>Núm. cuotas</TableCell>
+                    <TableCell>Valor cuota</TableCell>
                     <TableCell>Total</TableCell>
                     <TableCell>Pendiente</TableCell>
                     <TableCell>Estado</TableCell>
@@ -1714,12 +1747,14 @@ export default function CuotasModule() {
                       }}
                       sx={{ cursor: canViewPrestamos ? 'pointer' : 'default' }}
                     >
-                      <TableCell>{formatCurrency(row.monto_solicitado)}</TableCell>
-                      <TableCell>{row.interes ?? '-'}</TableCell>
+                      <TableCell>{formatCurrency(getLoanOriginalAmount(row))}</TableCell>
+                      <TableCell>{getInteresDisplay(row)}</TableCell>
+                      <TableCell>{formatCurrency(toMoneyNumber(row?.interes_total ?? 0))}</TableCell>
                       <TableCell>{row.modalidad || '-'}</TableCell>
-                      <TableCell>{row.num_semanas ?? '-'}</TableCell>
+                      <TableCell>{getLoanInstallmentsCount(row) || '-'}</TableCell>
+                      <TableCell>{formatCurrency(getDisplayPagosSemanales(row))}</TableCell>
                       <TableCell>{formatCurrency(getDisplayTotalPagar(row))}</TableCell>
-                      <TableCell>{formatCurrency(row.pendiente)}</TableCell>
+                      <TableCell>{formatCurrency(getLoanRemainingBalance(row))}</TableCell>
                       <TableCell>{row.status || '-'}</TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.5}>
@@ -1733,12 +1768,12 @@ export default function CuotasModule() {
                         </Stack>
                       </TableCell>
                       <TableCell>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
-                      <TableCell>{formatDateMMDDYYYY(row.fecha_vencimiento)}</TableCell>
+                      <TableCell>{formatDateMMDDYYYY(getLoanEndDateValue(row))}</TableCell>
                     </TableRow>
                   ))}
                   {historialRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} align='center'>
+                      <TableCell colSpan={12} align='center'>
                         Sin registros de historial
                       </TableCell>
                     </TableRow>

@@ -614,14 +614,17 @@ export default function SolicitudesModule() {
     setAprobacionDialogError('')
 
     try {
-      const numSemanas = Number(row?.plazo_semanas || row?.num_semanas || 0) || undefined
+      const numeroCuotas = Number(row?.numero_cuotas || row?.plazo_semanas || row?.num_semanas || 0) || undefined
       const modalidad = String(row?.modalidad || '').toUpperCase()
       const primerVencimientoSemanal = modalidad === 'SEMANAL' ? toDateOnlyString(addDays(new Date(), 7)) : ''
       let approvalRequestBody
 
       if (contratoFile) {
         approvalRequestBody = new FormData()
-        if (numSemanas) approvalRequestBody.append('num_semanas', String(numSemanas))
+        if (numeroCuotas) {
+          approvalRequestBody.append('numero_cuotas', String(numeroCuotas))
+          approvalRequestBody.append('num_semanas', String(numeroCuotas))
+        }
         if (primerVencimientoSemanal) {
           approvalRequestBody.append('fecha_primer_pago', primerVencimientoSemanal)
           approvalRequestBody.append('fecha_primer_vencimiento', primerVencimientoSemanal)
@@ -631,7 +634,7 @@ export default function SolicitudesModule() {
         approvalRequestBody.append('contrato_credito', contratoFile, contratoFileName)
         approvalRequestBody.append('documentos', contratoFile, contratoFileName)
       } else {
-        approvalRequestBody = { num_semanas: numSemanas }
+        approvalRequestBody = { numero_cuotas: numeroCuotas, num_semanas: numeroCuotas }
         if (primerVencimientoSemanal) {
           approvalRequestBody.fecha_primer_pago = primerVencimientoSemanal
           approvalRequestBody.fecha_primer_vencimiento = primerVencimientoSemanal

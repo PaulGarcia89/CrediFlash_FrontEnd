@@ -759,8 +759,12 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
         solicitudPayload.append('fecha_envio_solicitud', publicSubmissionTimestamp)
       }
       solicitudPayload.append('monto_solicitado', String(Number(form.monto_solicitado || 0)))
+      solicitudPayload.append('monto_original', String(Number(form.monto_solicitado || 0)))
       solicitudPayload.append('modalidad', form.modalidad)
+      solicitudPayload.append('numero_cuotas', String(publicMode ? 1 : Number(form.plazo_semanas || 0)))
       solicitudPayload.append('plazo_semanas', String(publicMode ? 1 : Number(form.plazo_semanas || 0)))
+      solicitudPayload.append('num_semanas', String(publicMode ? 1 : Number(form.plazo_semanas || 0)))
+      solicitudPayload.append('interes_porcentaje', String(Number(form.tasa_variable_pct || 0)))
       solicitudPayload.append('tasa_variable', String(publicMode ? Number(form.tasa_variable_pct || 1) : tasaVariable))
       solicitudPayload.append('modelo_calificacion', publicMode ? 'CLIENTE_NUEVO' : form.modelo_calificacion)
       solicitudPayload.append('modelo_aprobacion', publicMode ? 'AUTOMATICO' : form.modelo_aprobacion)

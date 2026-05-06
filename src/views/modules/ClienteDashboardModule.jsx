@@ -33,6 +33,22 @@ import usePermissions from '@/hooks/usePermissions'
 import { getToken } from '@/lib/auth/session'
 import { formatUSD } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
+import {
+  extractLoanSchedule,
+  getLoanContractRawUrl,
+  getLoanEndDateValue,
+  getLoanInstallmentValue,
+  getLoanInstallmentsCount,
+  getLoanInterestPercentage,
+  getLoanOriginalAmount,
+  getLoanPeriodicityLabel,
+  getLoanRemainingBalance,
+  getLoanTotalToPay,
+  hasActiveLoanContract,
+  isLoanActive,
+  isLoanSettled,
+  parseDateLocalSafe
+} from '@/utils/loanFinance'
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -100,22 +116,9 @@ const buildContratoActivoDocumento = prestamo => {
   if (prestamo?.contrato_activo === false) return null
   if (prestamo?.contrato_disponible === false) return null
 
-  const saldoPendiente = Number(prestamo?.saldo_pendiente ?? prestamo?.pendiente ?? prestamo?.monto_pendiente ?? 0)
-  const estadoNormalizado = normalizeStatus(prestamo?.status || prestamo?.estado)
-  const prestamoLiquidado =
-    saldoPendiente <= 0 || ['PAGADO', 'LIQUIDADO', 'CANCELADO', 'NO DEBE NADA'].includes(estadoNormalizado)
+  if (isLoanSettled(prestamo)) return null
 
-  if (prestamoLiquidado) return null
-
-  const rawUrl =
-    prestamo?.contrato_credito_url ||
-    prestamo?.contrato_url ||
-    prestamo?.contrato?.url ||
-    prestamo?.contrato?.url_descarga ||
-    prestamo?.contrato?.download_url ||
-    prestamo?.url_contrato ||
-    prestamo?.contrato_storage_path ||
-    ''
+  const rawUrl = getLoanContractRawUrl(prestamo)
   const documentId = String(
     prestamo?.contrato_credito_id || prestamo?.contrato_id || prestamo?.documento_id || prestamo?.contrato?.id || ''
   ).trim()
@@ -143,17 +146,14 @@ const isContratoActivoPrestamo = prestamo => {
   if (prestamo?.contrato_activo === true) return true
   if (prestamo?.contrato_activo === false) return false
 
-  const saldoPendiente = Number(prestamo?.saldo_pendiente ?? prestamo?.pendiente ?? prestamo?.monto_pendiente ?? 0)
-  const estadoNormalizado = normalizeStatus(prestamo?.status || prestamo?.estado)
-
-  return saldoPendiente > 0 && !['PAGADO', 'LIQUIDADO', 'CANCELADO', 'NO DEBE NADA'].includes(estadoNormalizado)
+  return isLoanActive(prestamo) && !isLoanSettled(prestamo)
 }
 
 const formatCurrency = value => formatUSD(value)
 const formatNaturalNumber = value =>
   new Intl.NumberFormat('es-DO', { maximumFractionDigits: 0 }).format(Number(value || 0))
-const getDisplayTotalPagar = prestamo => Number(prestamo?.total_pagar_bruto ?? prestamo?.total_pagar ?? 0)
-const getDisplayPagosSemanales = prestamo => Number(prestamo?.pagos_semanales_bruto ?? prestamo?.pagos_semanales ?? 0)
+const getDisplayTotalPagar = prestamo => Number(getLoanTotalToPay(prestamo) || 0)
+const getDisplayPagosSemanales = prestamo => Number(getLoanInstallmentValue(prestamo) || 0)
 const normalizeStatus = value =>
   String(value || '')
     .normalize('NFD')
@@ -163,7 +163,9 @@ const normalizeStatus = value =>
 const isActiveStatus = value => {
   const normalized = normalizeStatus(value)
 
-  return ['ACTIVO', 'ACTIVA', 'ACTIVE', 'VIGENTE', 'EN CURSO', 'EN_CURSO', 'PENDIENTE'].includes(normalized)
+  return ['ACTIVO', 'ACTIVA', 'ACTIVE', 'VIGENTE', 'EN CURSO', 'EN_CURSO', 'PENDIENTE', 'EN_MARCHA'].includes(
+    normalized
+  )
 }
 
 const isMoraStatus = value => {
@@ -173,20 +175,7 @@ const isMoraStatus = value => {
 }
 
 const parseDateSafe = value => {
-  if (!value) return null
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
-
-    if (match) {
-      const [, year, month, day] = match
-
-      return new Date(Number(year), Number(month) - 1, Number(day))
-    }
-  }
-  const date = new Date(value)
-
-  return Number.isNaN(date.getTime()) ? null : date
+  return parseDateLocalSafe(value)
 }
 
 const toEndOfDay = date => {
@@ -391,23 +380,23 @@ export default function ClienteDashboardModule({ clienteId }) {
   const prestamoPrincipal = useMemo(() => prestamosActivos[0] || prestamos[0] || null, [prestamos, prestamosActivos])
 
   const saldoPendiente = useMemo(
-    () => prestamos.reduce((sum, item) => sum + Number(item?.pendiente || item?.pagos_pendientes || 0), 0),
+    () => prestamos.reduce((sum, item) => sum + Number(getLoanRemainingBalance(item) || 0), 0),
     [prestamos]
   )
 
   const progresoPrincipal = useMemo(() => {
     if (!prestamoPrincipal) return 0
-    const total = Number(prestamoPrincipal?.total_pagar || 0)
+    const total = Number(getLoanTotalToPay(prestamoPrincipal) || 0)
     const pagado = Number(prestamoPrincipal?.pagos_hechos || 0)
-    const semanas = Number(prestamoPrincipal?.num_semanas || 0)
+    const cuotas = Number(getLoanInstallmentsCount(prestamoPrincipal) || 0)
 
     if (total > 0) {
-      const pendiente = Number(prestamoPrincipal?.pendiente || prestamoPrincipal?.pagos_pendientes || 0)
+      const pendiente = Number(getLoanRemainingBalance(prestamoPrincipal) || 0)
 
       return Math.min(100, Math.max(0, ((total - pendiente) / total) * 100))
     }
 
-    if (semanas > 0) return Math.min(100, Math.max(0, (pagado / semanas) * 100))
+    if (cuotas > 0) return Math.min(100, Math.max(0, (pagado / cuotas) * 100))
 
     return 0
   }, [prestamoPrincipal])
@@ -415,58 +404,50 @@ export default function ClienteDashboardModule({ clienteId }) {
   const proximosPagos = useMemo(() => {
     if (!prestamoPrincipal) return []
 
-    const rawCuotas =
-      (Array.isArray(prestamoPrincipal?.cuotas) && prestamoPrincipal.cuotas) ||
-      (Array.isArray(prestamoPrincipal?.detalle_cuotas) && prestamoPrincipal.detalle_cuotas) ||
-      (Array.isArray(prestamoPrincipal?.plan_pagos) && prestamoPrincipal.plan_pagos) ||
-      (Array.isArray(prestamoPrincipal?.calendario_pagos) && prestamoPrincipal.calendario_pagos) ||
-      []
+    const rawCuotas = extractLoanSchedule(prestamoPrincipal)
     const todayEnd = toEndOfDay(new Date())
 
     if (rawCuotas.length) {
       return rawCuotas.map((cuota, index) => {
-        const dueDate =
-          parseDateSafe(cuota?.fecha_vencimiento) || parseDateSafe(cuota?.vencimiento) || parseDateSafe(cuota?.fecha)
-        const paymentDate =
-          parseDateSafe(cuota?.fecha_pago) || parseDateSafe(cuota?.fecha_pagada) || parseDateSafe(cuota?.pagado_en)
+        const dueDate = parseDateSafe(cuota?.fecha_vencimiento)
         const estado = cuota?.estado || cuota?.status || 'Pendiente'
         const isPending = ['PENDIENTE', 'EN_MORA', 'MORA', 'VENCIDA', 'VENCIDO'].includes(normalizeStatus(estado))
         const lateByDate = Boolean(dueDate && isPending && isAfterDate(todayEnd, toEndOfDay(dueDate)))
-        const lateByPayment = Boolean(dueDate && paymentDate && isAfterDate(paymentDate, toEndOfDay(dueDate)))
-        const morosa = isMoraStatus(estado) || lateByDate || lateByPayment
+        const morosa = isMoraStatus(estado) || lateByDate
 
         return {
-          id: String(cuota?.id || `${prestamoPrincipal?.id || 'prestamo'}-${index}`),
-          label: `Cuota #${Number(cuota?.numero || cuota?.numero_cuota || index + 1)}`,
-          fecha: formatDateMMDDYYYY(dueDate || cuota?.fecha_vencimiento || cuota?.vencimiento || cuota?.fecha),
-          monto:
-            Number(
-              cuota?.monto_total ??
-                cuota?.monto_cuota ??
-                cuota?.monto ??
-                cuota?.valor ??
-                prestamoPrincipal?.pagos_semanales
-            ) || 0,
+          id: cuota.id || String(`${prestamoPrincipal?.id || 'prestamo'}-${index}`),
+          label: `Cuota #${Number(cuota?.numero || index + 1)}`,
+          fecha: formatDateMMDDYYYY(dueDate || cuota?.fecha_vencimiento),
+          monto: Number(cuota?.total_programado ?? getLoanInstallmentValue(prestamoPrincipal)) || 0,
           estado,
           morosa
         }
       })
     }
 
-    const totalCuotas = Math.max(Number(prestamoPrincipal?.num_semanas || 0), 0)
+    const totalCuotas = Math.max(Number(getLoanInstallmentsCount(prestamoPrincipal) || 0), 0)
     const cuotasPagadas = Math.max(Number(prestamoPrincipal?.pagos_hechos || 0), 0)
     const modalidad = normalizeStatus(prestamoPrincipal?.modalidad)
     const fechaInicioPrestamo = parseDateSafe(prestamoPrincipal?.fecha_inicio)
     const baseDate =
-      modalidad === 'SEMANAL' ? addDays(fechaInicioPrestamo || new Date(), 7) : fechaInicioPrestamo || new Date()
-    const amount = Number(prestamoPrincipal?.pagos_semanales || 0)
+      modalidad === 'SEMANAL'
+        ? addDays(fechaInicioPrestamo || new Date(), 7)
+        : modalidad === 'QUINCENAL'
+          ? addDays(fechaInicioPrestamo || new Date(), 15)
+          : fechaInicioPrestamo || new Date()
+    const amount = Number(getLoanInstallmentValue(prestamoPrincipal) || 0)
 
     if (!totalCuotas) return []
 
     return Array.from({ length: totalCuotas }).map((_, index) => {
       const date = new Date(baseDate)
 
-      date.setDate(date.getDate() + index * 7)
+      if (modalidad === 'MENSUAL') {
+        date.setMonth(date.getMonth() + index)
+      } else {
+        date.setDate(date.getDate() + index * (modalidad === 'QUINCENAL' ? 15 : 7))
+      }
       const isPending = index >= cuotasPagadas
       const morosa = isPending && isAfterDate(todayEnd, toEndOfDay(date))
 
@@ -907,7 +888,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                 <Typography>Préstamo principal</Typography>
                 <Typography color='text.secondary'>
                   Desembolsado: {formatDateMMDDYYYY(prestamoPrincipal?.fecha_inicio)} • Vence:{' '}
-                  {formatDateMMDDYYYY(prestamoPrincipal?.fecha_vencimiento)}
+                  {formatDateMMDDYYYY(getLoanEndDateValue(prestamoPrincipal))}
                 </Typography>
                 <Box sx={{ width: '100%', height: 10, bgcolor: 'action.hover', borderRadius: 999, overflow: 'hidden' }}>
                   <Box sx={{ width: `${progresoPrincipal}%`, height: '100%', bgcolor: 'success.main' }} />
@@ -916,6 +897,11 @@ export default function ClienteDashboardModule({ clienteId }) {
                   <Typography>Pagos hechos: {formatNaturalNumber(prestamoPrincipal?.pagos_hechos)}</Typography>
                   <Typography>Total: {formatCurrency(getDisplayTotalPagar(prestamoPrincipal))}</Typography>
                 </Stack>
+                <Typography color='text.secondary'>
+                  Cuotas: {formatNaturalNumber(getLoanInstallmentsCount(prestamoPrincipal))} • Valor cuota:{' '}
+                  {formatCurrency(getDisplayPagosSemanales(prestamoPrincipal))} • Periodicidad:{' '}
+                  {getLoanPeriodicityLabel(prestamoPrincipal?.modalidad)}
+                </Typography>
               </Stack>
             </CardContent>
           </Card>
@@ -937,7 +923,8 @@ export default function ClienteDashboardModule({ clienteId }) {
                   <Box>
                     <Typography>Préstamo activo</Typography>
                     <Typography color='text.secondary'>
-                      Solicitado: {formatDateMMDDYYYY(item.fecha_inicio)} • Tasa: {item.interes ?? '-'}%
+                      Solicitado: {formatDateMMDDYYYY(item.fecha_inicio)} • Tasa:{' '}
+                      {getLoanInterestPercentage(item) ?? '-'}%
                     </Typography>
                   </Box>
                   <Typography variant='h5'>{formatCurrency(getDisplayTotalPagar(item))}</Typography>
@@ -967,7 +954,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                     color={isActiveStatus(item.status || item?.estado) ? 'primary.main' : 'success.main'}
                   >
                     {isActiveStatus(item.status || item?.estado)
-                      ? formatCurrency(item.pendiente || item.pagos_pendientes)
+                      ? formatCurrency(getLoanRemainingBalance(item))
                       : 'Completado'}
                   </Typography>
                 </Stack>
@@ -997,6 +984,9 @@ export default function ClienteDashboardModule({ clienteId }) {
                     <Typography color={item?.morosa ? 'error.main' : 'text.secondary'}>
                       Vence: {item.fecha} • Estado: {item.estado}
                     </Typography>
+                    <Typography variant='body2' color={item?.morosa ? 'error.main' : 'text.secondary'}>
+                      {prestamoPrincipal ? getLoanPeriodicityLabel(prestamoPrincipal?.modalidad) : ''}
+                    </Typography>
                   </Box>
                   <Typography variant='h6' color={item?.morosa ? 'error.main' : 'text.primary'}>
                     {formatCurrency(item.monto)}
@@ -1022,7 +1012,7 @@ export default function ClienteDashboardModule({ clienteId }) {
                     </Typography>
                   </Box>
                   <Typography color={isMoraStatus(item?.status || item?.estado) ? 'error.main' : 'success.main'}>
-                    -{formatCurrency(item.pagos_semanales)}
+                    -{formatCurrency(getDisplayPagosSemanales(item))}
                   </Typography>
                 </Stack>
               ))}
