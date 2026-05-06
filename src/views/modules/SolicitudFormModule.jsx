@@ -441,17 +441,21 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         payload.append('modelo_calificacion', form.modelo_calificacion)
         payload.append('modelo_aprobacion', form.modelo_aprobacion)
         payload.append('destino', form.destino)
-        payload.append('tipo_documento_identidad', 'ID')
-        payload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
         if (documentoIdentidad) {
+          payload.append('tipo_documento_identidad', 'ID')
           payload.append(
             'documentos',
             documentoIdentidad,
             buildScopedUploadFilename(documentoIdentidad, 'identification')
           )
         }
+        if (documentosEstadoCuenta.some(Boolean)) {
+          payload.append('tipo_documentos_estado_cuenta', 'ESTADO_CUENTA')
+        }
         documentosEstadoCuenta.forEach(file => {
-          if (file) payload.append('documentos', file, buildScopedUploadFilename(file, 'account_statement'))
+          if (!file) return
+
+          payload.append('documentos', file, buildScopedUploadFilename(file, 'account_statement'))
         })
 
         created = await crearSolicitud(payload)
