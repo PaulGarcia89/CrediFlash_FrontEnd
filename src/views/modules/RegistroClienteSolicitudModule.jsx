@@ -2113,7 +2113,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
                     <Grid size={fieldHalfSize}>
                       <PublicFormTextField
                         publicMode={publicMode}
-                        label='Plazo (semanas) *'
+                        label='Plazo *'
                         name='plazo_semanas'
                         type='number'
                         value={form.plazo_semanas}
