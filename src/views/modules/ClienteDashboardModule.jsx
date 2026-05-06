@@ -408,22 +408,30 @@ export default function ClienteDashboardModule({ clienteId }) {
     const todayEnd = toEndOfDay(new Date())
 
     if (rawCuotas.length) {
-      return rawCuotas.map((cuota, index) => {
-        const dueDate = parseDateSafe(cuota?.fecha_vencimiento)
-        const estado = cuota?.estado || cuota?.status || 'Pendiente'
-        const isPending = ['PENDIENTE', 'EN_MORA', 'MORA', 'VENCIDA', 'VENCIDO'].includes(normalizeStatus(estado))
-        const lateByDate = Boolean(dueDate && isPending && isAfterDate(todayEnd, toEndOfDay(dueDate)))
-        const morosa = isMoraStatus(estado) || lateByDate
+      return rawCuotas
+        .map((cuota, index) => {
+          const dueDate = parseDateSafe(cuota?.fecha_vencimiento)
+          const estado = cuota?.estado || cuota?.status || 'Pendiente'
+          const isPending = ['PENDIENTE', 'EN_MORA', 'MORA', 'VENCIDA', 'VENCIDO'].includes(normalizeStatus(estado))
+          const lateByDate = Boolean(dueDate && isPending && isAfterDate(todayEnd, toEndOfDay(dueDate)))
+          const morosa = isMoraStatus(estado) || lateByDate
 
-        return {
-          id: cuota.id || String(`${prestamoPrincipal?.id || 'prestamo'}-${index}`),
-          label: `Cuota #${Number(cuota?.numero || index + 1)}`,
-          fecha: formatDateMMDDYYYY(dueDate || cuota?.fecha_vencimiento),
-          monto: Number(cuota?.total_programado ?? getLoanInstallmentValue(prestamoPrincipal)) || 0,
-          estado,
-          morosa
-        }
-      })
+          return {
+            id: cuota.id || String(`${prestamoPrincipal?.id || 'prestamo'}-${index}`),
+            label: `Cuota #${Number(cuota?.numero || index + 1)}`,
+            fecha: formatDateMMDDYYYY(dueDate || cuota?.fecha_vencimiento),
+            dueDate,
+            monto: Number(cuota?.total_programado ?? getLoanInstallmentValue(prestamoPrincipal)) || 0,
+            estado,
+            morosa
+          }
+        })
+        .sort((a, b) => {
+          const aTime = a?.dueDate instanceof Date && !Number.isNaN(a.dueDate.getTime()) ? a.dueDate.getTime() : 0
+          const bTime = b?.dueDate instanceof Date && !Number.isNaN(b.dueDate.getTime()) ? b.dueDate.getTime() : 0
+
+          return aTime - bTime
+        })
     }
 
     const totalCuotas = Math.max(Number(getLoanInstallmentsCount(prestamoPrincipal) || 0), 0)
@@ -440,26 +448,29 @@ export default function ClienteDashboardModule({ clienteId }) {
 
     if (!totalCuotas) return []
 
-    return Array.from({ length: totalCuotas }).map((_, index) => {
-      const date = new Date(baseDate)
+    return Array.from({ length: totalCuotas })
+      .map((_, index) => {
+        const date = new Date(baseDate)
 
-      if (modalidad === 'MENSUAL') {
-        date.setMonth(date.getMonth() + index)
-      } else {
-        date.setDate(date.getDate() + index * (modalidad === 'QUINCENAL' ? 15 : 7))
-      }
-      const isPending = index >= cuotasPagadas
-      const morosa = isPending && isAfterDate(todayEnd, toEndOfDay(date))
+        if (modalidad === 'MENSUAL') {
+          date.setMonth(date.getMonth() + index)
+        } else {
+          date.setDate(date.getDate() + index * (modalidad === 'QUINCENAL' ? 15 : 7))
+        }
+        const isPending = index >= cuotasPagadas
+        const morosa = isPending && isAfterDate(todayEnd, toEndOfDay(date))
 
-      return {
-        id: `${prestamoPrincipal?.id || 'prestamo'}-${index}`,
-        label: `Cuota #${index + 1}`,
-        fecha: formatDateMMDDYYYY(date),
-        monto: amount,
-        estado: index < cuotasPagadas ? 'Pagada' : 'Pendiente',
-        morosa
-      }
-    })
+        return {
+          id: `${prestamoPrincipal?.id || 'prestamo'}-${index}`,
+          label: `Cuota #${index + 1}`,
+          fecha: formatDateMMDDYYYY(date),
+          dueDate: date,
+          monto: amount,
+          estado: index < cuotasPagadas ? 'Pagada' : 'Pendiente',
+          morosa
+        }
+      })
+      .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
   }, [prestamoPrincipal])
 
   const prestamoPrincipalEnMora = useMemo(() => {
