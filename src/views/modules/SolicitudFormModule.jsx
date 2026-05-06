@@ -70,8 +70,8 @@ const STEP_DESCRIPTIONS = [
   'Selecciona el cliente activo al que pertenece esta solicitud.',
   'Define monto, modalidad, plazo, tasa y destino del crédito.',
   'Configura el modelo de calificación y aprobación.',
-  'Carga un documento de identidad del cliente (ID, licencia o pasaporte).',
-  'Carga los estados de cuenta del cliente en formato PDF.'
+  'Carga opcionalmente un documento de identidad del cliente (ID, licencia o pasaporte).',
+  'Carga opcionalmente los estados de cuenta del cliente en formato PDF.'
 ]
 
 const initialForm = {
@@ -268,7 +268,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
   const handleDocumentoIdentidad = event => {
     const selected = Array.from(event.target.files || [])
-    const validationError = validatePdfFiles({ selected, min: 1, max: 1 })
+    const validationError = validatePdfFiles({ selected, min: 0, max: 1 })
 
     if (validationError) {
       setSnackbar({ open: true, message: validationError })
@@ -281,7 +281,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
   const handleEstadoCuentaFiles = event => {
     const selected = Array.from(event.target.files || [])
-    const validationError = validatePdfFiles({ selected, min: 1, max: 2 })
+    const validationError = validatePdfFiles({ selected, min: 0, max: 2 })
 
     if (validationError) {
       setSnackbar({ open: true, message: validationError })
@@ -316,13 +316,9 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       return Boolean(form.modelo_calificacion && form.modelo_aprobacion)
     }
 
-    if (activeStep === 3) {
-      return Boolean(documentoIdentidad)
-    }
+    if (activeStep === 3) return true
 
-    if (activeStep === 4) {
-      return documentosEstadoCuenta.length >= 1
-    }
+    if (activeStep === 4) return true
 
     return true
   }
@@ -349,8 +345,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       return Boolean(form.modelo_calificacion && form.modelo_aprobacion)
     }
 
-    if (stepIndex === 3) return Boolean(documentoIdentidad)
-    if (stepIndex === 4) return documentosEstadoCuenta.length >= 1
+    if (stepIndex === 3) return true
+    if (stepIndex === 4) return true
 
     return false
   }
@@ -369,8 +365,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       'Debes seleccionar un cliente para continuar.',
       'Completa monto, modalidad, plazo, tasa y destino para continuar.',
       'Debes completar modelo de calificación y modelo de aprobación.',
-      'Debes cargar un documento de identidad (licencia o pasaporte) en PDF.',
-      'Debes cargar 1 o 2 estados de cuenta en PDF.'
+      'Puedes cargar un documento de identidad (licencia o pasaporte) en PDF si lo deseas.',
+      'Puedes cargar 1 o 2 estados de cuenta en PDF si lo deseas.'
     ]
 
     setError(stepMessages[activeStep] || 'Completa los campos requeridos para continuar.')
@@ -396,16 +392,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
       if (!form.modalidad) {
         throw new Error('Debes seleccionar una modalidad de préstamo.')
-      }
-
-      if (!solicitudId) {
-        if (!documentoIdentidad) {
-          throw new Error('Debes cargar el documento de identidad (licencia o pasaporte) en PDF.')
-        }
-
-        if (documentosEstadoCuenta.length < 1) {
-          throw new Error('Debes cargar 1 o 2 estados de cuenta en PDF.')
-        }
       }
 
       const tasaVariablePct = Number(form.interes_porcentaje || 0)
@@ -510,8 +496,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
       if (field === 'modelo_aprobacion') return !String(form.modelo_aprobacion || '').trim()
     }
 
-    if (activeStep === 3) return field === 'documento_identidad' && !documentoIdentidad
-    if (activeStep === 4) return field === 'estado_cuenta' && documentosEstadoCuenta.length < 1
+    if (activeStep === 3) return false
+    if (activeStep === 4) return false
 
     return false
   }
@@ -873,15 +859,13 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                           }}
                         >
                           <Typography variant='h5' sx={{ fontWeight: 700 }}>
-                            IMPORTANT (FILE) * / ARCHIVOS (IMPORTANTE)
+                            IMPORTANT (FILE) / ARCHIVOS (IMPORTANTE)
                           </Typography>
-                          <Typography
-                            color={isStepFieldMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
-                          >
+                          <Typography color='text.secondary'>
                             UPLOAD IDENTIFICATION (ID) / SUBIR IDENTIFICACION (ID)
                           </Typography>
                           <Button variant='outlined' component='label'>
-                            Cargar documento ID (obligatorio)
+                            Cargar documento ID (opcional)
                             <input
                               hidden
                               type='file'
@@ -889,10 +873,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                               onChange={handleDocumentoIdentidad}
                             />
                           </Button>
-                          <Typography
-                            variant='caption'
-                            color={isStepFieldMissing('documento_identidad') ? 'error.main' : 'text.secondary'}
-                          >
+                          <Typography variant='caption' color='text.secondary'>
                             {documentoIdentidad
                               ? `Archivo seleccionado: ${documentoIdentidad.name}`
                               : 'Aún no has cargado el documento ID.'}
@@ -911,14 +892,14 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                           }}
                         >
                           <Typography variant='h5' sx={{ fontWeight: 700 }}>
-                            HOW MANY BANK STATEMENTS * / ESTADOS DE CUENTAS BANCARIOS
+                            HOW MANY BANK STATEMENTS / ESTADOS DE CUENTAS BANCARIOS
                           </Typography>
                           <Typography color='text.secondary'>LAST 2 MONTHS / ULTIMOS 2 MESES</Typography>
-                          <Typography color={isStepFieldMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}>
+                          <Typography color='text.secondary'>
                             Sube hasta 2 archivos compatibles. Tamaño máximo por archivo: 10MB.
                           </Typography>
                           <Button variant='outlined' component='label'>
-                            Cargar estados de cuenta (1 o 2)
+                            Cargar estados de cuenta (opcional)
                             <input
                               hidden
                               type='file'
@@ -927,10 +908,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                               onChange={handleEstadoCuentaFiles}
                             />
                           </Button>
-                          <Typography
-                            variant='caption'
-                            color={isStepFieldMissing('estado_cuenta') ? 'error.main' : 'text.secondary'}
-                          >
+                          <Typography variant='caption' color='text.secondary'>
                             {documentosEstadoCuenta.length
                               ? `${documentosEstadoCuenta.length} archivo(s) seleccionado(s)`
                               : 'No hay estados de cuenta cargados'}
