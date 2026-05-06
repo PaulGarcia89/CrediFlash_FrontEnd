@@ -249,6 +249,29 @@ const getStatusColor = status => {
 
   return 'info'
 }
+
+const matchesStatusFilter = (row, filterValue) => {
+  const normalizedFilter = String(filterValue || 'TODOS').toUpperCase()
+
+  if (normalizedFilter === 'TODOS') return true
+
+  const operationalStatus = getOperationalStatus(row)
+
+  if (normalizedFilter === 'ACTIVO') {
+    return ['ACTIVO', 'EN_MARCHA', 'EN_PROCESO'].includes(operationalStatus)
+  }
+
+  if (normalizedFilter === 'MOROSO') {
+    return operationalStatus === 'MOROSO'
+  }
+
+  if (normalizedFilter === 'PAGADOS') {
+    return ['PAGADO', 'NO_DEBE_NADA', 'CANCELADO'].includes(operationalStatus)
+  }
+
+  return operationalStatus === normalizedFilter
+}
+
 const isPrestamoActivoOperativo = row => {
   if (row?.es_activo_operativo === true) return true
 
@@ -454,7 +477,7 @@ export default function CuotasModule() {
       const requestParams = {
         page,
         limit,
-        status,
+        status: status === 'PAGADOS' ? 'PAGADO' : status,
         search: normalizedSearch
       }
 
@@ -870,7 +893,7 @@ export default function CuotasModule() {
   const rows = useMemo(() => prestamos || [], [prestamos])
 
   const tableRows = useMemo(() => {
-    const output = [...rows]
+    const output = rows.filter(item => matchesStatusFilter(item, status))
 
     if (orden === 'monto_desc') {
       output.sort((a, b) => Number(getDisplayTotalPagar(b) || 0) - Number(getDisplayTotalPagar(a) || 0))
@@ -911,7 +934,7 @@ export default function CuotasModule() {
     })
 
     return output
-  }, [orden, rows])
+  }, [orden, rows, status])
 
   const debugInfo = useMemo(() => {
     if (!debugCuotas) return null
@@ -1197,7 +1220,7 @@ export default function CuotasModule() {
                   <MenuItem value='TODOS'>TODOS</MenuItem>
                   <MenuItem value='ACTIVO'>ACTIVO</MenuItem>
                   <MenuItem value='MOROSO'>MOROSO</MenuItem>
-                  <MenuItem value='CANCELADO'>CANCELADO</MenuItem>
+                  <MenuItem value='PAGADOS'>PAGADOS</MenuItem>
                 </TextField>
               </Stack>
             </Stack>
