@@ -1407,7 +1407,7 @@ export default function SolicitudesModule() {
                     <TableCell>Fecha y hora</TableCell>
                     <TableCell>Monto</TableCell>
                     <TableCell>Modalidad</TableCell>
-                    <TableCell>Plazo (semanas)</TableCell>
+                    <TableCell>Plazo</TableCell>
                     <TableCell>Tasa de interés (%)</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell>Acciones</TableCell>
@@ -1516,7 +1516,7 @@ export default function SolicitudesModule() {
                             Modalidad: {row.modalidad || '-'}
                           </Typography>
                           <Typography variant='body2' color='text.secondary'>
-                            Plazo (semanas): {row.plazo_semanas ?? '-'}
+                            Plazo: {row.plazo_semanas ?? '-'}
                           </Typography>
                           <Typography variant='body2' color='text.secondary'>
                             Tasa de interés (%): {getSolicitudInteresPorcentaje(row)}
