@@ -32,7 +32,12 @@ import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
-import { cargarPagosBancariosArchivo, generarReporte, listarPagosBancarios, obtenerDetalleLotePagos } from '@/api/reportes'
+import {
+  cargarPagosBancariosArchivo,
+  generarReporte,
+  listarPagosBancarios,
+  obtenerDetalleLotePagos
+} from '@/api/reportes'
 import usePermissions from '@/hooks/usePermissions'
 import { formatUSD } from '@/utils/currency'
 import { formatDateMMDDYYYY } from '@/utils/date'
@@ -52,8 +57,8 @@ const REPORT_OPTIONS = [
   { value: 'notificaciones-envios', label: 'Notificaciones enviadas' },
   { value: 'referidos-impacto', label: 'Impacto de referidos' }
 ]
-const REPORT_ESTADO_OPTIONS = ['', 'EN_PROCESO', 'EN_MARCHA', 'PAGADO', 'MOROSO', 'RECHAZADO', 'APROBADO']
-const REPORT_MODALIDAD_OPTIONS = ['', 'SEMANAL', 'QUINCENAL', 'MENSUAL']
+const REPORT_ESTADO_OPTIONS = ['TODOS', 'EN_PROCESO', 'EN_MARCHA', 'PAGADO', 'MOROSO', 'RECHAZADO', 'APROBADO']
+const REPORT_MODALIDAD_OPTIONS = ['TODAS', 'SEMANAL', 'QUINCENAL', 'MENSUAL']
 
 const extractRows = payload => {
   if (Array.isArray(payload)) return payload
@@ -126,8 +131,8 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
     fecha_fin: '',
     top: '10',
     search: '',
-    estado: '',
-    modalidad: ''
+    estado: 'TODOS',
+    modalidad: 'TODAS'
   })
   const [reportResult, setReportResult] = useState({
     generated: false,
@@ -157,7 +162,9 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
     error: ''
   })
   const inputRef = useRef(null)
-  const isAdminProfile = String(analista?.rol || analista?.role || '').toUpperCase().includes('ADMIN')
+  const isAdminProfile = String(analista?.rol || analista?.role || '')
+    .toUpperCase()
+    .includes('ADMIN')
   const canViewReportes = can('reportes.view') || isAdminProfile
   const canManageReportes = can('reportes.manage') || isAdminProfile
 
@@ -208,7 +215,16 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
     } finally {
       setLoading(false)
     }
-  }, [canViewReportes, filters.estado, filters.fecha_desde, filters.fecha_hasta, filters.lote_id, filters.search, page, pagination.limit])
+  }, [
+    canViewReportes,
+    filters.estado,
+    filters.fecha_desde,
+    filters.fecha_hasta,
+    filters.lote_id,
+    filters.search,
+    page,
+    pagination.limit
+  ])
 
   useEffect(() => {
     loadPagosBancarios()
@@ -389,8 +405,8 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
         fecha_fin: toMMDDYYYY(reportFilters.fecha_fin),
         top: Number(reportFilters.top || 10),
         search: reportFilters.search,
-        estado: reportFilters.estado,
-        modalidad: reportFilters.modalidad
+        estado: reportFilters.estado === 'TODOS' ? '' : reportFilters.estado,
+        modalidad: reportFilters.modalidad === 'TODAS' ? '' : reportFilters.modalidad
       })
 
       const source = response?.data || response || {}
@@ -432,7 +448,12 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
         <CardContent>
           {!hideTabs ? (
             <>
-              <Tabs value={subMenu} onChange={(_, value) => setSubMenu(value)} variant='scrollable' scrollButtons='auto'>
+              <Tabs
+                value={subMenu}
+                onChange={(_, value) => setSubMenu(value)}
+                variant='scrollable'
+                scrollButtons='auto'
+              >
                 <Tab value='resumen' label='Resumen' />
                 <Tab value='carga-pagos-bancarios' label='Carga de pagos bancarios' />
               </Tabs>
@@ -468,7 +489,9 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                         type='date'
                         label='Fecha inicio'
                         value={reportFilters.fecha_inicio}
-                        onChange={event => setReportFilters(previous => ({ ...previous, fecha_inicio: event.target.value }))}
+                        onChange={event =>
+                          setReportFilters(previous => ({ ...previous, fecha_inicio: event.target.value }))
+                        }
                         InputLabelProps={{ shrink: true }}
                       />
                       <TextField
@@ -476,7 +499,9 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                         type='date'
                         label='Fecha fin'
                         value={reportFilters.fecha_fin}
-                        onChange={event => setReportFilters(previous => ({ ...previous, fecha_fin: event.target.value }))}
+                        onChange={event =>
+                          setReportFilters(previous => ({ ...previous, fecha_fin: event.target.value }))
+                        }
                         InputLabelProps={{ shrink: true }}
                       />
                       <TextField
@@ -506,10 +531,9 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                         onChange={event => setReportFilters(previous => ({ ...previous, estado: event.target.value }))}
                         sx={{ minWidth: { xs: '100%', md: 220 } }}
                       >
-                        <MenuItem value=''>Todos</MenuItem>
-                        {REPORT_ESTADO_OPTIONS.filter(Boolean).map(option => (
+                        {REPORT_ESTADO_OPTIONS.map(option => (
                           <MenuItem key={option} value={option}>
-                            {option}
+                            {option === 'TODOS' ? 'Todos' : option}
                           </MenuItem>
                         ))}
                       </TextField>
@@ -518,13 +542,14 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                         size='small'
                         label='Modalidad'
                         value={reportFilters.modalidad}
-                        onChange={event => setReportFilters(previous => ({ ...previous, modalidad: event.target.value }))}
+                        onChange={event =>
+                          setReportFilters(previous => ({ ...previous, modalidad: event.target.value }))
+                        }
                         sx={{ minWidth: { xs: '100%', md: 220 } }}
                       >
-                        <MenuItem value=''>Todas</MenuItem>
-                        {REPORT_MODALIDAD_OPTIONS.filter(Boolean).map(option => (
+                        {REPORT_MODALIDAD_OPTIONS.map(option => (
                           <MenuItem key={option} value={option}>
-                            {option}
+                            {option === 'TODAS' ? 'Todas' : option}
                           </MenuItem>
                         ))}
                       </TextField>
@@ -539,7 +564,8 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                           <Stack spacing={1.5}>
                             <Typography variant='h6'>{reportResult.title}</Typography>
                             <Typography color='text.secondary'>
-                              Rango: {formatDateMMDDYYYY(reportFilters.fecha_inicio)} - {formatDateMMDDYYYY(reportFilters.fecha_fin)}
+                              Rango: {formatDateMMDDYYYY(reportFilters.fecha_inicio)} -{' '}
+                              {formatDateMMDDYYYY(reportFilters.fecha_fin)}
                             </Typography>
                             {reportResult.note ? <Alert severity='info'>{reportResult.note}</Alert> : null}
                             {reportResult.resumen && typeof reportResult.resumen === 'object' ? (
@@ -605,7 +631,9 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                                             column.id === 'monto_mora_hoy' ||
                                             column.id === 'monto_total_en_mora'
                                           ) {
-                                            return <TableCell key={column.id}>{formatUSD(Number(value || 0))}</TableCell>
+                                            return (
+                                              <TableCell key={column.id}>{formatUSD(Number(value || 0))}</TableCell>
+                                            )
                                           }
 
                                           if (column.id.includes('fecha')) {
@@ -631,8 +659,8 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                             ) : null}
                             {reportResult.pagination ? (
                               <Typography variant='body2' color='text.secondary'>
-                                Página: {reportResult.pagination?.page || 1} de {reportResult.pagination?.pages || 1} | Total:{' '}
-                                {reportResult.pagination?.total || reportResult.rows.length || 0}
+                                Página: {reportResult.pagination?.page || 1} de {reportResult.pagination?.pages || 1} |
+                                Total: {reportResult.pagination?.total || reportResult.rows.length || 0}
                               </Typography>
                             ) : null}
                           </Stack>
@@ -664,7 +692,11 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
               {success ? <Alert severity='success'>{success}</Alert> : null}
 
               {canManageReportes ? (
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }}>
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  spacing={1.5}
+                  alignItems={{ xs: 'stretch', md: 'center' }}
+                >
                   <Button variant='contained' onClick={onPickFile} disabled={uploading}>
                     Seleccionar archivo
                   </Button>
@@ -785,7 +817,12 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                         <TableCell align='right'>{formatUSD(Number(row.monto || 0))}</TableCell>
                         <TableCell>{formatDateMMDDYYYY(row.fecha_pago)}</TableCell>
                         <TableCell>
-                          <Chip size='small' variant='tonal' color={getEstadoColor(row.estado)} label={row.estado || '-'} />
+                          <Chip
+                            size='small'
+                            variant='tonal'
+                            color={getEstadoColor(row.estado)}
+                            label={row.estado || '-'}
+                          />
                         </TableCell>
                         <TableCell>{row.observacion || '-'}</TableCell>
                         <TableCell>{row.archivo_nombre || '-'}</TableCell>
@@ -828,7 +865,12 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
         </CardContent>
       </Card>
 
-      <Dialog open={loteDialog.open} onClose={() => setLoteDialog(previous => ({ ...previous, open: false }))} fullWidth maxWidth='lg'>
+      <Dialog
+        open={loteDialog.open}
+        onClose={() => setLoteDialog(previous => ({ ...previous, open: false }))}
+        fullWidth
+        maxWidth='lg'
+      >
         <DialogTitle>Detalle de lote: {loteDialog.loteId || '-'}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={1.5}>
@@ -863,7 +905,12 @@ export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = 
                       <TableCell align='right'>{formatUSD(Number(item.monto || 0))}</TableCell>
                       <TableCell>{formatDateMMDDYYYY(item.fecha_pago)}</TableCell>
                       <TableCell>
-                        <Chip size='small' variant='tonal' color={getEstadoColor(item.estado)} label={item.estado || '-'} />
+                        <Chip
+                          size='small'
+                          variant='tonal'
+                          color={getEstadoColor(item.estado)}
+                          label={item.estado || '-'}
+                        />
                       </TableCell>
                       <TableCell>{item.observacion || '-'}</TableCell>
                     </TableRow>
