@@ -50,6 +50,7 @@ import usePermissions from '@/hooks/usePermissions'
 import { appendAuditLog } from '@/lib/audit/logs'
 import { formatUSD } from '@/utils/currency'
 import { formatDateTimeMMDDYYYY } from '@/utils/date'
+import { getLoanInterestPercentage } from '@/utils/loanFinance'
 
 const LABEL_MAP = {
   scoreFinal: 'Puntaje',
@@ -397,6 +398,15 @@ const getClienteNombre = row => {
 
   return row?.cliente_nombre || row?.nombre_cliente || ''
 }
+
+const getSolicitudInteresPorcentaje = row => {
+  const canonical = getLoanInterestPercentage(row)
+
+  if (Number.isFinite(canonical)) return canonical.toFixed(4)
+
+  return '-'
+}
+
 const parseDescuentoReferido = payload => {
   const raw =
     payload?.descuento_referido_aplicado ??
@@ -1071,7 +1081,7 @@ export default function SolicitudesModule() {
       item?.monto_solicitado || '',
       item?.modalidad || '',
       item?.plazo_semanas || '',
-      item?.tasa_variable || '',
+      getSolicitudInteresPorcentaje(item),
       item?.estado || ''
     ])
 
@@ -1398,7 +1408,7 @@ export default function SolicitudesModule() {
                     <TableCell>Monto</TableCell>
                     <TableCell>Modalidad</TableCell>
                     <TableCell>Plazo (semanas)</TableCell>
-                    <TableCell>Tasa variable (%)</TableCell>
+                    <TableCell>Tasa de interés (%)</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell>Acciones</TableCell>
                   </TableRow>
@@ -1436,7 +1446,7 @@ export default function SolicitudesModule() {
                         <TableCell>{formatUSD(row.monto_solicitado)}</TableCell>
                         <TableCell>{row.modalidad || '-'}</TableCell>
                         <TableCell>{row.plazo_semanas ?? '-'}</TableCell>
-                        <TableCell>{row.tasa_variable ?? '-'}</TableCell>
+                        <TableCell>{getSolicitudInteresPorcentaje(row)}</TableCell>
                         <TableCell>
                           <Chip
                             label={row.estado || '-'}
@@ -1509,7 +1519,7 @@ export default function SolicitudesModule() {
                             Plazo (semanas): {row.plazo_semanas ?? '-'}
                           </Typography>
                           <Typography variant='body2' color='text.secondary'>
-                            Tasa variable (%): {row.tasa_variable ?? '-'}
+                            Tasa de interés (%): {getSolicitudInteresPorcentaje(row)}
                           </Typography>
                           <Divider sx={{ my: 0.5 }} />
                           {renderAcciones(row)}
