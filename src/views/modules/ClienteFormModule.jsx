@@ -33,6 +33,7 @@ const initialForm = {
   apellido: '',
   telefono: '',
   email: '',
+  fecha_nacimiento: '',
   direccion: '',
   es_referido: false,
   referido_por: '',
@@ -87,6 +88,33 @@ const isSameCliente = (left, right) => {
   return normalizeText(getClienteLabel(left)) === normalizeText(getClienteLabel(right))
 }
 const isValidEmailFormat = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())
+const normalizeDateInputValue = value => {
+  const raw = String(value || '').trim()
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(raw)
+
+  return match ? match[1] : ''
+}
+
+const getAgeFromBirthdate = birthdateValue => {
+  const normalized = normalizeDateInputValue(birthdateValue)
+
+  if (!normalized) return null
+
+  const [year, month, day] = normalized.split('-').map(Number)
+  const birthdate = new Date(year, month - 1, day)
+
+  if (Number.isNaN(birthdate.getTime())) return null
+
+  const today = new Date()
+  let age = today.getFullYear() - birthdate.getFullYear()
+  const monthDiff = today.getMonth() - birthdate.getMonth()
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
+    age -= 1
+  }
+
+  return age
+}
 
 export default function ClienteFormModule({ clienteId = null }) {
   const router = useRouter()
@@ -165,6 +193,7 @@ export default function ClienteFormModule({ clienteId = null }) {
           apellido: cliente?.apellido || '',
           telefono: cliente?.telefono || '',
           email: cliente?.email || '',
+          fecha_nacimiento: normalizeDateInputValue(cliente?.fecha_nacimiento),
           direccion: cliente?.direccion || '',
           es_referido: parseBoolean(cliente?.es_referido),
           referido_por: cliente?.referido_por || '',
@@ -267,6 +296,20 @@ export default function ClienteFormModule({ clienteId = null }) {
         }
       }
 
+      if (!String(form.fecha_nacimiento || '').trim()) {
+        throw new Error('Debes ingresar la fecha de nacimiento del cliente.')
+      }
+
+      const edadCliente = getAgeFromBirthdate(form.fecha_nacimiento)
+
+      if (!Number.isFinite(edadCliente)) {
+        throw new Error('La fecha de nacimiento no es válida.')
+      }
+
+      if (edadCliente < 21) {
+        throw new Error('No se pueden registrar clientes menores de 21 años para otorgar créditos.')
+      }
+
       const montoReferido = Number(String(form.monto_referido || '0').replace(',', '.'))
 
       if (!Number.isFinite(montoReferido) || montoReferido < 0) {
@@ -292,6 +335,7 @@ export default function ClienteFormModule({ clienteId = null }) {
       const payload = {
         ...form,
         email,
+        fecha_nacimiento: normalizeDateInputValue(form.fecha_nacimiento),
         es_referido: Boolean(form.es_referido),
         referido_por: form.es_referido ? referidoPorNombre || referidoExterno : '',
         monto_referido: form.es_referido ? Number(montoReferido.toFixed(2)) : 0
@@ -412,6 +456,7 @@ export default function ClienteFormModule({ clienteId = null }) {
     if (field === 'nombre') return !String(form.nombre || '').trim()
     if (field === 'apellido') return !String(form.apellido || '').trim()
     if (field === 'email') return !clienteId && !String(form.email || '').trim()
+    if (field === 'fecha_nacimiento') return !String(form.fecha_nacimiento || '').trim()
     if (field === 'referido_por') {
       if (!Boolean(form.es_referido)) return false
 
@@ -575,6 +620,20 @@ export default function ClienteFormModule({ clienteId = null }) {
                       ) : null}
                     </Grid>
                   ) : null}
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label='Fecha de nacimiento *'
+                      name='fecha_nacimiento'
+                      type='date'
+                      value={form.fecha_nacimiento}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                      InputLabelProps={{ shrink: true }}
+                      error={isRequiredMissing('fecha_nacimiento')}
+                      helperText={isRequiredMissing('fecha_nacimiento') ? 'Campo obligatorio' : 'mm/dd/yyyy'}
+                    />
+                  </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
                       label='Dirección'
