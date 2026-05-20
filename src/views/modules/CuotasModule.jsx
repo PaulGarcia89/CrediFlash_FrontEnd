@@ -59,7 +59,8 @@ import {
   getLoanTotalToPay,
   hasActiveLoanContract,
   isLoanActive,
-  isLoanSettled
+  isLoanSettled,
+  normalizeLoanStatus
 } from '@/utils/loanFinance'
 
 const formatCurrency = value => formatMoney(value)
@@ -231,13 +232,13 @@ const desktopActionsCellSx = {
 }
 
 const getOperationalStatus = row => {
-  const normalized = String(row?.status_normalizado || '').trim()
+  const normalized = normalizeLoanStatus(row?.status_normalizado || row?.status || row?.estado)
 
-  if (normalized) return normalized.toUpperCase()
+  if (isLoanSettled(row)) return 'PAGADO'
+  if (!normalized) return 'PENDIENTE'
+  if (normalized === 'NO DEBE NADA' || normalized === 'NO_DEBE_NADA') return 'PAGADO'
 
-  const legacy = String(row?.status || row?.estado || '').trim()
-
-  return legacy ? legacy.toUpperCase() : 'PENDIENTE'
+  return normalized
 }
 
 const getStatusColor = status => {
@@ -1778,7 +1779,7 @@ export default function CuotasModule() {
                       <TableCell>{formatCurrency(getDisplayPagosSemanales(row))}</TableCell>
                       <TableCell>{formatCurrency(getDisplayTotalPagar(row))}</TableCell>
                       <TableCell>{formatCurrency(getLoanRemainingBalance(row))}</TableCell>
-                      <TableCell>{row.status || '-'}</TableCell>
+                      <TableCell>{getOperationalStatus(row)}</TableCell>
                       <TableCell>
                         <Stack direction='row' spacing={0.5}>
                           {canViewPrestamos ? (

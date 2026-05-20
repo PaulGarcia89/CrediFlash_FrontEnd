@@ -6,6 +6,7 @@ export const normalizeLoanStatus = value =>
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase()
     .trim()
+    .replace(/^NO DEBE NADA$/, 'PAGADO')
 
 export const parseDateLocalSafe = value => {
   if (!value) return null
