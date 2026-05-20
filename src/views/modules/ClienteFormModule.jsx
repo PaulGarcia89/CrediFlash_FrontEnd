@@ -296,18 +296,20 @@ export default function ClienteFormModule({ clienteId = null }) {
         }
       }
 
-      if (!String(form.fecha_nacimiento || '').trim()) {
-        throw new Error('Debes ingresar la fecha de nacimiento del cliente.')
-      }
+      if (!clienteId) {
+        if (!String(form.fecha_nacimiento || '').trim()) {
+          throw new Error('Debes ingresar la fecha de nacimiento del cliente.')
+        }
 
-      const edadCliente = getAgeFromBirthdate(form.fecha_nacimiento)
+        const edadCliente = getAgeFromBirthdate(form.fecha_nacimiento)
 
-      if (!Number.isFinite(edadCliente)) {
-        throw new Error('La fecha de nacimiento no es válida.')
-      }
+        if (!Number.isFinite(edadCliente)) {
+          throw new Error('La fecha de nacimiento no es válida.')
+        }
 
-      if (edadCliente < 21) {
-        throw new Error('No se pueden registrar clientes menores de 21 años para otorgar créditos.')
+        if (edadCliente < 21) {
+          throw new Error('No se pueden registrar clientes menores de 21 años para otorgar créditos.')
+        }
       }
 
       const montoReferido = Number(String(form.monto_referido || '0').replace(',', '.'))
@@ -456,7 +458,7 @@ export default function ClienteFormModule({ clienteId = null }) {
     if (field === 'nombre') return !String(form.nombre || '').trim()
     if (field === 'apellido') return !String(form.apellido || '').trim()
     if (field === 'email') return !clienteId && !String(form.email || '').trim()
-    if (field === 'fecha_nacimiento') return !String(form.fecha_nacimiento || '').trim()
+    if (field === 'fecha_nacimiento') return !clienteId && !String(form.fecha_nacimiento || '').trim()
     if (field === 'referido_por') {
       if (!Boolean(form.es_referido)) return false
 
@@ -622,13 +624,13 @@ export default function ClienteFormModule({ clienteId = null }) {
                   ) : null}
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label='Fecha de nacimiento *'
+                      label={clienteId ? 'Fecha de nacimiento' : 'Fecha de nacimiento *'}
                       name='fecha_nacimiento'
                       type='date'
                       value={form.fecha_nacimiento}
                       onChange={handleChange}
                       fullWidth
-                      required
+                      required={!clienteId}
                       InputLabelProps={{ shrink: true }}
                       error={isRequiredMissing('fecha_nacimiento')}
                       helperText={isRequiredMissing('fecha_nacimiento') ? 'Campo obligatorio' : 'mm/dd/yyyy'}
