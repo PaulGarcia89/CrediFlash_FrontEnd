@@ -28,7 +28,7 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
-import { listarClientes } from '@/api/clientes'
+import { listarClientes, obtenerCliente } from '@/api/clientes'
 import { actualizarSolicitud, crearSolicitud, obtenerSolicitud } from '@/api/solicitudes'
 import { buildScopedUploadFilename } from '@/utils/uploads'
 
@@ -142,11 +142,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     [clientesPagination.page, clientesPagination.pages]
   )
   const flowSteps = useMemo(() => (solicitudId ? STEP_LABELS.slice(0, 3) : STEP_LABELS), [solicitudId])
-  const clienteFechaNacimiento = useMemo(() => {
-    const rawValue = clienteValue?.fecha_nacimiento
-
-    return String(rawValue || '').trim()
-  }, [clienteValue])
 
   useEffect(() => {
     if (!solicitudId) return
@@ -192,6 +187,38 @@ export default function SolicitudFormModule({ solicitudId = null }) {
 
     fetchSolicitud()
   }, [solicitudId])
+
+  useEffect(() => {
+    if (!form.cliente_id || clienteFechaNacimiento) return
+
+    let cancelled = false
+
+    const hydrateSelectedCliente = async () => {
+      try {
+        const response = await obtenerCliente(form.cliente_id)
+        const clienteCompleto = response?.data || response
+
+        if (cancelled || !clienteCompleto?.id) return
+
+        setClienteValue(previous => ({ ...(previous || {}), ...clienteCompleto }))
+        setClientesOptions(previous => {
+          const exists = previous.some(item => item.id === clienteCompleto.id)
+
+          if (!exists) return [clienteCompleto, ...previous]
+
+          return previous.map(item => (item.id === clienteCompleto.id ? { ...item, ...clienteCompleto } : item))
+        })
+      } catch {
+        // Si no se puede hidratar el cliente, dejamos el flujo seguir con los datos disponibles.
+      }
+    }
+
+    hydrateSelectedCliente()
+
+    return () => {
+      cancelled = true
+    }
+  }, [form.cliente_id, clienteFechaNacimiento])
 
   const loadClientesActivos = useCallback(async (pageValue, searchValue, append = false) => {
     setClientesLoading(true)
@@ -412,8 +439,7 @@ export default function SolicitudFormModule({ solicitudId = null }) {
           fecha_inicio: form.fecha_inicio,
           modelo_calificacion: form.modelo_calificacion,
           modelo_aprobacion: form.modelo_aprobacion,
-          destino: form.destino,
-          ...(clienteFechaNacimiento ? { fecha_nacimiento: clienteFechaNacimiento } : {})
+          destino: form.destino
         })
       } else {
         let created
@@ -435,9 +461,6 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         payload.append('modelo_calificacion', form.modelo_calificacion)
         payload.append('modelo_aprobacion', form.modelo_aprobacion)
         payload.append('destino', form.destino)
-        if (clienteFechaNacimiento) {
-          payload.append('fecha_nacimiento', clienteFechaNacimiento)
-        }
         if (documentoIdentidad) {
           payload.append('tipo_documento_identidad', 'ID')
           payload.append(
@@ -609,9 +632,31 @@ export default function SolicitudFormModule({ solicitudId = null }) {
                               value={clienteValue}
                               loading={clientesLoading}
                               disabled={Boolean(solicitudId)}
-                              onChange={(_, value) => {
+                              onChange={async (_, value) => {
                                 setClienteValue(value)
                                 setForm(previous => ({ ...previous, cliente_id: value?.id || '' }))
+
+                                if (!value?.id || String(value?.fecha_nacimiento || '').trim()) return
+
+                                try {
+                                  const response = await obtenerCliente(value.id)
+                                  const clienteCompleto = response?.data || response
+
+                                  if (!clienteCompleto?.id) return
+
+                                  setClienteValue(previous => ({ ...(previous || {}), ...clienteCompleto }))
+                                  setClientesOptions(previous => {
+                                    const exists = previous.some(item => item.id === clienteCompleto.id)
+
+                                    if (!exists) return [clienteCompleto, ...previous]
+
+                                    return previous.map(item =>
+                                      item.id === clienteCompleto.id ? { ...item, ...clienteCompleto } : item
+                                    )
+                                  })
+                                } catch {
+                                  // Si falla, mantenemos la selección actual y el backend decidirá la validación final.
+                                }
                               }}
                               onInputChange={(_, value) => {
                                 setClienteSearch(value)

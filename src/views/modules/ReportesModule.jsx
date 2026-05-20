@@ -94,26 +94,7 @@ const getEstadoColor = estado => {
 }
 
 const toMMDDYYYY = inputValue => {
-  if (!inputValue) return ''
-
-  const raw = String(inputValue).trim()
-  const ymdMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
-
-  if (ymdMatch) {
-    const [, yyyy, mm, dd] = ymdMatch
-
-    return `${mm}/${dd}/${yyyy}`
-  }
-
-  const date = new Date(raw)
-
-  if (Number.isNaN(date.getTime())) return inputValue
-
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const yyyy = String(date.getFullYear())
-
-  return `${mm}/${dd}/${yyyy}`
+  return formatDateMMDDYYYY(inputValue)
 }
 
 export default function ReportesModule({ initialSubMenu = 'resumen', hideTabs = false, pageTitle = 'Reportes' }) {

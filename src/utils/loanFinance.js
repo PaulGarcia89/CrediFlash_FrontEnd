@@ -11,14 +11,56 @@ export const normalizeLoanStatus = value =>
 export const parseDateLocalSafe = value => {
   if (!value) return null
 
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null
+
+    const localMidnight =
+      value.getHours() === 0 &&
+      value.getMinutes() === 0 &&
+      value.getSeconds() === 0 &&
+      value.getMilliseconds() === 0
+    const utcMidnight =
+      value.getUTCHours() === 0 &&
+      value.getUTCMinutes() === 0 &&
+      value.getUTCSeconds() === 0 &&
+      value.getUTCMilliseconds() === 0
+
+    if (localMidnight) return new Date(value.getTime())
+    if (utcMidnight) return new Date(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate(), 0, 0, 0, 0)
+
+    return new Date(value.getTime())
+  }
+
   if (typeof value === 'string') {
     const trimmed = value.trim()
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
+    if (!trimmed) return null
 
-    if (match) {
-      const [, year, month, day] = match
+    const isoDateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
+    if (isoDateOnly) {
+      const [, year, month, day] = isoDateOnly
 
-      return new Date(Number(year), Number(month) - 1, Number(day))
+      return new Date(Number(year), Number(month) - 1, Number(day), 0, 0, 0, 0)
+    }
+
+    const isoMidnightZ = /^(\d{4})-(\d{2})-(\d{2})T00:00:00(?:\.000)?Z$/.exec(trimmed)
+    if (isoMidnightZ) {
+      const [, year, month, day] = isoMidnightZ
+
+      return new Date(Number(year), Number(month) - 1, Number(day), 0, 0, 0, 0)
+    }
+
+    const mmddyyyy = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed)
+    if (mmddyyyy) {
+      const [, month, day, year] = mmddyyyy
+
+      return new Date(Number(year), Number(month) - 1, Number(day), 0, 0, 0, 0)
+    }
+
+    const mmddyyyyDash = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed)
+    if (mmddyyyyDash) {
+      const [, month, day, year] = mmddyyyyDash
+
+      return new Date(Number(year), Number(month) - 1, Number(day), 0, 0, 0, 0)
     }
   }
 

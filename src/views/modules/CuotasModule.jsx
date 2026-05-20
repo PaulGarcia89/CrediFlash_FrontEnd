@@ -393,16 +393,17 @@ const buildProjectedSchedule = row => {
   const saldoPendiente = toMoneyNumber(getLoanRemainingBalance(row))
 
   if (!totalCuotas || !fechaInicio) return []
+  const baseDate = new Date(fechaInicio)
 
   return Array.from({ length: totalCuotas }, (_, index) => {
-    const dueDate = new Date(fechaInicio)
+    const projectedDate = new Date(baseDate)
 
     if (modalidad === 'MENSUAL') {
-      dueDate.setMonth(dueDate.getMonth() + index + 1)
+      projectedDate.setMonth(projectedDate.getMonth() + index + 1)
     } else if (modalidad === 'QUINCENAL') {
-      dueDate.setDate(dueDate.getDate() + (index + 1) * 15)
+      projectedDate.setDate(projectedDate.getDate() + (index + 1) * 15)
     } else {
-      dueDate.setDate(dueDate.getDate() + (index + 1) * 7)
+      projectedDate.setDate(projectedDate.getDate() + (index + 1) * 7)
     }
 
     const saldoRestanteCuota = Math.max(round2(saldoPendiente - valorCuota * index), 0)
@@ -410,7 +411,7 @@ const buildProjectedSchedule = row => {
     return {
       id: String(`${row?.id || 'prestamo'}-projected-${index + 1}`),
       numero: index + 1,
-      fecha_vencimiento: dueDate,
+      fecha_vencimiento: projectedDate,
       capital_programado: 0,
       interes_programado: 0,
       total_programado: valorCuota,
@@ -1024,8 +1025,8 @@ export default function CuotasModule() {
 
       if (diff !== 0) return diff
 
-      const aFecha = new Date(a?.fecha_inicio || 0).getTime()
-      const bFecha = new Date(b?.fecha_inicio || 0).getTime()
+      const aFecha = parseDateLocalSafe(a?.fecha_inicio || 0)?.getTime() || 0
+      const bFecha = parseDateLocalSafe(b?.fecha_inicio || 0)?.getTime() || 0
 
       return bFecha - aFecha
     })

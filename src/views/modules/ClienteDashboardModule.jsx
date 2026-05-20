@@ -194,7 +194,10 @@ const isAfterDate = (leftDate, rightDate) => {
 }
 
 const addDays = (baseDateInput, daysToAdd) => {
-  const baseDate = new Date(baseDateInput)
+  const baseDate = parseDateLocalSafe(baseDateInput)
+
+  if (!baseDate) return null
+
   baseDate.setDate(baseDate.getDate() + daysToAdd)
 
   return baseDate

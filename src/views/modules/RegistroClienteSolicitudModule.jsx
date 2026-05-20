@@ -439,7 +439,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
     if (field === 'nombre') return !String(form.nombre || '').trim()
     if (field === 'apellido') return !String(form.apellido || '').trim()
     if (field === 'email') return !String(form.email || '').trim()
-    if (field === 'fecha_nacimiento') return !String(form.fecha_nacimiento || '').trim()
+    if (field === 'fecha_nacimiento') return !publicMode && !String(form.fecha_nacimiento || '').trim()
     if (field === 'sexo') return !String(form.sexo || '').trim()
     if (field === 'status_legal') return !String(form.status_legal || '').trim()
     if (field === 'empleo_actual') return !String(form.empleo_actual || '').trim()
@@ -638,7 +638,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
       if (!isValidEmailFormat(email)) throw createValidationError('email', 'Ingresa un correo con formato válido.')
       if (!emailVerified || verifiedEmail !== email)
         throw createValidationError('email', 'Debes verificar el correo con código antes de publicar.')
-      if (!String(form.fecha_nacimiento || '').trim())
+      if (!publicMode && !String(form.fecha_nacimiento || '').trim())
         throw createValidationError('fecha_nacimiento', 'Debes completar la fecha de nacimiento.')
       if (!String(form.sexo || '').trim()) throw createValidationError('sexo', 'Debes seleccionar el sexo.')
       if (!String(form.status_legal || '').trim())
@@ -1136,7 +1136,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
           ) : null}
         </PublicQuestionCard>
 
-        <PublicQuestionCard fieldKey='fecha_nacimiento' title='DATE OF BIRTH' subtitle='FECHA DE NACIMIENTO' required>
+        <PublicQuestionCard fieldKey='fecha_nacimiento' title='DATE OF BIRTH' subtitle='FECHA DE NACIMIENTO' required={!publicMode}>
           <MuiTextField
             variant='standard'
             label={undefined}
@@ -1145,7 +1145,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
             value={form.fecha_nacimiento}
             onChange={handleChange}
             fullWidth
-            required
+            required={!publicMode}
             InputLabelProps={{ shrink: true }}
             error={isRequiredMissing('fecha_nacimiento')}
             helperText={isRequiredMissing('fecha_nacimiento') ? 'Campo obligatorio' : 'mm/dd/yyyy'}
@@ -1673,7 +1673,7 @@ export default function RegistroClienteSolicitudModule({ publicMode = false, ori
                       value={form.nombre}
                       onChange={handleChange}
                       fullWidth
-                      required
+                      required={!publicMode}
                       error={isRequiredMissing('nombre')}
                       helperText={isRequiredMissing('nombre') ? 'Campo obligatorio' : 'Tu respuesta'}
                     />
