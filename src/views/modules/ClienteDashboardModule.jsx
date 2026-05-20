@@ -445,7 +445,7 @@ export default function ClienteDashboardModule({ clienteId }) {
       modalidad === 'SEMANAL'
         ? addDays(fechaInicioPrestamo || new Date(), 7)
         : modalidad === 'QUINCENAL'
-          ? addDays(fechaInicioPrestamo || new Date(), 15)
+          ? addDays(fechaInicioPrestamo || new Date(), 14)
           : fechaInicioPrestamo || new Date()
     const amount = Number(getLoanInstallmentValue(prestamoPrincipal) || 0)
 
@@ -458,7 +458,7 @@ export default function ClienteDashboardModule({ clienteId }) {
         if (modalidad === 'MENSUAL') {
           date.setMonth(date.getMonth() + index)
         } else {
-          date.setDate(date.getDate() + index * (modalidad === 'QUINCENAL' ? 15 : 7))
+          date.setDate(date.getDate() + index * (modalidad === 'QUINCENAL' ? 14 : 7))
         }
         const isPending = index >= cuotasPagadas
         const morosa = isPending && isAfterDate(todayEnd, toEndOfDay(date))

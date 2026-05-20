@@ -188,7 +188,7 @@ export const hasActiveLoanContract = row => {
 export const getLoanPeriodicityLabel = modalidad => {
   const normalized = normalizeLoanStatus(modalidad)
 
-  if (normalized === 'QUINCENAL') return 'Cada 15 días'
+  if (normalized === 'QUINCENAL') return 'Cada 14 días'
   if (normalized === 'MENSUAL') return 'Cada 1 mes'
 
   return 'Cada 7 días'

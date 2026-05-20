@@ -401,7 +401,7 @@ const buildProjectedSchedule = row => {
     if (modalidad === 'MENSUAL') {
       projectedDate.setMonth(projectedDate.getMonth() + index + 1)
     } else if (modalidad === 'QUINCENAL') {
-      projectedDate.setDate(projectedDate.getDate() + (index + 1) * 15)
+      projectedDate.setDate(projectedDate.getDate() + (index + 1) * 14)
     } else {
       projectedDate.setDate(projectedDate.getDate() + (index + 1) * 7)
     }
@@ -436,7 +436,7 @@ const isScheduleConsistentWithLoan = row => {
   if (modalidad === 'MENSUAL') {
     expectedFirstDate.setMonth(expectedFirstDate.getMonth() + 1)
   } else if (modalidad === 'QUINCENAL') {
-    expectedFirstDate.setDate(expectedFirstDate.getDate() + 15)
+    expectedFirstDate.setDate(expectedFirstDate.getDate() + 14)
   } else {
     expectedFirstDate.setDate(expectedFirstDate.getDate() + 7)
   }
@@ -456,7 +456,7 @@ const isScheduleConsistentWithLoan = row => {
     if (modalidad === 'MENSUAL') {
       expectedDate.setMonth(expectedDate.getMonth() + 1)
     } else if (modalidad === 'QUINCENAL') {
-      expectedDate.setDate(expectedDate.getDate() + 15)
+      expectedDate.setDate(expectedDate.getDate() + 14)
     } else {
       expectedDate.setDate(expectedDate.getDate() + 7)
     }
