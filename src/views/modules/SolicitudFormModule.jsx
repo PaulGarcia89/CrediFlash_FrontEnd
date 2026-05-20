@@ -142,6 +142,11 @@ export default function SolicitudFormModule({ solicitudId = null }) {
     [clientesPagination.page, clientesPagination.pages]
   )
   const flowSteps = useMemo(() => (solicitudId ? STEP_LABELS.slice(0, 3) : STEP_LABELS), [solicitudId])
+  const clienteFechaNacimiento = useMemo(() => {
+    const rawValue = clienteValue?.fecha_nacimiento
+
+    return String(rawValue || '').trim()
+  }, [clienteValue])
 
   useEffect(() => {
     if (!solicitudId) return
@@ -407,7 +412,8 @@ export default function SolicitudFormModule({ solicitudId = null }) {
           fecha_inicio: form.fecha_inicio,
           modelo_calificacion: form.modelo_calificacion,
           modelo_aprobacion: form.modelo_aprobacion,
-          destino: form.destino
+          destino: form.destino,
+          ...(clienteFechaNacimiento ? { fecha_nacimiento: clienteFechaNacimiento } : {})
         })
       } else {
         let created
@@ -429,6 +435,9 @@ export default function SolicitudFormModule({ solicitudId = null }) {
         payload.append('modelo_calificacion', form.modelo_calificacion)
         payload.append('modelo_aprobacion', form.modelo_aprobacion)
         payload.append('destino', form.destino)
+        if (clienteFechaNacimiento) {
+          payload.append('fecha_nacimiento', clienteFechaNacimiento)
+        }
         if (documentoIdentidad) {
           payload.append('tipo_documento_identidad', 'ID')
           payload.append(
