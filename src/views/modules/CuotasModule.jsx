@@ -399,6 +399,7 @@ export default function CuotasModule() {
   const [limit, setLimit] = useState(10)
   const [status, setStatus] = useState('TODOS')
   const [modalidadFiltro, setModalidadFiltro] = useState('')
+  const [cuotasRestantesFiltro, setCuotasRestantesFiltro] = useState('')
   const [orden, setOrden] = useState('reciente')
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 })
 
@@ -512,7 +513,7 @@ export default function CuotasModule() {
 
   useEffect(() => {
     setPage(1)
-  }, [limit, debouncedSearch, status])
+  }, [limit, debouncedSearch, status, cuotasRestantesFiltro])
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -894,7 +895,17 @@ export default function CuotasModule() {
   const rows = useMemo(() => prestamos || [], [prestamos])
 
   const tableRows = useMemo(() => {
-    const output = rows.filter(item => matchesStatusFilter(item, status))
+    const output = rows.filter(item => {
+      if (!matchesStatusFilter(item, status)) return false
+
+      if (cuotasRestantesFiltro) {
+        const cuotasRestantes = Number(getCuotasRestantes(item) || 0)
+
+        if (cuotasRestantes !== Number(cuotasRestantesFiltro)) return false
+      }
+
+      return true
+    })
 
     if (orden === 'monto_desc') {
       output.sort((a, b) => Number(getDisplayTotalPagar(b) || 0) - Number(getDisplayTotalPagar(a) || 0))
@@ -935,7 +946,7 @@ export default function CuotasModule() {
     })
 
     return output
-  }, [orden, rows, status])
+  }, [cuotasRestantesFiltro, orden, rows, status])
 
   const debugInfo = useMemo(() => {
     if (!debugCuotas) return null
@@ -947,12 +958,13 @@ export default function CuotasModule() {
         page,
         limit,
         search: normalizedSearch,
-        status
+        status,
+        cuotas_restantes: cuotasRestantesFiltro
       },
       total: pagination.total,
       rendered: tableRows.length
     }
-  }, [debouncedSearch, debugCuotas, limit, page, pagination.total, status, tableRows.length])
+  }, [cuotasRestantesFiltro, debouncedSearch, debugCuotas, limit, page, pagination.total, status, tableRows.length])
 
   const metrics = useMemo(() => {
     return {
@@ -1209,6 +1221,15 @@ export default function CuotasModule() {
                   value={searchCliente}
                   onChange={event => setSearchCliente(event.target.value)}
                   sx={{ minWidth: { xs: '100%', md: 300 } }}
+                />
+                <TextField
+                  size='small'
+                  type='number'
+                  label='Cuotas restantes'
+                  value={cuotasRestantesFiltro}
+                  onChange={event => setCuotasRestantesFiltro(event.target.value)}
+                  inputProps={{ min: 0 }}
+                  sx={{ minWidth: { xs: '100%', sm: 180 } }}
                 />
                 <TextField
                   select
