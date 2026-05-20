@@ -25,6 +25,7 @@ import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
+import TableContainer from '@mui/material/TableContainer'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -201,7 +202,8 @@ const desktopHeadCellSx = {
   fontSize: '0.95rem',
   fontWeight: 700,
   color: 'text.secondary',
-  whiteSpace: 'nowrap'
+  whiteSpace: 'normal',
+  lineHeight: 1.25
 }
 
 const desktopBodyCellSx = {
@@ -1249,104 +1251,107 @@ export default function CuotasModule() {
                 <CircularProgress size={28} />
               </Stack>
             ) : !useCardLayout ? (
-              <Table
-                size='small'
-                sx={{
-                  tableLayout: 'fixed',
-                  '& .MuiTableCell-root': {
-                    borderBottomColor: 'rgba(115, 103, 240, 0.08)'
-                  },
-                  '& .MuiTableRow-hover:hover': {
-                    backgroundColor: 'rgba(115, 103, 240, 0.03)'
-                  }
-                }}
-              >
-                <TableHead>
-                  <TableRow>
-                    <TableCell padding='checkbox' sx={{ ...desktopHeadCellSx, width: 40 }}>
-                      <Checkbox size='small' />
-                    </TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '16%' }}>Cliente</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Monto total</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Valor cuota</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Tasa de interés</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '7%' }}>Núm. cuotas</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Pagos hechos</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Fecha inicio</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '12%' }}>Saldo pendiente</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Cuotas restantes</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Estado</TableCell>
-                    <TableCell sx={{ ...desktopHeadCellSx, width: 176, textAlign: 'center' }}>Acciones</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tableRows.map(row => (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      onDoubleClick={() => {
-                        if (!canViewPrestamos) return
-
-                        openDetalleDialog(row)
-                      }}
-                      sx={{ cursor: canViewPrestamos ? 'pointer' : 'default' }}
-                    >
-                      <TableCell padding='checkbox' sx={desktopBodyCellSx}>
+              <TableContainer sx={{ width: '100%', overflowX: 'auto' }}>
+                <Table
+                  size='small'
+                  sx={{
+                    minWidth: 1480,
+                    tableLayout: 'auto',
+                    '& .MuiTableCell-root': {
+                      borderBottomColor: 'rgba(115, 103, 240, 0.08)'
+                    },
+                    '& .MuiTableRow-hover:hover': {
+                      backgroundColor: 'rgba(115, 103, 240, 0.03)'
+                    }
+                  }}
+                >
+                  <TableHead>
+                    <TableRow>
+                      <TableCell padding='checkbox' sx={{ ...desktopHeadCellSx, width: 40 }}>
                         <Checkbox size='small' />
                       </TableCell>
-                      <TableCell sx={desktopClientCellSx}>{row.nombre_completo || '-'}</TableCell>
-                      <TableCell sx={desktopNumericCellSx}>{formatCurrency(getDisplayTotalPagar(row))}</TableCell>
-                      <TableCell sx={desktopNumericCellSx}>{formatCurrency(getDisplayPagosSemanales(row))}</TableCell>
-                      <TableCell sx={desktopNumericCellSx}>{getInteresDisplay(row)}</TableCell>
-                      <TableCell sx={desktopNumericCellSx}>{getLoanInstallmentsCount(row) || '-'}</TableCell>
-                      <TableCell sx={desktopNumericCellSx}>{formatNaturalNumber(row.pagos_hechos)}</TableCell>
-                      <TableCell sx={desktopNumericCellSx}>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
-                      <TableCell sx={desktopNumericCellSx}>
-                        {(() => {
-                          const saldoInfo = getSaldoPendienteInfo(row)
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '16%' }}>Cliente</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Monto total</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Valor cuota</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Tasa de interés</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '7%' }}>Núm. cuotas</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Pagos hechos</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Fecha inicio</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '12%' }}>Saldo pendiente</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '8%' }}>Cuotas restantes</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: '10%' }}>Estado</TableCell>
+                      <TableCell sx={{ ...desktopHeadCellSx, width: 176, textAlign: 'center' }}>Acciones</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {tableRows.map(row => (
+                      <TableRow
+                        key={row.id}
+                        hover
+                        onDoubleClick={() => {
+                          if (!canViewPrestamos) return
 
-                          return (
-                            <Stack direction='row' spacing={0.75} alignItems='center'>
-                              <span>{formatCurrency(saldoInfo.value)}</span>
-                              {saldoInfo.estimated ? (
-                                <Chip size='small' variant='outlined' color='warning' label='Estimado' />
-                              ) : null}
-                            </Stack>
-                          )
-                        })()}
-                      </TableCell>
-                      <TableCell sx={desktopNumericCellSx}>{formatNaturalNumber(getCuotasRestantes(row))}</TableCell>
-                      <TableCell sx={desktopBodyCellSx}>
-                        <Stack
-                          direction='row'
-                          spacing={0.75}
-                          flexWrap='wrap'
-                          alignItems='center'
-                          sx={{ minHeight: 34 }}
-                        >
-                          <Chip
-                            size='small'
-                            variant='tonal'
-                            label={getOperationalStatus(row)}
-                            color={getStatusColor(getOperationalStatus(row))}
-                          />
-                          {hasDescuentoReferidoObservacion(row) ? (
-                            <Chip size='small' variant='tonal' color='success' label='Descuento referido' />
-                          ) : null}
-                        </Stack>
-                      </TableCell>
-                      <TableCell sx={desktopActionsCellSx}>{renderAccionesPrestamo(row)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {tableRows.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={12} align='center'>
-                        Sin resultados
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                </TableBody>
-              </Table>
+                          openDetalleDialog(row)
+                        }}
+                        sx={{ cursor: canViewPrestamos ? 'pointer' : 'default' }}
+                      >
+                        <TableCell padding='checkbox' sx={desktopBodyCellSx}>
+                          <Checkbox size='small' />
+                        </TableCell>
+                        <TableCell sx={desktopClientCellSx}>{row.nombre_completo || '-'}</TableCell>
+                        <TableCell sx={desktopNumericCellSx}>{formatCurrency(getDisplayTotalPagar(row))}</TableCell>
+                        <TableCell sx={desktopNumericCellSx}>{formatCurrency(getDisplayPagosSemanales(row))}</TableCell>
+                        <TableCell sx={desktopNumericCellSx}>{getInteresDisplay(row)}</TableCell>
+                        <TableCell sx={desktopNumericCellSx}>{getLoanInstallmentsCount(row) || '-'}</TableCell>
+                        <TableCell sx={desktopNumericCellSx}>{formatNaturalNumber(row.pagos_hechos)}</TableCell>
+                        <TableCell sx={desktopNumericCellSx}>{formatDateMMDDYYYY(row.fecha_inicio)}</TableCell>
+                        <TableCell sx={desktopNumericCellSx}>
+                          {(() => {
+                            const saldoInfo = getSaldoPendienteInfo(row)
+
+                            return (
+                              <Stack direction='row' spacing={0.75} alignItems='center'>
+                                <span>{formatCurrency(saldoInfo.value)}</span>
+                                {saldoInfo.estimated ? (
+                                  <Chip size='small' variant='outlined' color='warning' label='Estimado' />
+                                ) : null}
+                              </Stack>
+                            )
+                          })()}
+                        </TableCell>
+                        <TableCell sx={desktopNumericCellSx}>{formatNaturalNumber(getCuotasRestantes(row))}</TableCell>
+                        <TableCell sx={desktopBodyCellSx}>
+                          <Stack
+                            direction='row'
+                            spacing={0.75}
+                            flexWrap='wrap'
+                            alignItems='center'
+                            sx={{ minHeight: 34 }}
+                          >
+                            <Chip
+                              size='small'
+                              variant='tonal'
+                              label={getOperationalStatus(row)}
+                              color={getStatusColor(getOperationalStatus(row))}
+                            />
+                            {hasDescuentoReferidoObservacion(row) ? (
+                              <Chip size='small' variant='tonal' color='success' label='Descuento referido' />
+                            ) : null}
+                          </Stack>
+                        </TableCell>
+                        <TableCell sx={desktopActionsCellSx}>{renderAccionesPrestamo(row)}</TableCell>
+                      </TableRow>
+                    ))}
+                    {tableRows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={12} align='center'>
+                          Sin resultados
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             ) : (
               <Stack spacing={1.25}>
                 {tableRows.length === 0 ? <Alert severity='info'>Sin resultados</Alert> : null}
