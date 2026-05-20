@@ -61,7 +61,8 @@ import {
   hasActiveLoanContract,
   isLoanActive,
   isLoanSettled,
-  normalizeLoanStatus
+  normalizeLoanStatus,
+  parseDateLocalSafe
 } from '@/utils/loanFinance'
 
 const formatCurrency = value => formatMoney(value)
@@ -384,6 +385,95 @@ const getContractOpenUrl = row => {
   return urls[0] || ''
 }
 const getContractDocumentId = row => getLoanContractDocumentId(row)
+const buildProjectedSchedule = row => {
+  const totalCuotas = Math.max(Number(getLoanInstallmentsCount(row) || 0), 0)
+  const fechaInicio = parseDateLocalSafe(row?.fecha_inicio)
+  const modalidad = normalizeLoanStatus(row?.modalidad)
+  const valorCuota = toMoneyNumber(getDisplayPagosSemanales(row))
+  const saldoPendiente = toMoneyNumber(getLoanRemainingBalance(row))
+
+  if (!totalCuotas || !fechaInicio) return []
+
+  return Array.from({ length: totalCuotas }, (_, index) => {
+    const dueDate = new Date(fechaInicio)
+
+    if (modalidad === 'MENSUAL') {
+      dueDate.setMonth(dueDate.getMonth() + index + 1)
+    } else if (modalidad === 'QUINCENAL') {
+      dueDate.setDate(dueDate.getDate() + (index + 1) * 15)
+    } else {
+      dueDate.setDate(dueDate.getDate() + (index + 1) * 7)
+    }
+
+    const saldoRestanteCuota = Math.max(round2(saldoPendiente - valorCuota * index), 0)
+
+    return {
+      id: String(`${row?.id || 'prestamo'}-projected-${index + 1}`),
+      numero: index + 1,
+      fecha_vencimiento: dueDate,
+      capital_programado: 0,
+      interes_programado: 0,
+      total_programado: valorCuota,
+      saldo_restante: saldoRestanteCuota,
+      estado: 'PENDIENTE'
+    }
+  })
+}
+const isScheduleConsistentWithLoan = row => {
+  const schedule = extractLoanSchedule(row)
+  const fechaInicio = parseDateLocalSafe(row?.fecha_inicio)
+  const modalidad = normalizeLoanStatus(row?.modalidad)
+
+  if (!schedule.length || !fechaInicio) return false
+
+  const firstDueDate = parseDateLocalSafe(schedule[0]?.fecha_vencimiento)
+
+  if (!firstDueDate) return false
+
+  const expectedFirstDate = new Date(fechaInicio)
+
+  if (modalidad === 'MENSUAL') {
+    expectedFirstDate.setMonth(expectedFirstDate.getMonth() + 1)
+  } else if (modalidad === 'QUINCENAL') {
+    expectedFirstDate.setDate(expectedFirstDate.getDate() + 15)
+  } else {
+    expectedFirstDate.setDate(expectedFirstDate.getDate() + 7)
+  }
+
+  const firstDiffDays = Math.abs(roundToCents((firstDueDate.getTime() - expectedFirstDate.getTime()) / 86400000))
+
+  if (firstDiffDays > 3) return false
+
+  for (let index = 1; index < schedule.length; index += 1) {
+    const previousDate = parseDateLocalSafe(schedule[index - 1]?.fecha_vencimiento)
+    const currentDate = parseDateLocalSafe(schedule[index]?.fecha_vencimiento)
+
+    if (!previousDate || !currentDate) return false
+
+    const expectedDate = new Date(previousDate)
+
+    if (modalidad === 'MENSUAL') {
+      expectedDate.setMonth(expectedDate.getMonth() + 1)
+    } else if (modalidad === 'QUINCENAL') {
+      expectedDate.setDate(expectedDate.getDate() + 15)
+    } else {
+      expectedDate.setDate(expectedDate.getDate() + 7)
+    }
+
+    const diffDays = Math.abs(roundToCents((currentDate.getTime() - expectedDate.getTime()) / 86400000))
+
+    if (diffDays > 3) return false
+  }
+
+  return true
+}
+const getDisplaySchedule = row => {
+  if (isScheduleConsistentWithLoan(row)) return extractLoanSchedule(row)
+
+  const projectedSchedule = buildProjectedSchedule(row)
+
+  return projectedSchedule.length ? projectedSchedule : extractLoanSchedule(row)
+}
 
 export default function CuotasModule() {
   const theme = useTheme()
@@ -1699,7 +1789,7 @@ export default function CuotasModule() {
             >
               Visualizar contrato PDF
             </Button>
-            {extractLoanSchedule(selectedPrestamo).length ? (
+            {getDisplaySchedule(selectedPrestamo).length ? (
               <Stack spacing={1} sx={{ pt: 1 }}>
                 <Typography variant='h6'>Cronograma canónico</Typography>
                 <Table size='small'>
@@ -1715,7 +1805,7 @@ export default function CuotasModule() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {extractLoanSchedule(selectedPrestamo).map(cuota => (
+                    {getDisplaySchedule(selectedPrestamo).map(cuota => (
                       <TableRow key={cuota.id}>
                         <TableCell>{cuota.numero}</TableCell>
                         <TableCell>{formatDateMMDDYYYY(cuota.fecha_vencimiento)}</TableCell>
