@@ -19,13 +19,6 @@ export const crearSolicitudPublica = formData =>
     auth: false
   })
 
-export const crearSolicitudShortForm = payload =>
-  apiRequest('/public/solicitudes-short-form', {
-    method: 'POST',
-    body: payload,
-    auth: false
-  })
-
 export const obtenerSolicitud = solicitudId =>
   apiRequest(`/solicitudes/${solicitudId}`, {
     method: 'GET'
