@@ -8,6 +8,7 @@ import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
+import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -36,13 +37,20 @@ const TRACKING_KEYS = [
   'requested_amount'
 ]
 
+const AMOUNT_OPTIONS = [
+  { label: '$200 — $500', value: '350' },
+  { label: '$500 — $1,000', value: '750' },
+  { label: '$1,000 — $2,500', value: '2000' },
+  { label: '$2,500 — $5,000', value: '3750' }
+]
+
 const PURPOSE_OPTIONS = [
-  'Consolidacion De Deudas',
+  'Consolidación De Deudas',
   'Gastos Cotidianos/Emergencia',
-  'Consolidacion De Tarjetas De Credito',
+  'Consolidación De Tarjetas De Crédito',
   'Compra De Auto',
   'Mejoras Del Hogar',
-  'Gastos Medicos',
+  'Gastos Médicos',
   'Negocio',
   'Impuestos',
   'Alquiler O Hipoteca',
@@ -55,7 +63,7 @@ const MODALIDAD_OPTIONS = [
   { value: 'MENSUAL', label: 'Mensual' }
 ]
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 
 const isValidEmailFormat = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())
 const sanitizeAmount = value => String(value || '').replace(/[^\d.]/g, '')
@@ -98,18 +106,52 @@ const fieldInputSx = {
   }
 }
 
+const titleSx = {
+  fontFamily: 'Georgia, "Times New Roman", serif',
+  fontSize: { xs: '3.15rem', md: '4.45rem' },
+  lineHeight: 0.98,
+  fontWeight: 700,
+  letterSpacing: '-0.04em',
+  maxWidth: 760
+}
+
+const pillButtonSx = {
+  borderRadius: '999px',
+  borderColor: '#dca57d',
+  color: '#4b211c',
+  fontSize: { xs: '1.5rem', md: '1.72rem' },
+  fontWeight: 500,
+  px: 3.5,
+  py: 2,
+  textTransform: 'none'
+}
+
+const nextButtonSx = {
+  alignSelf: 'flex-end',
+  borderRadius: '999px',
+  background: 'linear-gradient(90deg, #ee7d2a 0%, #b44b4b 100%)',
+  px: 5,
+  py: 1.7,
+  fontSize: { xs: '1.6rem', md: '1.9rem' },
+  fontWeight: 500,
+  textTransform: 'none',
+  boxShadow: '0 16px 30px rgba(180, 75, 75, 0.18)'
+}
+
 const buildSummaryLabel = form => {
   switch (form.step) {
     case 1:
       return `Monto: $${Number(form.requested_amount || 0).toLocaleString('en-US')}`
     case 2:
-      return `Monto Menor: ${form.monto_menor_considerado || '-'}`
+      return `Monto: $${Number(form.requested_amount || 0).toLocaleString('en-US')}`
     case 3:
-      return `Proposito Del Prestamo: ${form.loan_purpose || '-'}`
+      return `Monto Menor: ${form.monto_menor_considerado || '-'}`
     case 4:
-      return `Nombre: ${[form.nombre, form.apellido].filter(Boolean).join(' ') || '-'}`
+      return `Propósito Del Préstamo: ${form.loan_purpose || '-'}`
     case 5:
-      return `Nacimiento: ${form.fecha_nacimiento || '-'}`
+      return `Nombre: ${[form.nombre, form.apellido].filter(Boolean).join(' ') || '-'}`
+    case 6:
+      return `Nombre: ${[form.nombre, form.apellido].filter(Boolean).join(' ') || '-'}`
     default:
       return `Contacto: ${form.email || form.telefono || '-'}`
   }
@@ -170,16 +212,16 @@ export default function ShortFormSolicitudModule() {
   }
 
   const validateStep = () => {
-    if (!(Number(form.requested_amount || 0) > 0)) return 'Debes tener un monto solicitado válido.'
-    if (form.step === 1 && !form.monto_menor_considerado) return 'Selecciona si aceptarías un monto menor.'
-    if (form.step === 2 && !form.loan_purpose) return 'Selecciona el propósito del préstamo.'
-    if (form.step === 3) {
+    if (!(Number(form.requested_amount || 0) > 0)) return 'Debes seleccionar un monto solicitado.'
+    if (form.step === 2 && !form.monto_menor_considerado) return 'Selecciona si aceptarías un monto menor.'
+    if (form.step === 3 && !form.loan_purpose) return 'Selecciona el propósito del préstamo.'
+    if (form.step === 4) {
       if (!String(form.nombre || '').trim()) return 'Debes ingresar el nombre.'
       if (!String(form.apellido || '').trim()) return 'Debes ingresar el apellido.'
     }
-    if (form.step === 4 && !String(form.fecha_nacimiento || '').trim()) return 'Debes ingresar la fecha de nacimiento.'
-    if (form.step === 5 && !String(form.telefono || '').trim()) return 'Debes ingresar el teléfono.'
-    if (form.step === 6) {
+    if (form.step === 5 && !String(form.fecha_nacimiento || '').trim()) return 'Debes ingresar la fecha de nacimiento.'
+    if (form.step === 6 && !String(form.telefono || '').trim()) return 'Debes ingresar el teléfono.'
+    if (form.step === 7) {
       if (!String(form.email || '').trim()) return 'Debes ingresar el correo.'
       if (!isValidEmailFormat(form.email)) return 'Debes ingresar un correo con formato válido.'
     }
@@ -251,13 +293,13 @@ export default function ShortFormSolicitudModule() {
         py: { xs: 4, md: 7 }
       }}
     >
-      <Stack spacing={3} sx={{ maxWidth: 700, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ maxWidth: 740, mx: 'auto' }}>
         <Stack spacing={1.25}>
           <Stack direction='row' justifyContent='space-between' alignItems='baseline' spacing={2}>
-            <Typography sx={{ fontSize: { xs: '1.7rem', md: '2rem' }, color: '#d0a27d', fontWeight: 500 }}>
-              1/2 Precalificacion <strong style={{ color: '#4b211c' }}>{progressValue}%</strong>
+            <Typography sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, color: '#d0a27d', fontWeight: 500 }}>
+              1/2 Precalificación <strong style={{ color: '#4b211c' }}>{progressValue}%</strong>
             </Typography>
-            <Typography sx={{ fontSize: { xs: '1.6rem', md: '2rem' }, fontWeight: 700 }}>{amountRangeLabel}</Typography>
+            <Typography sx={{ fontSize: { xs: '1.7rem', md: '2rem' }, fontWeight: 700 }}>{amountRangeLabel}</Typography>
           </Stack>
           <Box
             sx={{
@@ -285,19 +327,41 @@ export default function ShortFormSolicitudModule() {
           <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#ee7d2a' }}>↑ {summaryLabel}</Typography>
 
           {form.step === 1 ? (
+            <Stack spacing={4}>
+              <Typography sx={titleSx}>Elige el monto del préstamo deseado</Typography>
+              <Stack spacing={1.9} sx={{ width: { xs: '100%', sm: 330 }, ml: 'auto' }}>
+                {AMOUNT_OPTIONS.map(option => {
+                  const isSelected = String(form.requested_amount || '') === option.value
+
+                  return (
+                    <Button
+                      key={option.value}
+                      type='button'
+                      variant='outlined'
+                      onClick={() => setField('requested_amount', option.value)}
+                      sx={{
+                        ...pillButtonSx,
+                        borderColor: isSelected ? '#b6754f' : '#dca57d',
+                        borderWidth: isSelected ? 2.5 : 1.6,
+                        bgcolor: isSelected ? 'rgba(255,255,255,0.32)' : 'transparent'
+                      }}
+                    >
+                      {isSelected ? '✓ ' : ''}
+                      {option.label}
+                    </Button>
+                  )
+                })}
+              </Stack>
+              <Button type='submit' variant='contained' sx={nextButtonSx}>
+                Siguiente paso →
+              </Button>
+            </Stack>
+          ) : null}
+
+          {form.step === 2 ? (
             <Stack spacing={3}>
-              <Typography
-                sx={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: { xs: '2.4rem', md: '3.55rem' },
-                  lineHeight: 1.04,
-                  fontWeight: 700,
-                  maxWidth: 640
-                }}
-              >
-                ¿También considerarías un monto menor a $1,000?
-              </Typography>
-              <Stack spacing={1.5} sx={{ width: 140, ml: 'auto' }}>
+              <Typography sx={titleSx}>¿También considerarías un monto menor a $1,000?</Typography>
+              <Stack spacing={1.5} sx={{ width: 160, ml: 'auto' }}>
                 {['Sí', 'No'].map(option => (
                   <Button
                     key={option}
@@ -323,19 +387,9 @@ export default function ShortFormSolicitudModule() {
             </Stack>
           ) : null}
 
-          {form.step === 2 ? (
+          {form.step === 3 ? (
             <Stack spacing={3}>
-              <Typography
-                sx={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: { xs: '2.4rem', md: '3.55rem' },
-                  lineHeight: 1.04,
-                  fontWeight: 700,
-                  maxWidth: 640
-                }}
-              >
-                ¿Cuál es el propósito de tu préstamo?
-              </Typography>
+              <Typography sx={titleSx}>¿Cuál es el propósito de tu préstamo?</Typography>
               <Stack spacing={1.4} alignItems='center'>
                 {PURPOSE_OPTIONS.map(option => (
                   <Button
@@ -365,7 +419,7 @@ export default function ShortFormSolicitudModule() {
             </Stack>
           ) : null}
 
-          {form.step === 3 ? (
+          {form.step === 4 ? (
             <Stack spacing={2.4} sx={{ maxWidth: 520 }}>
               <Typography
                 sx={{
@@ -391,26 +445,13 @@ export default function ShortFormSolicitudModule() {
                 fullWidth
                 sx={fieldInputSx}
               />
-              <Button
-                type='submit'
-                variant='contained'
-                sx={{
-                  alignSelf: 'flex-end',
-                  borderRadius: '999px',
-                  bgcolor: '#c8643f',
-                  px: 4,
-                  py: 1.45,
-                  fontSize: '1.12rem',
-                  textTransform: 'none',
-                  boxShadow: 'none'
-                }}
-              >
+              <Button type='submit' variant='contained' sx={{ ...nextButtonSx, fontSize: '1.12rem', px: 4, py: 1.45 }}>
                 Siguiente paso →
               </Button>
             </Stack>
           ) : null}
 
-          {form.step === 4 ? (
+          {form.step === 5 ? (
             <Stack spacing={2.4} sx={{ maxWidth: 520 }}>
               <Typography
                 sx={{
@@ -431,26 +472,13 @@ export default function ShortFormSolicitudModule() {
                 fullWidth
                 sx={fieldInputSx}
               />
-              <Button
-                type='submit'
-                variant='contained'
-                sx={{
-                  alignSelf: 'flex-end',
-                  borderRadius: '999px',
-                  bgcolor: '#c8643f',
-                  px: 4,
-                  py: 1.45,
-                  fontSize: '1.12rem',
-                  textTransform: 'none',
-                  boxShadow: 'none'
-                }}
-              >
+              <Button type='submit' variant='contained' sx={{ ...nextButtonSx, fontSize: '1.12rem', px: 4, py: 1.45 }}>
                 Siguiente paso →
               </Button>
             </Stack>
           ) : null}
 
-          {form.step === 5 ? (
+          {form.step === 6 ? (
             <Stack spacing={2.4} sx={{ maxWidth: 520 }}>
               <Typography
                 sx={{
@@ -469,26 +497,13 @@ export default function ShortFormSolicitudModule() {
                 fullWidth
                 sx={fieldInputSx}
               />
-              <Button
-                type='submit'
-                variant='contained'
-                sx={{
-                  alignSelf: 'flex-end',
-                  borderRadius: '999px',
-                  bgcolor: '#c8643f',
-                  px: 4,
-                  py: 1.45,
-                  fontSize: '1.12rem',
-                  textTransform: 'none',
-                  boxShadow: 'none'
-                }}
-              >
+              <Button type='submit' variant='contained' sx={{ ...nextButtonSx, fontSize: '1.12rem', px: 4, py: 1.45 }}>
                 Siguiente paso →
               </Button>
             </Stack>
           ) : null}
 
-          {form.step === 6 ? (
+          {form.step === 7 ? (
             <Stack spacing={2.4} sx={{ maxWidth: 520 }}>
               <Typography
                 sx={{
@@ -526,16 +541,7 @@ export default function ShortFormSolicitudModule() {
                 type='submit'
                 variant='contained'
                 disabled={saving}
-                sx={{
-                  alignSelf: 'flex-end',
-                  borderRadius: '999px',
-                  bgcolor: '#c8643f',
-                  px: 4,
-                  py: 1.45,
-                  fontSize: '1.12rem',
-                  textTransform: 'none',
-                  boxShadow: 'none'
-                }}
+                sx={{ ...nextButtonSx, fontSize: '1.12rem', px: 4, py: 1.45 }}
               >
                 {saving ? 'Enviando...' : 'Enviar solicitud →'}
               </Button>
