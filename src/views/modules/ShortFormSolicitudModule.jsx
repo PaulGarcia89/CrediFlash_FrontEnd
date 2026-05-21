@@ -108,11 +108,12 @@ const fieldInputSx = {
 
 const titleSx = {
   fontFamily: 'Georgia, "Times New Roman", serif',
-  fontSize: { xs: '3.15rem', md: '4.45rem' },
+  fontSize: { xs: '3.15rem', md: '4.2rem' },
   lineHeight: 0.98,
   fontWeight: 700,
   letterSpacing: '-0.04em',
-  maxWidth: 760
+  maxWidth: 760,
+  color: '#5b241f'
 }
 
 const pillButtonSx = {
@@ -132,7 +133,7 @@ const nextButtonSx = {
   background: 'linear-gradient(90deg, #ee7d2a 0%, #b44b4b 100%)',
   px: 5,
   py: 1.7,
-  fontSize: { xs: '1.6rem', md: '1.9rem' },
+  fontSize: { xs: '1.6rem', md: '1.78rem' },
   fontWeight: 500,
   textTransform: 'none',
   boxShadow: '0 16px 30px rgba(180, 75, 75, 0.18)'
@@ -293,7 +294,7 @@ export default function ShortFormSolicitudModule() {
         py: { xs: 4, md: 7 }
       }}
     >
-      <Stack spacing={3} sx={{ maxWidth: 740, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ maxWidth: 1040, mx: 'auto' }}>
         <Stack spacing={1.25}>
           <Stack direction='row' justifyContent='space-between' alignItems='baseline' spacing={2}>
             <Typography sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, color: '#d0a27d', fontWeight: 500 }}>
@@ -324,14 +325,33 @@ export default function ShortFormSolicitudModule() {
         {success ? <Alert severity='success'>{success}</Alert> : null}
 
         <Stack spacing={3} sx={{ pt: { xs: 3, md: 8 } }}>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#ee7d2a' }}>↑ {summaryLabel}</Typography>
+          {form.step > 1 ? (
+            <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#ee7d2a' }}>↑ {summaryLabel}</Typography>
+          ) : null}
 
           {form.step === 1 ? (
-            <Stack spacing={4}>
-              <Typography sx={titleSx}>Elige el monto del préstamo deseado</Typography>
-              <Stack spacing={1.9} sx={{ width: { xs: '100%', sm: 330 }, ml: 'auto' }}>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={{ xs: 5, md: 8 }}
+              alignItems={{ xs: 'stretch', md: 'flex-start' }}
+              sx={{ pt: { xs: 4, md: 12 }, minHeight: { md: 720 } }}
+            >
+              <Box sx={{ flex: '1 1 52%', pt: { md: 14 } }}>
+                <Typography
+                  sx={{
+                    ...titleSx,
+                    fontSize: { xs: '3.3rem', md: '5rem' },
+                    maxWidth: 560
+                  }}
+                >
+                  Elige el monto del préstamo deseado
+                </Typography>
+              </Box>
+
+              <Stack spacing={2.1} sx={{ flex: '0 0 360px', width: { xs: '100%', md: 360 }, pt: { md: 26 } }}>
                 {AMOUNT_OPTIONS.map(option => {
                   const isSelected = String(form.requested_amount || '') === option.value
+                  const selectedLabel = `$${Number(option.value).toLocaleString('en-US')}`
 
                   return (
                     <Button
@@ -343,18 +363,25 @@ export default function ShortFormSolicitudModule() {
                         ...pillButtonSx,
                         borderColor: isSelected ? '#b6754f' : '#dca57d',
                         borderWidth: isSelected ? 2.5 : 1.6,
-                        bgcolor: isSelected ? 'rgba(255,255,255,0.32)' : 'transparent'
+                        bgcolor: isSelected ? 'rgba(255,255,255,0.32)' : 'transparent',
+                        minHeight: 94,
+                        justifyContent: 'center',
+                        fontSize: { xs: '1.55rem', md: '1.72rem' }
                       }}
                     >
-                      {isSelected ? '✓ ' : ''}
-                      {option.label}
+                      {isSelected ? `✓ ${selectedLabel}` : option.label}
                     </Button>
                   )
                 })}
+
+                <Button
+                  type='submit'
+                  variant='contained'
+                  sx={{ ...nextButtonSx, mt: 2.2, minHeight: 96, width: '100%' }}
+                >
+                  Siguiente paso →
+                </Button>
               </Stack>
-              <Button type='submit' variant='contained' sx={nextButtonSx}>
-                Siguiente paso →
-              </Button>
             </Stack>
           ) : null}
 
