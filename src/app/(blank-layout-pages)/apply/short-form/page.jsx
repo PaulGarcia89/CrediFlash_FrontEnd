@@ -11,11 +11,11 @@ export default function ShortFormSolicitudPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        py: { xs: 2, md: 4 },
-        bgcolor: '#f6f7fb'
+        py: 0,
+        bgcolor: '#FBF3DF'
       }}
     >
-      <Box sx={{ maxWidth: 1180, mx: 'auto', px: { xs: 2, sm: 3, md: 4 } }}>
+      <Box sx={{ width: '100%', maxWidth: '100%', mx: 'auto', px: 0 }}>
         <ShortFormSolicitudModule />
       </Box>
     </Box>
