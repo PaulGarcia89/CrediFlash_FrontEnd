@@ -108,11 +108,11 @@ const fieldInputSx = {
 
 const titleSx = {
   fontFamily: 'Georgia, "Times New Roman", serif',
-  fontSize: { xs: '3.15rem', md: '4.2rem' },
-  lineHeight: 0.98,
+  fontSize: { xs: '3.4rem', md: '5.15rem' },
+  lineHeight: 0.94,
   fontWeight: 700,
   letterSpacing: '-0.04em',
-  maxWidth: 760,
+  maxWidth: 620,
   color: '#5b241f'
 }
 
@@ -131,8 +131,8 @@ const nextButtonSx = {
   alignSelf: 'flex-end',
   borderRadius: '999px',
   background: 'linear-gradient(90deg, #ee7d2a 0%, #b44b4b 100%)',
-  px: 5,
-  py: 1.7,
+  px: 5.5,
+  py: 1.85,
   fontSize: { xs: '1.6rem', md: '1.78rem' },
   fontWeight: 500,
   textTransform: 'none',
@@ -294,7 +294,7 @@ export default function ShortFormSolicitudModule() {
         py: { xs: 4, md: 7 }
       }}
     >
-      <Stack spacing={3} sx={{ maxWidth: 1040, mx: 'auto' }}>
+      <Stack spacing={3} sx={{ maxWidth: 1140, mx: 'auto' }}>
         <Stack spacing={1.25}>
           <Stack direction='row' justifyContent='space-between' alignItems='baseline' spacing={2}>
             <Typography sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, color: '#d0a27d', fontWeight: 500 }}>
@@ -332,23 +332,26 @@ export default function ShortFormSolicitudModule() {
           {form.step === 1 ? (
             <Stack
               direction={{ xs: 'column', md: 'row' }}
-              spacing={{ xs: 5, md: 8 }}
+              spacing={{ xs: 5, md: 10 }}
               alignItems={{ xs: 'stretch', md: 'flex-start' }}
-              sx={{ pt: { xs: 4, md: 12 }, minHeight: { md: 720 } }}
+              sx={{ pt: { xs: 4, md: 15 }, minHeight: { md: 800 } }}
             >
-              <Box sx={{ flex: '1 1 52%', pt: { md: 14 } }}>
+              <Box sx={{ flex: '1 1 56%', pt: { md: 18 }, pl: { md: 3 } }}>
                 <Typography
                   sx={{
                     ...titleSx,
-                    fontSize: { xs: '3.3rem', md: '5rem' },
-                    maxWidth: 560
+                    fontSize: { xs: '3.45rem', md: '5.4rem' },
+                    maxWidth: 620
                   }}
                 >
                   Elige el monto del préstamo deseado
                 </Typography>
               </Box>
 
-              <Stack spacing={2.1} sx={{ flex: '0 0 360px', width: { xs: '100%', md: 360 }, pt: { md: 26 } }}>
+              <Stack
+                spacing={2.15}
+                sx={{ flex: '0 0 410px', width: { xs: '100%', md: 410 }, pt: { md: 31 }, pr: { md: 2 } }}
+              >
                 {AMOUNT_OPTIONS.map(option => {
                   const isSelected = String(form.requested_amount || '') === option.value
                   const selectedLabel = `$${Number(option.value).toLocaleString('en-US')}`
@@ -364,9 +367,9 @@ export default function ShortFormSolicitudModule() {
                         borderColor: isSelected ? '#b6754f' : '#dca57d',
                         borderWidth: isSelected ? 2.5 : 1.6,
                         bgcolor: isSelected ? 'rgba(255,255,255,0.32)' : 'transparent',
-                        minHeight: 94,
+                        minHeight: 104,
                         justifyContent: 'center',
-                        fontSize: { xs: '1.55rem', md: '1.72rem' }
+                        fontSize: { xs: '1.6rem', md: '1.82rem' }
                       }}
                     >
                       {isSelected ? `✓ ${selectedLabel}` : option.label}
@@ -377,7 +380,7 @@ export default function ShortFormSolicitudModule() {
                 <Button
                   type='submit'
                   variant='contained'
-                  sx={{ ...nextButtonSx, mt: 2.2, minHeight: 96, width: '100%' }}
+                  sx={{ ...nextButtonSx, mt: 2.8, minHeight: 104, width: '100%' }}
                 >
                   Siguiente paso →
                 </Button>
