@@ -7,32 +7,12 @@ import { useSearchParams } from 'next/navigation'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
-import CardHeader from '@mui/material/CardHeader'
 import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
-import Grid from '@mui/material/Grid'
-import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 
 import { crearSolicitudShortForm } from '@/api/solicitudes'
-
-const introCardSx = {
-  borderTop: theme => `10px solid ${theme.palette.primary.main}`,
-  borderRadius: 3
-}
-
-const sectionCardSx = { borderRadius: 3 }
-
-const AMOUNT_OPTIONS = ['300', '500', '1000', '1500', '2000', '3000']
-const MODALIDAD_OPTIONS = [
-  { value: 'SEMANAL', label: 'Semanal' },
-  { value: 'QUINCENAL', label: 'Quincenal' },
-  { value: 'MENSUAL', label: 'Mensual' }
-]
 
 const TRACKING_KEYS = [
   'manual',
@@ -56,12 +36,84 @@ const TRACKING_KEYS = [
   'requested_amount'
 ]
 
+const PURPOSE_OPTIONS = [
+  'Consolidacion De Deudas',
+  'Gastos Cotidianos/Emergencia',
+  'Consolidacion De Tarjetas De Credito',
+  'Compra De Auto',
+  'Mejoras Del Hogar',
+  'Gastos Medicos',
+  'Negocio',
+  'Impuestos',
+  'Alquiler O Hipoteca',
+  'Otro'
+]
+
+const MODALIDAD_OPTIONS = [
+  { value: 'SEMANAL', label: 'Semanal' },
+  { value: 'QUINCENAL', label: 'Quincenal' },
+  { value: 'MENSUAL', label: 'Mensual' }
+]
+
+const TOTAL_STEPS = 6
+
 const isValidEmailFormat = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())
-
 const sanitizeAmount = value => String(value || '').replace(/[^\d.]/g, '')
-
 const extractSolicitudId = payload =>
   payload?.data?.id || payload?.id || payload?.data?.solicitud_id || payload?.solicitud_id || ''
+
+const getAmountRangeLabel = amountValue => {
+  const amount = Number(amountValue || 0)
+
+  if (amount >= 2500) return '$2,500+'
+  if (amount >= 1000) return '$1,000 — $2,500'
+  if (amount >= 500) return '$500 — $1,000'
+  if (amount > 0) return '$100 — $500'
+
+  return '$100 — $2,500'
+}
+
+const fieldInputSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '999px',
+    backgroundColor: '#fff',
+    color: '#4a221d',
+    fontSize: '1.15rem',
+    '& fieldset': {
+      borderColor: '#b37a5a',
+      borderWidth: 1.5
+    },
+    '&:hover fieldset': {
+      borderColor: '#a05e38'
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: '#a05e38'
+    }
+  },
+  '& .MuiInputBase-input': {
+    py: 1.2
+  },
+  '& .MuiFormHelperText-root': {
+    ml: 0
+  }
+}
+
+const buildSummaryLabel = form => {
+  switch (form.step) {
+    case 1:
+      return `Monto: $${Number(form.requested_amount || 0).toLocaleString('en-US')}`
+    case 2:
+      return `Monto Menor: ${form.monto_menor_considerado || '-'}`
+    case 3:
+      return `Proposito Del Prestamo: ${form.loan_purpose || '-'}`
+    case 4:
+      return `Nombre: ${[form.nombre, form.apellido].filter(Boolean).join(' ') || '-'}`
+    case 5:
+      return `Nacimiento: ${form.fecha_nacimiento || '-'}`
+    default:
+      return `Contacto: ${form.email || form.telefono || '-'}`
+  }
+}
 
 export default function ShortFormSolicitudModule() {
   const searchParams = useSearchParams()
@@ -80,58 +132,81 @@ export default function ShortFormSolicitudModule() {
 
   const [form, setForm] = useState({
     requested_amount: sanitizeAmount(tracking.requested_amount || ''),
+    monto_menor_considerado: '',
+    loan_purpose: '',
     nombre: '',
     apellido: '',
+    fecha_nacimiento: '',
     telefono: '',
     email: '',
     modalidad: 'SEMANAL',
     idioma: 'ES',
-    consentimiento: true
+    consentimiento: true,
+    step: 1
   })
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [submitAttempted, setSubmitAttempted] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  const handleChange = event => {
-    const { name, value } = event.target
+  const amountRangeLabel = useMemo(() => getAmountRangeLabel(form.requested_amount), [form.requested_amount])
+  const progressValue = useMemo(() => Math.round((form.step / TOTAL_STEPS) * 100), [form.step])
+  const fullName = useMemo(
+    () => [form.nombre, form.apellido].filter(Boolean).join(' ').trim(),
+    [form.apellido, form.nombre]
+  )
+  const summaryLabel = useMemo(() => buildSummaryLabel(form), [form])
 
-    setForm(previous => ({
-      ...previous,
-      [name]: name === 'requested_amount' ? sanitizeAmount(value) : value
-    }))
+  const setField = (name, value) => {
+    setForm(previous => ({ ...previous, [name]: value }))
   }
 
-  const isRequiredMissing = field => {
-    if (!submitAttempted) return false
-
-    if (field === 'requested_amount') return !(Number(form.requested_amount || 0) > 0)
-    if (field === 'nombre') return !String(form.nombre || '').trim()
-    if (field === 'apellido') return !String(form.apellido || '').trim()
-    if (field === 'telefono') return !String(form.telefono || '').trim()
-    if (field === 'email') return !String(form.email || '').trim()
-
-    return false
+  const goNext = () => {
+    setForm(previous => ({ ...previous, step: Math.min(previous.step + 1, TOTAL_STEPS) }))
   }
 
-  const handleSubmit = async event => {
-    event.preventDefault()
-    setSubmitAttempted(true)
-    setSaving(true)
+  const goBack = () => {
     setError('')
+    setForm(previous => ({ ...previous, step: Math.max(previous.step - 1, 1) }))
+  }
+
+  const validateStep = () => {
+    if (!(Number(form.requested_amount || 0) > 0)) return 'Debes tener un monto solicitado válido.'
+    if (form.step === 1 && !form.monto_menor_considerado) return 'Selecciona si aceptarías un monto menor.'
+    if (form.step === 2 && !form.loan_purpose) return 'Selecciona el propósito del préstamo.'
+    if (form.step === 3) {
+      if (!String(form.nombre || '').trim()) return 'Debes ingresar el nombre.'
+      if (!String(form.apellido || '').trim()) return 'Debes ingresar el apellido.'
+    }
+    if (form.step === 4 && !String(form.fecha_nacimiento || '').trim()) return 'Debes ingresar la fecha de nacimiento.'
+    if (form.step === 5 && !String(form.telefono || '').trim()) return 'Debes ingresar el teléfono.'
+    if (form.step === 6) {
+      if (!String(form.email || '').trim()) return 'Debes ingresar el correo.'
+      if (!isValidEmailFormat(form.email)) return 'Debes ingresar un correo con formato válido.'
+    }
+
+    return ''
+  }
+
+  const handleAdvance = async event => {
+    event.preventDefault()
+    setError('')
+
+    const stepError = validateStep()
+
+    if (stepError) {
+      setError(stepError)
+      return
+    }
+
+    if (form.step < TOTAL_STEPS) {
+      goNext()
+      return
+    }
+
+    setSaving(true)
     setSuccess('')
 
     try {
-      if (!(Number(form.requested_amount || 0) > 0)) {
-        throw new Error('Debes ingresar un monto solicitado válido.')
-      }
-
-      if (!String(form.nombre || '').trim()) throw new Error('Debes ingresar el nombre.')
-      if (!String(form.apellido || '').trim()) throw new Error('Debes ingresar el apellido.')
-      if (!String(form.telefono || '').trim()) throw new Error('Debes ingresar el teléfono.')
-      if (!String(form.email || '').trim()) throw new Error('Debes ingresar el correo.')
-      if (!isValidEmailFormat(form.email)) throw new Error('Debes ingresar un correo con formato válido.')
-
       const payload = {
         nombre: String(form.nombre || '').trim(),
         apellido: String(form.apellido || '').trim(),
@@ -139,8 +214,11 @@ export default function ShortFormSolicitudModule() {
         email: String(form.email || '')
           .trim()
           .toLowerCase(),
+        fecha_nacimiento: String(form.fecha_nacimiento || '').trim(),
         requested_amount: Number(form.requested_amount || 0),
         monto_solicitado: Number(form.requested_amount || 0),
+        monto_menor_considerado: form.monto_menor_considerado,
+        loan_purpose: form.loan_purpose,
         modalidad: form.modalidad,
         idioma: form.idioma,
         consentimiento: Boolean(form.consentimiento),
@@ -162,179 +240,328 @@ export default function ShortFormSolicitudModule() {
   }
 
   return (
-    <Stack spacing={3} component='form' onSubmit={handleSubmit}>
-      <Card sx={introCardSx}>
-        <CardContent>
-          <Stack spacing={1}>
-            <Typography
-              sx={{
-                letterSpacing: '0.14em',
-                color: 'text.secondary',
-                fontWeight: 700,
-                fontSize: '0.68rem'
-              }}
-            >
-              SHORT FORM
+    <Box
+      component='form'
+      onSubmit={handleAdvance}
+      sx={{
+        minHeight: '100vh',
+        bgcolor: '#fbf3df',
+        color: '#4b211c',
+        px: { xs: 2.5, sm: 4, md: 7 },
+        py: { xs: 4, md: 7 }
+      }}
+    >
+      <Stack spacing={3} sx={{ maxWidth: 700, mx: 'auto' }}>
+        <Stack spacing={1.25}>
+          <Stack direction='row' justifyContent='space-between' alignItems='baseline' spacing={2}>
+            <Typography sx={{ fontSize: { xs: '1.7rem', md: '2rem' }, color: '#d0a27d', fontWeight: 500 }}>
+              1/2 Precalificacion <strong style={{ color: '#4b211c' }}>{progressValue}%</strong>
             </Typography>
-            <Typography
-              variant='h3'
-              sx={{ fontWeight: 700, lineHeight: 1.02, letterSpacing: '-0.03em', color: '#202124' }}
-            >
-              Solicitud rápida de crédito
-            </Typography>
-            <Typography color='text.secondary' sx={{ fontSize: 15, lineHeight: 1.45, maxWidth: 760 }}>
-              Completa este formulario corto para registrar una nueva solicitud en un flujo independiente y con tracking
-              separado del resto del sistema.
-            </Typography>
+            <Typography sx={{ fontSize: { xs: '1.6rem', md: '2rem' }, fontWeight: 700 }}>{amountRangeLabel}</Typography>
           </Stack>
-        </CardContent>
-      </Card>
+          <Box
+            sx={{
+              height: 8,
+              borderRadius: 999,
+              bgcolor: 'rgba(255,255,255,0.65)',
+              overflow: 'hidden'
+            }}
+          >
+            <Box
+              sx={{
+                width: `${progressValue}%`,
+                height: '100%',
+                borderRadius: 999,
+                bgcolor: '#ee7d2a'
+              }}
+            />
+          </Box>
+        </Stack>
 
-      {error ? <Alert severity='error'>{error}</Alert> : null}
-      {success ? <Alert severity='success'>{success}</Alert> : null}
+        {error ? <Alert severity='error'>{error}</Alert> : null}
+        {success ? <Alert severity='success'>{success}</Alert> : null}
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Card sx={sectionCardSx}>
-            <CardContent>
-              <Stack spacing={3}>
-                <Box>
-                  <Typography variant='h5' sx={{ fontWeight: 700, mb: 0.5 }}>
-                    Monto solicitado
-                  </Typography>
-                  <Typography color='text.secondary'>Puedes usar el monto del enlace o escribir otro valor.</Typography>
-                </Box>
+        <Stack spacing={3} sx={{ pt: { xs: 3, md: 8 } }}>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#ee7d2a' }}>↑ {summaryLabel}</Typography>
 
-                <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap'>
-                  {AMOUNT_OPTIONS.map(amount => (
-                    <Chip
-                      key={amount}
-                      label={`$${amount}`}
-                      color={String(form.requested_amount) === amount ? 'primary' : 'default'}
-                      variant={String(form.requested_amount) === amount ? 'filled' : 'outlined'}
-                      onClick={() => setForm(previous => ({ ...previous, requested_amount: amount }))}
-                    />
-                  ))}
-                </Stack>
-
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label='Monto solicitado *'
-                      name='requested_amount'
-                      type='number'
-                      value={form.requested_amount}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('requested_amount')}
-                      helperText={isRequiredMissing('requested_amount') ? 'Campo obligatorio' : 'Ejemplo: 2000'}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      select
-                      label='Modalidad'
-                      name='modalidad'
-                      value={form.modalidad}
-                      onChange={handleChange}
-                      fullWidth
-                    >
-                      {MODALIDAD_OPTIONS.map(option => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label='Nombre *'
-                      name='nombre'
-                      value={form.nombre}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('nombre')}
-                      helperText={isRequiredMissing('nombre') ? 'Campo obligatorio' : ''}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label='Apellido *'
-                      name='apellido'
-                      value={form.apellido}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('apellido')}
-                      helperText={isRequiredMissing('apellido') ? 'Campo obligatorio' : ''}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label='Teléfono *'
-                      name='telefono'
-                      value={form.telefono}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('telefono')}
-                      helperText={isRequiredMissing('telefono') ? 'Campo obligatorio' : ''}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label='Correo electrónico *'
-                      name='email'
-                      type='email'
-                      value={form.email}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      error={isRequiredMissing('email')}
-                      helperText={isRequiredMissing('email') ? 'Campo obligatorio' : ''}
-                    />
-                  </Grid>
-                </Grid>
-
-                <Divider />
-
-                <Stack spacing={1}>
-                  <Typography variant='h6' sx={{ fontWeight: 700 }}>
-                    Tracking del enlace
-                  </Typography>
-                  <Typography color='text.secondary'>
-                    Este flujo guarda separado el origen de campaña y los parámetros de marketing del enlace.
-                  </Typography>
-                  <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap'>
-                    {Object.entries(tracking).map(([key, value]) => (
-                      <Chip key={key} label={`${key}: ${value}`} variant='outlined' />
-                    ))}
-                    {!Object.keys(tracking).length ? (
-                      <Chip label='Sin parámetros de tracking' variant='outlined' />
-                    ) : null}
-                  </Stack>
-                </Stack>
+          {form.step === 1 ? (
+            <Stack spacing={3}>
+              <Typography
+                sx={{
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: { xs: '2.4rem', md: '3.55rem' },
+                  lineHeight: 1.04,
+                  fontWeight: 700,
+                  maxWidth: 640
+                }}
+              >
+                ¿También considerarías un monto menor a $1,000?
+              </Typography>
+              <Stack spacing={1.5} sx={{ width: 140, ml: 'auto' }}>
+                {['Sí', 'No'].map(option => (
+                  <Button
+                    key={option}
+                    type='button'
+                    variant='outlined'
+                    onClick={() => {
+                      setField('monto_menor_considerado', option)
+                      setError('')
+                      goNext()
+                    }}
+                    sx={{
+                      borderRadius: '999px',
+                      borderColor: '#c98d64',
+                      color: '#4b211c',
+                      fontSize: '1.1rem',
+                      py: 1.15
+                    }}
+                  >
+                    {option}
+                  </Button>
+                ))}
               </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+            </Stack>
+          ) : null}
 
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Card sx={{ borderRadius: 3, position: 'sticky', top: 24 }}>
-            <CardHeader title='Acciones' subheader='Envía la solicitud al flujo corto independiente.' />
-            <Divider />
-            <CardContent>
-              <Stack spacing={1.5}>
-                <Button variant='contained' type='submit' disabled={saving} fullWidth>
-                  {saving ? 'Enviando...' : 'Enviar solicitud corta'}
-                </Button>
+          {form.step === 2 ? (
+            <Stack spacing={3}>
+              <Typography
+                sx={{
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: { xs: '2.4rem', md: '3.55rem' },
+                  lineHeight: 1.04,
+                  fontWeight: 700,
+                  maxWidth: 640
+                }}
+              >
+                ¿Cuál es el propósito de tu préstamo?
+              </Typography>
+              <Stack spacing={1.4} alignItems='center'>
+                {PURPOSE_OPTIONS.map(option => (
+                  <Button
+                    key={option}
+                    type='button'
+                    variant='outlined'
+                    onClick={() => {
+                      setField('loan_purpose', option)
+                      setError('')
+                      goNext()
+                    }}
+                    sx={{
+                      borderRadius: '999px',
+                      borderColor: '#c98d64',
+                      color: '#4b211c',
+                      fontSize: { xs: '1.05rem', md: '1.22rem' },
+                      px: { xs: 3, md: 4.5 },
+                      py: 1.4,
+                      textTransform: 'none',
+                      minWidth: { xs: '100%', sm: 'auto' }
+                    }}
+                  >
+                    {option}
+                  </Button>
+                ))}
               </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Stack>
+            </Stack>
+          ) : null}
+
+          {form.step === 3 ? (
+            <Stack spacing={2.4} sx={{ maxWidth: 520 }}>
+              <Typography
+                sx={{
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: { xs: '2.4rem', md: '3.35rem' },
+                  lineHeight: 1.04,
+                  fontWeight: 700
+                }}
+              >
+                ¿Cuál es tu nombre legal?
+              </Typography>
+              <TextField
+                label='Nombre'
+                value={form.nombre}
+                onChange={event => setField('nombre', event.target.value)}
+                fullWidth
+                sx={fieldInputSx}
+              />
+              <TextField
+                label='Apellido'
+                value={form.apellido}
+                onChange={event => setField('apellido', event.target.value)}
+                fullWidth
+                sx={fieldInputSx}
+              />
+              <Button
+                type='submit'
+                variant='contained'
+                sx={{
+                  alignSelf: 'flex-end',
+                  borderRadius: '999px',
+                  bgcolor: '#c8643f',
+                  px: 4,
+                  py: 1.45,
+                  fontSize: '1.12rem',
+                  textTransform: 'none',
+                  boxShadow: 'none'
+                }}
+              >
+                Siguiente paso →
+              </Button>
+            </Stack>
+          ) : null}
+
+          {form.step === 4 ? (
+            <Stack spacing={2.4} sx={{ maxWidth: 520 }}>
+              <Typography
+                sx={{
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: { xs: '2.2rem', md: '3.1rem' },
+                  lineHeight: 1.05,
+                  fontWeight: 700
+                }}
+              >
+                ¡Mucho gusto, {fullName || 'amigo'}! ¿Cuál es tu fecha de nacimiento?
+              </Typography>
+              <TextField
+                label='Fecha de nacimiento'
+                type='date'
+                value={form.fecha_nacimiento}
+                onChange={event => setField('fecha_nacimiento', event.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                sx={fieldInputSx}
+              />
+              <Button
+                type='submit'
+                variant='contained'
+                sx={{
+                  alignSelf: 'flex-end',
+                  borderRadius: '999px',
+                  bgcolor: '#c8643f',
+                  px: 4,
+                  py: 1.45,
+                  fontSize: '1.12rem',
+                  textTransform: 'none',
+                  boxShadow: 'none'
+                }}
+              >
+                Siguiente paso →
+              </Button>
+            </Stack>
+          ) : null}
+
+          {form.step === 5 ? (
+            <Stack spacing={2.4} sx={{ maxWidth: 520 }}>
+              <Typography
+                sx={{
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: { xs: '2.2rem', md: '3.1rem' },
+                  lineHeight: 1.05,
+                  fontWeight: 700
+                }}
+              >
+                ¿Cuál es tu número de teléfono?
+              </Typography>
+              <TextField
+                label='Teléfono'
+                value={form.telefono}
+                onChange={event => setField('telefono', event.target.value)}
+                fullWidth
+                sx={fieldInputSx}
+              />
+              <Button
+                type='submit'
+                variant='contained'
+                sx={{
+                  alignSelf: 'flex-end',
+                  borderRadius: '999px',
+                  bgcolor: '#c8643f',
+                  px: 4,
+                  py: 1.45,
+                  fontSize: '1.12rem',
+                  textTransform: 'none',
+                  boxShadow: 'none'
+                }}
+              >
+                Siguiente paso →
+              </Button>
+            </Stack>
+          ) : null}
+
+          {form.step === 6 ? (
+            <Stack spacing={2.4} sx={{ maxWidth: 520 }}>
+              <Typography
+                sx={{
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: { xs: '2.2rem', md: '3.1rem' },
+                  lineHeight: 1.05,
+                  fontWeight: 700
+                }}
+              >
+                ¿Cuál es tu correo electrónico?
+              </Typography>
+              <TextField
+                label='Correo electrónico'
+                type='email'
+                value={form.email}
+                onChange={event => setField('email', event.target.value)}
+                fullWidth
+                sx={fieldInputSx}
+              />
+              <TextField
+                select
+                label='Modalidad preferida'
+                value={form.modalidad}
+                onChange={event => setField('modalidad', event.target.value)}
+                fullWidth
+                sx={fieldInputSx}
+              >
+                {MODALIDAD_OPTIONS.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <Button
+                type='submit'
+                variant='contained'
+                disabled={saving}
+                sx={{
+                  alignSelf: 'flex-end',
+                  borderRadius: '999px',
+                  bgcolor: '#c8643f',
+                  px: 4,
+                  py: 1.45,
+                  fontSize: '1.12rem',
+                  textTransform: 'none',
+                  boxShadow: 'none'
+                }}
+              >
+                {saving ? 'Enviando...' : 'Enviar solicitud →'}
+              </Button>
+            </Stack>
+          ) : null}
+        </Stack>
+
+        <Stack direction='row' justifyContent='space-between' alignItems='center' pt={2}>
+          <Button
+            type='button'
+            variant='text'
+            onClick={goBack}
+            disabled={form.step === 1 || saving}
+            sx={{ color: '#8d5a43', textTransform: 'none' }}
+          >
+            Atrás
+          </Button>
+          <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap' justifyContent='flex-end'>
+            {Object.keys(tracking)
+              .slice(0, 3)
+              .map(key => (
+                <Chip key={key} label={`${key}: ${tracking[key]}`} size='small' variant='outlined' />
+              ))}
+          </Stack>
+        </Stack>
+      </Stack>
+    </Box>
   )
 }
